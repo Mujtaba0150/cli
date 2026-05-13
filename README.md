@@ -9,6 +9,18 @@ asset transfer, machine-readable output, and raw API access for advanced use.
 ## Install
 
 ```sh
+npm install -g @beeper/desktop-api-cli
+```
+
+Or with Homebrew:
+
+```sh
+brew install beeper/tap/beeper-desktop-cli
+```
+
+For local development:
+
+```sh
 npm install
 npm run build
 node ./bin/run.js --help
@@ -173,3 +185,21 @@ beeper reply-file CHAT MESSAGE FILE [TEXT]
 | `BEEPER_DESKTOP_BASE_URL` | Beeper Desktop API base URL. Defaults to `http://localhost:23373`. |
 | `BEEPER_BASE_URL` | SDK-compatible base URL fallback. |
 | `BEEPER_CLI_CONFIG_DIR` | Override config directory for testing or isolated profiles. |
+
+## Publishing
+
+Tagged releases publish the same CLI to npm and Homebrew. Push a `v*` tag to run
+`.github/workflows/publish-release.yml`.
+
+The release workflow:
+
+- runs the TypeScript test suite
+- publishes `@beeper/desktop-api-cli` to npm with provenance
+- builds a Homebrew archive containing the compiled CLI and production dependencies
+- uploads the archive to the GitHub release
+- updates `beeper/homebrew-tap` with the pinned archive SHA
+
+Required repository secrets:
+
+- `NPM_TOKEN`
+- `HOMEBREW_TAP_GITHUB_TOKEN`

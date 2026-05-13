@@ -2,126 +2,39 @@ name: CI
 on:
   push:
     branches:
-      - '**'
-      - '!integrated/**'
-      - '!stl-preview-head/**'
-      - '!stl-preview-base/**'
-      - '!generated'
-      - '!codegen/**'
-      - 'codegen/stl/**'
+      - "**"
+      - "!integrated/**"
+      - "!stl-preview-head/**"
+      - "!stl-preview-base/**"
+      - "!generated"
+      - "!codegen/**"
+      - "codegen/stl/**"
   pull_request:
     branches-ignore:
-      - 'stl-preview-head/**'
-      - 'stl-preview-base/**'
-
-env:
-  GOPRIVATE: github.com/beeper/desktop-api-go,github.com/stainless-sdks/beeper-desktop-api-go
+      - "stl-preview-head/**"
+      - "stl-preview-base/**"
 
 jobs:
-  lint:
-    timeout-minutes: 10
-    name: lint
-    runs-on: ${{ github.repository == 'stainless-sdks/beeper-desktop-api-cli' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-go
-        with:
-          stainless-api-key: ${{ secrets.STAINLESS_API_KEY }}
-
-      - name: Link staging branch
-        if: github.repository == 'stainless-sdks/beeper-desktop-api-cli'
-        run: |
-          ./scripts/link 'github.com/stainless-sdks/beeper-desktop-api-go@${{ github.ref_name }}' || true
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
-      - name: Run lints
-        run: ./scripts/lint
-
-  build:
-    timeout-minutes: 10
-    name: build
-    permissions:
-      contents: read
-      id-token: write
-    runs-on: ${{ github.repository == 'stainless-sdks/beeper-desktop-api-cli' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-go
-        with:
-          stainless-api-key: ${{ secrets.STAINLESS_API_KEY }}
-
-      - name: Link staging branch
-        if: github.repository == 'stainless-sdks/beeper-desktop-api-cli'
-        run: |
-          ./scripts/link 'github.com/stainless-sdks/beeper-desktop-api-go@${{ github.ref_name }}' || true
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
-      - name: Run goreleaser
-        uses: goreleaser/goreleaser-action@v6.1.0
-        with:
-          version: latest
-          args: release --snapshot --clean --skip=publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get GitHub OIDC Token
-        if: |-
-          github.repository == 'stainless-sdks/beeper-desktop-api-cli' &&
-          !startsWith(github.ref, 'refs/heads/stl/')
-        id: github-oidc
-        uses: actions/github-script@v8
-        with:
-          script: core.setOutput('github_token', await core.getIDToken());
-
-      - name: Upload tarball
-        if: |-
-          github.repository == 'stainless-sdks/beeper-desktop-api-cli' &&
-          !startsWith(github.ref, 'refs/heads/stl/')
-        env:
-          URL: https://pkg.stainless.com/s
-          AUTH: ${{ steps.github-oidc.outputs.github_token }}
-          SHA: ${{ github.sha }}
-        run: ./scripts/utils/upload-artifact.sh
-
   test:
     timeout-minutes: 10
     name: test
-    runs-on: ${{ github.repository == 'stainless-sdks/beeper-desktop-api-cli' && 'depot-ubuntu-24.04' || 'ubuntu-latest' }}
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/setup-go
-        with:
-          stainless-api-key: ${{ secrets.STAINLESS_API_KEY }}
-
-      - name: Link staging branch
-        if: github.repository == 'stainless-sdks/beeper-desktop-api-cli'
-        run: |
-          ./scripts/link 'github.com/stainless-sdks/beeper-desktop-api-go@${{ github.ref_name }}' || true
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
-      - name: Run tests
-        run: ./scripts/test
-
       - uses: actions/setup-node@v6
         with:
-          node-version: 25
+          node-version: 24
           cache: npm
 
-      - name: Install TypeScript CLI dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Run TypeScript CLI tests
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
         run: npm test
+
+      - name: Package Homebrew archive
+        run: npm run pack:homebrew

@@ -61,7 +61,8 @@
   ],
   "release-type": "simple",
   "extra-files": [
-    "pkg/cmd/version.go",
+    "package.json",
+    "package-lock.json",
     "README.md"
   ]
 }

@@ -2,6 +2,7 @@
 name: Publish Release
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: publish
@@ -11,27 +12,48 @@ on:
     tags:
       - "v*"
 jobs:
-  goreleaser:
+  publish:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v6
       with:
         fetch-depth: 0
-    - name: Set up Go
-      uses: actions/setup-go@v5
+    - name: Set up Node
+      uses: actions/setup-node@v6
       with:
-        go-version-file: "go.mod"
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v6.1.0
-      with:
-        version: latest
-        args: release --clean
+        node-version: 24
+        registry-url: https://registry.npmjs.org
+        cache: npm
+    - name: Install dependencies
+      run: npm ci
+    - name: Test
+      run: npm test
+    - name: Publish npm package
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: |
+        set -euo pipefail
+        package_name="$(node -p "require('./package.json').name")"
+        package_version="$(node -p "require('./package.json').version")"
+        if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+          echo "${package_name}@${package_version} is already published; skipping npm publish."
+        else
+          npm publish --provenance --access public
+        fi
+    - name: Build Homebrew archive
+      run: npm run pack:homebrew
+    - name: Publish GitHub release assets
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        tag="${GITHUB_REF_NAME}"
+        if ! gh release view "${tag}" >/dev/null 2>&1; then
+          gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag
+        fi
+        gh release upload "${tag}" dist/release/*.tar.gz dist/release/homebrew.json --clobber
+    - name: Publish Homebrew formula
+      env:
         HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-        MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-        MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-        MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-        MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-        MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+      run: node scripts/publish-homebrew-formula.mjs
