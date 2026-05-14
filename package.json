@@ -49,6 +49,9 @@
       "api": {
         "description": "Call raw Desktop API endpoints."
       },
+      "app": {
+        "description": "Manage app login and encrypted messaging setup."
+      },
       "assets": {
         "description": "Upload and download message assets."
       },
