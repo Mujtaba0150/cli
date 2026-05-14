@@ -58,6 +58,9 @@
       "auth": {
         "description": "Authenticate with local Beeper Desktop."
       },
+      "bridge": {
+        "description": "Manage Matrix bridge login flows."
+      },
       "chat": {
         "description": "Open and inspect one chat."
       },
