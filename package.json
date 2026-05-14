@@ -52,14 +52,14 @@
       "app": {
         "description": "Manage app login and encrypted messaging setup."
       },
+      "accounts": {
+        "description": "Manage Beeper accounts."
+      },
       "assets": {
         "description": "Upload and download message assets."
       },
       "auth": {
         "description": "Authenticate with local Beeper Desktop."
-      },
-      "bridge": {
-        "description": "Manage Matrix bridge login flows."
       },
       "chat": {
         "description": "Open and inspect one chat."

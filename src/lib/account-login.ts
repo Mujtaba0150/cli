@@ -8,11 +8,17 @@ import type {
 } from '@beeper/desktop-api/resources/matrix/bridges/auth.js'
 import type BeeperDesktop from '@beeper/desktop-api'
 
-export type BridgeLoginStep =
+export type AccountLoginStep =
   | AuthStartLoginResponse
   | AuthSubmitCookiesResponse
   | AuthSubmitUserInputResponse
   | AuthWaitForStepResponse
+
+export type AccountLoginOptions = {
+  cookies?: Record<string, string>
+  fields?: Record<string, string>
+  nonInteractive?: boolean
+}
 
 type CommonStep = {
   instructions?: string
@@ -21,7 +27,7 @@ type CommonStep = {
   type: string
 }
 
-export function printBridgeLoginStep(step: BridgeLoginStep): void {
+export function printAccountLoginStep(step: AccountLoginStep): void {
   const common = step as CommonStep
   process.stdout.write(`step: ${common.type}\n`)
   if (common.instructions) process.stdout.write(`${common.instructions}\n`)
@@ -51,18 +57,18 @@ export function printBridgeLoginStep(step: BridgeLoginStep): void {
   }
 }
 
-export async function runGuidedBridgeLogin(client: BeeperDesktop, bridgeID: string, initialStep: BridgeLoginStep): Promise<BridgeLoginStep> {
+export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: string, initialStep: AccountLoginStep, options: AccountLoginOptions = {}): Promise<AccountLoginStep> {
   let step = initialStep
   for (;;) {
-    printBridgeLoginStep(step)
+    printAccountLoginStep(step)
     if ('complete' in step) return step
 
     const loginProcessID = (step as CommonStep).login_id
     const stepID = (step as CommonStep).step_id
-    if (!loginProcessID || !stepID) throw new Error('Bridge login step did not include login_id and step_id.')
+    if (!loginProcessID || !stepID) throw new Error('Account login step did not include login_id and step_id.')
 
     if ('display_and_wait' in step) {
-      await promptText('Press Enter after completing this step in the browser/app.')
+      await promptText('Press Enter after completing this step.')
       step = await client.matrix.bridges.auth.waitForStep(stepID, { bridgeID, loginProcessID })
       continue
     }
@@ -70,6 +76,20 @@ export async function runGuidedBridgeLogin(client: BeeperDesktop, bridgeID: stri
     if ('user_input' in step) {
       const body: Record<string, string> = {}
       for (const field of step.user_input.fields) {
+        if (options.fields?.[field.id] !== undefined) {
+          body[field.id] = options.fields[field.id]!
+          continue
+        }
+
+        if (options.nonInteractive) {
+          if (field.default_value !== undefined) {
+            body[field.id] = field.default_value
+            continue
+          }
+
+          throw new Error(`Missing required field ${field.id}. Pass --field ${field.id}=... or run without --non-interactive.`)
+        }
+
         const fallback = field.default_value ? ` [${field.default_value}]` : ''
         const value = await promptText(`${field.name}${fallback}: `)
         body[field.id] = value || field.default_value || ''
@@ -80,12 +100,20 @@ export async function runGuidedBridgeLogin(client: BeeperDesktop, bridgeID: stri
 
     if ('cookies' in step) {
       const body: Record<string, string> = {}
-      for (const field of step.cookies.fields) body[field.name] = await promptText(`${field.name}: `)
+      for (const field of step.cookies.fields) {
+        if (options.cookies?.[field.name] !== undefined) {
+          body[field.name] = options.cookies[field.name]!
+          continue
+        }
+
+        if (options.nonInteractive) throw new Error(`Missing required cookie ${field.name}. Pass --cookie ${field.name}=... or run without --non-interactive.`)
+        body[field.name] = await promptText(`${field.name}: `)
+      }
       step = await client.matrix.bridges.auth.submitCookies(stepID, { bridgeID, loginProcessID, body })
       continue
     }
 
-    throw new Error(`Unsupported bridge login step: ${(step as CommonStep).type}`)
+    throw new Error(`Unsupported account login step: ${(step as CommonStep).type}`)
   }
 }
 

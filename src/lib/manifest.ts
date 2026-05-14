@@ -2,6 +2,7 @@ import { apiCopy } from './copy.js'
 
 export const commandManifest = [
   { command: 'accounts', description: apiCopy.accounts.list },
+  { command: 'accounts add', description: 'Add a Beeper account' },
   { command: 'api get', description: 'Make an authenticated raw GET request' },
   { command: 'api post', description: 'Make an authenticated raw POST request' },
   { command: 'app e2ee recovery-code mark-backed-up', description: 'Mark the recovery key as saved' },
@@ -23,15 +24,6 @@ export const commandManifest = [
   { command: 'auth logout', description: 'Remove local credentials' },
   { command: 'auth status', description: 'Show local auth state' },
   { command: 'avatar', description: 'Set or clear a group chat avatar' },
-  { command: 'bridge flows', description: 'List bridge login flows' },
-  { command: 'bridge login', description: 'Start and optionally complete a bridge login flow' },
-  { command: 'bridge login start', description: 'Start a bridge login and print the first step' },
-  { command: 'bridge login submit-cookies', description: 'Submit cookies for a bridge login step' },
-  { command: 'bridge login submit-user-input', description: 'Submit user input for a bridge login step' },
-  { command: 'bridge login wait', description: 'Wait for the next bridge login step' },
-  { command: 'bridge logins', description: 'List bridge login IDs' },
-  { command: 'bridge logout', description: 'Log out a bridge login' },
-  { command: 'bridge whoami', description: 'Show bridge manager info' },
   { command: 'chat', description: apiCopy.chats.retrieve },
   { command: 'chat open', description: 'Alias for focus' },
   { command: 'chats', description: apiCopy.chats.list },
