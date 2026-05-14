@@ -12,6 +12,7 @@ beeper auth status
 beeper doctor
 beeper status
 beeper accounts
+beeper contacts list ACCOUNT
 beeper contacts search QUERY
 beeper contacts search QUERY --account imessage
 beeper create-chat --account imessage --participant USER_ID
@@ -46,6 +47,16 @@ beeper read CHAT
 beeper unread CHAT
 beeper mute CHAT
 beeper unmute CHAT
+beeper pin CHAT
+beeper unpin CHAT
+beeper low-priority CHAT
+beeper inbox CHAT
+beeper title CHAT TITLE
+beeper description CHAT DESCRIPTION
+beeper description CHAT --clear
+beeper avatar CHAT PATH
+beeper avatar CHAT --clear
+beeper message-expiry CHAT SECONDS|off
 beeper notify-anyway CHAT
 beeper remind CHAT 2026-05-13T12:00:00Z
 beeper unremind CHAT
@@ -77,6 +88,17 @@ beeper api post PATH --body JSON
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand one network to multiple accounts.
 - Contact and start-chat commands search across accounts when no account is specified.
+
+## Search Filters
+
+`chats search` exposes the app-facing filters from Desktop: `--inbox`,
+`--scope`, `--type`, `--unread`, `--include-muted` / `--no-include-muted`,
+`--last-activity-after`, and `--last-activity-before`.
+
+`messages search` supports literal query search plus `--chat`, `--account`,
+`--sender`, `--chat-type`, `--date-after`, `--date-before`, `--media`,
+`--include-muted` / `--no-include-muted`, and
+`--exclude-low-priority` / `--no-exclude-low-priority`.
 
 ## Send Confirmation
 

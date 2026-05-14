@@ -18,6 +18,7 @@ export const apiCopy = {
     start: 'Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper Desktop v4.2.808+.',
   },
   contacts: {
+    list: 'List merged contacts for a specific account with cursor-based pagination.',
     search: 'Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup.',
   },
   messages: {

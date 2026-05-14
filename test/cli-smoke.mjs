@@ -35,7 +35,6 @@ const help = ok('--help')
 assert.match(help, /\bchat\b/, 'help should expose canonical chat command')
 assert.match(help, /\bchats\b/, 'help should expose canonical chats command')
 assert.match(help, /\bthread\b/, 'help should expose compatibility thread alias')
-assert.doesNotMatch(help, /\bserve\b/, 'help must not expose assets serve')
 assert.doesNotMatch(help, /\bfailed-sends\b|\bscheduled\b|\blocal\s+stats\b/, 'help must not expose stale local DB commands')
 
 for (const command of [
@@ -50,6 +49,18 @@ for (const command of [
   ['watch', '--help'],
   ['current-user', '--help'],
   ['export', '--help'],
+  ['interactive', '--help'],
+  ['contacts', 'list', '--help'],
+  ['pin', '--help'],
+  ['unpin', '--help'],
+  ['low-priority', '--help'],
+  ['inbox', '--help'],
+  ['title', '--help'],
+  ['description', '--help'],
+  ['avatar', '--help'],
+  ['message-expiry', '--help'],
+  ['login', '--help'],
+  ['logout', '--help'],
   ['whoami', '--help'],
   ['config', 'get', '--help'],
   ['config', 'set', '--help'],
@@ -65,6 +76,7 @@ assert.match(ok('messages', '--help'), /--pick/, 'messages should expose --pick 
 assert.match(ok('chats', '--help'), /--account=<value>\.\.\./, 'chats should accept account selectors')
 assert.match(ok('export', '--help'), /--out/, 'export should expose output directory selection')
 assert.match(ok('export', '--help'), /--no-attachments/, 'export should expose attachment control')
+assert.match(ok('login', '--help'), /--server-url/, 'login should expose --server-url')
 
 const commandsJSON = JSON.parse(ok('commands', '--json'))
 assert.equal(commandsJSON.length, commandManifest.length, 'commands --json should expose the full manifest')
@@ -74,6 +86,7 @@ assert(commandsJSON.some(item => item.command === 'chat open'), 'commands --json
 assert(commandsJSON.some(item => item.command === 'tail'), 'commands --json should include tail alias')
 assert(commandsJSON.some(item => item.command === 'whoami'), 'commands --json should include whoami alias')
 assert(!commandsJSON.some(item => item.command.includes('serve')), 'commands --json must not include serve')
+assert(!commandsJSON.some(item => item.command.includes('base64')), 'commands --json must not include base64 asset variants')
 
 const configDir = '/tmp/beeper-cli-test-config'
 const configEnv = { ...process.env, BEEPER_CLI_CONFIG_DIR: configDir }

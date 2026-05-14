@@ -6,7 +6,7 @@ export default class LLM extends Command {
 
   async run(): Promise<void> {
     this.log('Beeper Desktop CLI')
-    this.log('Auth: beeper auth login')
+    this.log('Auth: beeper login')
     this.log('Output: most commands accept --json; list commands accept --limit where useful.')
     this.log('Common:')
     for (const item of commandManifest) this.log(`- beeper ${item.command}: ${item.description}`)

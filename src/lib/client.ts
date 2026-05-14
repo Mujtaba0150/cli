@@ -14,7 +14,7 @@ export async function createClient(flags: { baseURL?: string; 'base-url'?: strin
 export async function requireToken(): Promise<string> {
   const token = await getAccessToken()
   if (!token) {
-    throw new Error('Not authenticated. Run `beeper auth login` or set BEEPER_ACCESS_TOKEN.')
+    throw new Error('Not authenticated. Run `beeper login` or set BEEPER_ACCESS_TOKEN.')
   }
   return token
 }

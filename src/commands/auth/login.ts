@@ -5,7 +5,10 @@ import { readConfig } from '../../lib/config.js'
 export default class AuthLogin extends Command {
   static override summary = 'Authenticate with Beeper Desktop using OAuth2 PKCE'
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'server-url': Flags.string({
+      aliases: ['base-url'],
+      description: 'Beeper Desktop API server URL',
+    }),
     'client-name': Flags.string({ default: 'Beeper CLI', description: 'OAuth client name shown in Beeper Desktop' }),
     'no-open': Flags.boolean({ default: false, description: 'Print the authorization URL instead of opening a browser' }),
     scope: Flags.string({ default: 'read write', description: 'Space-separated OAuth scopes' }),
@@ -15,7 +18,7 @@ export default class AuthLogin extends Command {
     const { flags } = await this.parse(AuthLogin)
     const config = await readConfig()
     const token = await loginWithPKCE({
-      baseURL: flags['base-url'] ?? config.baseURL,
+      baseURL: flags['server-url'] ?? config.baseURL,
       clientName: flags['client-name'],
       openBrowser: !flags['no-open'],
       scope: flags.scope,
