@@ -41,11 +41,19 @@ beeper login --server-url http://localhost:23373
 beeper auth status
 ```
 
-`login` uses OAuth2 Authorization Code with PKCE. It registers a local
+`login` checks the local Desktop app state first. If Beeper Desktop is already
+signed in, it uses OAuth2 Authorization Code with PKCE: it registers a local
 client, opens the authorization URL, listens on a loopback callback, exchanges
 the authorization code, and stores the server URL and bearer token in
 `~/.config/beeper/config.json`. After that, commands reuse the remembered
 server URL.
+
+If the local Desktop app is not authenticated, `login` falls into the app
+bootstrap flow. You can force that flow with:
+
+```sh
+beeper login --app-login --email you@example.com
+```
 
 For non-interactive use, pass a token through the environment:
 

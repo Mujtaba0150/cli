@@ -13,7 +13,7 @@ export default class AppE2EERecoveryCodeResetBegin extends Command {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AppE2EERecoveryCodeResetBegin)
-    const result = await appRequest<ResetBeginResponse>('POST', '/v1/app/e2ee/recovery-code/reset/begin', {
+    const result = await appRequest<ResetBeginResponse>('POST', '/v1/app/e2ee/recovery-code/reset', {
       baseURL: flags['base-url'],
       body: flags['recovery-code'] ? { recoveryCode: flags['recovery-code'] } : {},
     })

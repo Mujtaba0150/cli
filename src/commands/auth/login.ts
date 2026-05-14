@@ -12,7 +12,7 @@ import {
 import { printData } from '../../lib/output.js'
 
 export default class AuthLogin extends Command {
-  static override summary = 'Sign in to Beeper through local Beeper Desktop'
+  static override summary = 'Authenticate with local Beeper Desktop'
   static override flags = {
     'server-url': Flags.string({
       aliases: ['base-url'],
@@ -22,9 +22,10 @@ export default class AuthLogin extends Command {
     code: Flags.string({ description: 'Email sign-in code' }),
     username: Flags.string({ description: 'Username to create if registration is required' }),
     'accept-terms': Flags.boolean({ default: false, description: 'Accept the Terms of Use and acknowledge the Privacy Policy when creating an account' }),
+    'app-login': Flags.boolean({ default: false, description: 'Sign in the local Beeper Desktop app itself instead of requesting a Desktop API token from an already signed-in app' }),
     'no-save': Flags.boolean({ default: false, description: 'Do not store the returned Desktop API token' }),
     json: Flags.boolean({ default: false, description: 'Print JSON' }),
-    oauth: Flags.boolean({ default: false, description: 'Use the legacy OAuth2 PKCE Desktop API authorization flow' }),
+    oauth: Flags.boolean({ default: false, description: 'Use the OAuth2 PKCE Desktop API authorization flow' }),
     'client-name': Flags.string({ default: 'Beeper CLI', description: 'OAuth client name shown in Beeper Desktop' }),
     'no-open': Flags.boolean({ default: false, description: 'Print the authorization URL instead of opening a browser' }),
     scope: Flags.string({ default: 'read write', description: 'Space-separated OAuth scopes' }),
@@ -35,15 +36,25 @@ export default class AuthLogin extends Command {
     const config = await readConfig()
     const baseURL = flags['server-url'] ?? config.baseURL
 
-    if (flags.oauth) {
+    const useAppLogin = flags['app-login']
+      || Boolean(flags.email || flags.code || flags.username || flags['accept-terms'])
+      || (!flags.oauth && await this.shouldUseAppLogin(baseURL))
+
+    if (!useAppLogin || flags.oauth) {
       const token = await loginWithPKCE({
         baseURL,
         clientName: flags['client-name'],
         openBrowser: !flags['no-open'],
+        save: !flags['no-save'],
         scope: flags.scope,
       })
+      if (flags.json) {
+        printData(token, 'json')
+        return
+      }
       this.log(`Authenticated as OAuth client ${token.clientID}`)
       if (token.expires_in) this.log(`Token expires in ${token.expires_in}s`)
+      if (flags['no-save']) this.log('Token was not saved')
       return
     }
 
@@ -71,13 +82,24 @@ export default class AuthLogin extends Command {
     await this.finishLogin(baseURL, result, { json: flags.json, save: !flags['no-save'] })
   }
 
+  private async shouldUseAppLogin(baseURL: string): Promise<boolean> {
+    const response = await fetch(new URL('/v1/app/status', baseURL))
+
+    if (response.status === 401 || response.status === 403) return false
+    if (response.status === 404) return false
+    if (!response.ok) throw new Error(`GET /v1/app/status failed: ${response.status} ${await response.text()}`)
+
+    const status = await response.json() as { state?: string }
+    return status.state === 'needs-login'
+  }
+
   private async register(
     baseURL: string,
     required: Extract<AppLoginOutput, { registrationRequired: true }>,
-    flags: { username?: string; 'accept-terms': boolean },
+    flags: { username?: string; 'accept-terms': boolean; json?: boolean },
   ): Promise<AppLoginSuccess> {
-    if (required.copy?.title) this.log(required.copy.title)
-    if (required.usernameSuggestions?.length) this.log(`Suggestions: ${required.usernameSuggestions.join(', ')}`)
+    if (!flags.json && required.copy?.title) this.log(required.copy.title)
+    if (!flags.json && required.usernameSuggestions?.length) this.log(`Suggestions: ${required.usernameSuggestions.join(', ')}`)
     const username = flags.username ?? await promptText(`${required.copy?.usernamePlaceholder ?? 'Username'}: `)
     const accepted = flags['accept-terms'] || await promptYesNo(required.copy?.terms ?? 'Accept Terms of Use and acknowledge Privacy Policy?')
     if (!accepted) throw new Error('Account creation requires --accept-terms or an interactive yes response.')

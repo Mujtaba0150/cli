@@ -13,7 +13,7 @@ export default class AppE2EEVerificationStart extends Command {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AppE2EEVerificationStart)
-    const result = await appRequest<VerificationStartResponse>('POST', '/v1/app/e2ee/verification/start', {
+    const result = await appRequest<VerificationStartResponse>('POST', '/v1/app/e2ee/verification', {
       baseURL: flags['base-url'],
       body: flags['user-id'] ? { userID: flags['user-id'] } : {},
     })

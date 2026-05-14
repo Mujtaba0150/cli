@@ -8,6 +8,7 @@ export type OAuthLoginOptions = {
   baseURL: string
   clientName: string
   openBrowser: boolean
+  save?: boolean
   scope: string
   timeoutMs?: number
 }
@@ -56,17 +57,19 @@ export async function loginWithPKCE(options: OAuthLoginOptions): Promise<TokenRe
       pkce.codeVerifier,
     )
 
-    await updateConfig(config => ({
-      ...config,
-      baseURL: options.baseURL,
-      auth: {
-        accessToken: token.access_token,
-        clientID: registered.client_id,
-        expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
-        scope: token.scope,
-        tokenType: token.token_type,
-      },
-    }))
+    if (options.save !== false) {
+      await updateConfig(config => ({
+        ...config,
+        baseURL: options.baseURL,
+        auth: {
+          accessToken: token.access_token,
+          clientID: registered.client_id,
+          expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
+          scope: token.scope,
+          tokenType: token.token_type,
+        },
+      }))
+    }
 
     return { ...token, clientID: registered.client_id }
   } finally {

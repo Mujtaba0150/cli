@@ -108,7 +108,8 @@ until it resolves to a message.
 
 ## OAuth
 
-`auth login` uses OAuth2 Authorization Code with PKCE:
+`auth login` first checks `/v1/app/status`. If the local Desktop app is already
+signed in, it uses OAuth2 Authorization Code with PKCE:
 
 1. Start a loopback callback server on `127.0.0.1`.
 2. Register a public OAuth client with `POST /oauth/register`.
@@ -117,3 +118,8 @@ until it resolves to a message.
 5. Validate the callback `state`.
 6. Exchange the code with `POST /oauth/token`.
 7. Store the bearer token under `~/.config/beeper/config.json` with mode `0600`.
+
+That is the flow for the CLI getting its own Desktop API token from an existing
+Desktop session. If the app is not signed in, `auth login` instead completes
+the app bootstrap flow through `/v1/app/login/*`. Use `auth login --app-login`
+or `auth login --oauth` only when you need to force one side explicitly.
