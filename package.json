@@ -1,12 +1,11 @@
 {
-  "name": "@beeper/desktop-api-cli",
+  "name": "beeper-cli",
   "version": "0.0.0",
-  "description": "Beeper Desktop API command-line interface",
+  "description": "Beeper CLI",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "beeper": "./bin/run.js",
-    "beeper-desktop-cli": "./bin/run.js"
+    "beeper": "./bin/run.js"
   },
   "files": [
     "bin",

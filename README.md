@@ -1,4 +1,4 @@
-# Beeper Desktop CLI
+# Beeper CLI
 
 Command-line access to the [Beeper Desktop API](https://developers.beeper.com/desktop-api/).
 
@@ -8,14 +8,10 @@ asset transfer, machine-readable output, and raw API access for advanced use.
 
 ## Install
 
-```sh
-npm install -g @beeper/desktop-api-cli
-```
-
-Or with Homebrew:
+Beeper CLI is distributed through Homebrew as a built release archive:
 
 ```sh
-brew install beeper/tap/beeper-desktop-cli
+brew install beeper/tap/beeper-cli
 ```
 
 For local development:
@@ -32,7 +28,7 @@ During development, run commands directly from TypeScript:
 npm run dev -- --help
 ```
 
-The package exposes both `beeper` and `beeper-desktop-cli`.
+The CLI command is `beeper`.
 
 ## Authenticate
 
@@ -248,18 +244,16 @@ beeper reply-file CHAT MESSAGE FILE [TEXT]
 
 ## Publishing
 
-Tagged releases publish the same CLI to npm and Homebrew. Push a `v*` tag to run
-`.github/workflows/publish-release.yml`.
+Beeper CLI releases are built as Homebrew archives and uploaded to GitHub
+Releases. Push a `v*` tag to run `.github/workflows/publish-release.yml`.
 
 The release workflow:
 
 - runs the TypeScript test suite
-- publishes `@beeper/desktop-api-cli` to npm with provenance
 - builds a Homebrew archive containing the compiled CLI and production dependencies
 - uploads the archive to the GitHub release
 - updates `beeper/homebrew-tap` with the pinned archive SHA
 
 Required repository secrets:
 
-- `NPM_TOKEN`
 - `HOMEBREW_TAP_GITHUB_TOKEN`

@@ -62,7 +62,6 @@
   "release-type": "simple",
   "extra-files": [
     "package.json",
-    "package-lock.json",
     "README.md"
   ]
 }

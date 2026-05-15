@@ -4,5 +4,5 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-echo "==> Unlinking with local directory"
-go mod edit -dropreplace github.com/beeper/desktop-api-go
+echo "==> Unlinking Beeper CLI"
+npm unlink -g beeper-cli || true

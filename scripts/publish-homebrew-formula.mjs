@@ -13,7 +13,7 @@ const token = process.env.HOMEBREW_TAP_GITHUB_TOKEN;
 const tapRepository = process.env.HOMEBREW_TAP_REPOSITORY || 'beeper/homebrew-tap';
 const sourceRepository = process.env.GITHUB_REPOSITORY || 'beeper/desktop-api-cli';
 const version = process.env.PACKAGE_VERSION || metadata.version || packageJson.version;
-const formulaName = process.env.HOMEBREW_FORMULA_NAME || 'beeper-desktop-cli';
+const formulaName = process.env.HOMEBREW_FORMULA_NAME || 'beeper-cli';
 const commandName = process.env.HOMEBREW_COMMAND_NAME || metadata.command || 'beeper';
 const formulaClass = formulaName
   .split(/[-_]/)
@@ -25,7 +25,7 @@ if (!token) {
   throw new Error('HOMEBREW_TAP_GITHUB_TOKEN is required to publish the Homebrew formula.');
 }
 
-const cloneRoot = await mkdtemp(join(tmpdir(), 'desktop-api-cli-homebrew-'));
+const cloneRoot = await mkdtemp(join(tmpdir(), 'beeper-cli-homebrew-'));
 const tapPath = join(cloneRoot, 'tap');
 const remote = `https://x-access-token:${token}@github.com/${tapRepository}.git`;
 
@@ -59,7 +59,7 @@ try {
 
 function formula({formulaClass, formulaName, sourceRepository, tag, version, metadata, commandName}) {
   return `class ${formulaClass} < Formula
-  desc "CLI for Beeper Desktop API"
+  desc "Beeper CLI"
   homepage "https://developers.beeper.com/desktop-api/"
   url "https://github.com/${sourceRepository}/releases/download/${tag}/${metadata.archive}"
   sha256 "${metadata.sha256}"

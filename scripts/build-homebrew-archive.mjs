@@ -13,13 +13,13 @@ const distPath = join(root, 'dist');
 const outDir = join(root, 'dist', 'release');
 
 const pkg = JSON.parse(await readFile(packageJsonPath, 'utf8'));
-const packageName = 'beeper-desktop-cli';
+const packageName = 'beeper-cli';
 const commandName = 'beeper';
 const version = process.env.PACKAGE_VERSION || pkg.version;
 const archiveName = `${packageName}_${version}_any.tar.gz`;
 const archivePath = join(outDir, archiveName);
 const metadataPath = join(outDir, 'homebrew.json');
-const workDir = await mkdtemp(join(tmpdir(), 'desktop-api-cli-homebrew-'));
+const workDir = await mkdtemp(join(tmpdir(), 'beeper-cli-homebrew-'));
 
 await ensureBuilt();
 await mkdir(join(workDir, 'bin'), {recursive: true});
@@ -56,6 +56,7 @@ await writeFile(
     {
       archive: basename(archivePath),
       command: commandName,
+      displayName: 'Beeper CLI',
       package: packageName,
       path: archivePath,
       sha256,
