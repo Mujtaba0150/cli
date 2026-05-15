@@ -24,6 +24,6 @@ export default class Chat extends Command {
     const chat = await client.chats.retrieve(chatID, {
       maxParticipantCount: flags['max-participants'],
     })
-    printData(chat, flags.json ? 'json' : 'human')
+    await printData(chat, flags.json ? 'json' : 'human')
   }
 }

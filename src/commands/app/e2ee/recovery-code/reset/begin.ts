@@ -17,6 +17,6 @@ export default class AppE2EERecoveryCodeResetBegin extends Command {
       baseURL: flags['base-url'],
       body: flags['recovery-code'] ? { recoveryCode: flags['recovery-code'] } : {},
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

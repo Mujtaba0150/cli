@@ -1,8 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
-import { collectPage, printData, printIDs } from '../../lib/output.js'
+import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
+import { withSpinner } from '../../lib/ui.js'
 
 export default class MessagesSearch extends Command {
   static override summary = apiCopy.messages.search
@@ -33,7 +34,7 @@ export default class MessagesSearch extends Command {
     const chatIDs = flags.chat?.length
       ? await Promise.all(flags.chat.map(chat => resolveChatID(client, chat, { accountIDs })))
       : undefined
-    const items = await collectPage(client.messages.search({
+    const params = {
       accountIDs,
       chatIDs,
       chatType: flags['chat-type'] as 'group' | 'single' | undefined,
@@ -44,11 +45,25 @@ export default class MessagesSearch extends Command {
       mediaTypes: flags.media as Array<'any' | 'video' | 'image' | 'link' | 'file'> | undefined,
       query: args.query,
       sender: flags.sender as 'me' | 'others' | (string & {}) | undefined,
-    }), flags.limit)
+    }
+    const useSpinner = !flags.json && !flags.ids
+    const label = args.query ? `Searching messages for "${args.query}"…` : 'Searching messages…'
+    const items = useSpinner
+      ? await withSpinner(label, () => collectPage(client.messages.search(params), flags.limit), {
+        done: value => `${value.length} match${value.length === 1 ? '' : 'es'}`,
+      })
+      : await collectPage(client.messages.search(params), flags.limit)
     if (flags.ids) {
       printIDs(items)
       return
     }
-    printData(items, flags.json ? 'json' : 'human')
+    printList(items, flags.json ? 'json' : 'human', {
+      title: 'No messages matched',
+      subtitle: args.query ? `Nothing found for "${args.query}".` : 'Try a different filter combination.',
+      suggestions: [
+        { command: 'beeper messages <chatID>', hint: 'list messages from a chat' },
+        { command: 'beeper search "<term>"', hint: 'search chats + messages' },
+      ],
+    })
   }
 }

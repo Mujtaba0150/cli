@@ -22,6 +22,6 @@ export default class Message extends Command {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
     const result = await client.messages.retrieve(args.message, { chatID })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

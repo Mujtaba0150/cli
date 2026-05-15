@@ -22,6 +22,6 @@ export default class Read extends Command {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
     const result = await client.chats.markRead(chatID, { messageID: flags.message })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

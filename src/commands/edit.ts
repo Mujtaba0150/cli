@@ -26,6 +26,6 @@ export default class Edit extends Command {
       chatID,
       text: args.text,
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

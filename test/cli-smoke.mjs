@@ -51,7 +51,6 @@ for (const command of [
   ['watch', '--help'],
   ['current-user', '--help'],
   ['export', '--help'],
-  ['interactive', '--help'],
   ['contacts', 'list', '--help'],
   ['pin', '--help'],
   ['unpin', '--help'],
@@ -268,7 +267,7 @@ function listCommandFiles(dir) {
     const path = join(dir, entry)
     if (statSync(path).isDirectory()) {
       files.push(...listCommandFiles(path))
-    } else if (path.endsWith('.ts')) {
+    } else if (path.endsWith('.ts') || path.endsWith('.tsx')) {
       files.push(path)
     }
   }
@@ -276,7 +275,7 @@ function listCommandFiles(dir) {
 }
 
 function fileToCommand(file) {
-  const rel = relative(join(root, 'src/commands'), file).replace(/\.ts$/, '')
+  const rel = relative(join(root, 'src/commands'), file).replace(/\.tsx?$/, '')
   return rel.endsWith('/index')
     ? rel.slice(0, -'/index'.length).replaceAll('/', ' ')
     : rel.replaceAll('/', ' ')

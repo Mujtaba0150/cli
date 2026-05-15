@@ -18,6 +18,6 @@ export default class ApiPost extends Command {
     const { args, flags } = await this.parse(ApiPost)
     const client = await createClient(flags)
     const body = JSON.parse(flags.body) as Record<string, unknown>
-    printData(await client.post(args.path, { body }), flags.json ? 'json' : 'human')
+    await printData(await client.post(args.path, { body }), flags.json ? 'json' : 'human')
   }
 }

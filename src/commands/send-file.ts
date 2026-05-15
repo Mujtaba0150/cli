@@ -53,9 +53,9 @@ export default class SendFile extends Command {
         intervalMs: flags['wait-interval'],
         timeoutMs: flags['wait-timeout'],
       })
-      printData(resolved, flags.json ? 'json' : 'human')
+      await printData(resolved, flags.json ? 'json' : 'human')
       return
     }
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

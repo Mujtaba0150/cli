@@ -1,8 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { printData } from '../../lib/output.js'
+import { printData, printList } from '../../lib/output.js'
 import { listAccountIDs, resolveAccountIDs } from '../../lib/resolve.js'
+import { withSpinner } from '../../lib/ui.js'
 
 export default class ContactsSearch extends Command {
   static override summary = apiCopy.contacts.search
@@ -20,15 +21,35 @@ export default class ContactsSearch extends Command {
     const { args, flags } = await this.parse(ContactsSearch)
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true }) ?? await listAccountIDs(client)
-    const results = []
-    for (const accountID of accountIDs) {
-      try {
-        const result = await client.accounts.contacts.search(accountID, { query: args.query })
-        results.push(...result.items.map((item: unknown) => ({ ...(item as Record<string, unknown>), accountID })))
-      } catch {
-        // Some networks reject exact lookups for some identifiers; keep trying the rest.
+    const load = async (): Promise<Array<Record<string, unknown>>> => {
+      const collected: Array<Record<string, unknown>> = []
+      for (const accountID of accountIDs) {
+        try {
+          const result = await client.accounts.contacts.search(accountID, { query: args.query })
+          collected.push(...result.items.map((item: unknown) => ({ ...(item as Record<string, unknown>), accountID })))
+        } catch {
+          // Some networks reject exact lookups for some identifiers; keep trying the rest.
+        }
       }
+      return collected
     }
-    printData(flags.json ? { items: results } : results, flags.json ? 'json' : 'human')
+    const useSpinner = !flags.json
+    const results = useSpinner
+      ? await withSpinner(`Searching contacts for "${args.query}"…`, load, {
+        done: value => `${value.length} match${value.length === 1 ? '' : 'es'} across ${accountIDs.length} account${accountIDs.length === 1 ? '' : 's'}`,
+      })
+      : await load()
+    if (flags.json) {
+      await printData({ items: results }, 'json')
+      return
+    }
+    await printList(results, 'human', {
+      title: 'No contacts matched',
+      subtitle: `Nothing across your ${accountIDs.length} account${accountIDs.length === 1 ? '' : 's'} matched "${args.query}".`,
+      suggestions: [
+        { command: 'beeper accounts', hint: 'verify which accounts are connected' },
+        { command: `beeper contact <accountID> ${args.query}`, hint: 'exact lookup on one account' },
+      ],
+    })
   }
 }

@@ -13,6 +13,6 @@ export default class AppStatus extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(AppStatus)
     const state = await appRequest<AppStatusResponse>('GET', '/v1/app/status', { baseURL: flags['base-url'] })
-    printData(state, flags.json ? 'json' : 'human')
+    await printData(state, flags.json ? 'json' : 'human')
   }
 }

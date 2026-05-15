@@ -28,6 +28,6 @@ export default class React extends Command {
       reactionKey: args.reaction,
       transactionID: flags.transaction,
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

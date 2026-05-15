@@ -47,6 +47,6 @@ export default class Draft extends Command {
           : undefined,
       },
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

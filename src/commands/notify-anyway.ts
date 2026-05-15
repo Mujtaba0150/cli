@@ -21,6 +21,6 @@ export default class NotifyAnyway extends Command {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
     const result = await client.chats.notifyAnyway(chatID)
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

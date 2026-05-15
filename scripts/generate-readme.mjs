@@ -91,7 +91,6 @@ beeper chats
 beeper messages "Family"
 beeper send "Family" "on my way" --wait
 beeper export --out ./beeper-export
-beeper interactive
 beeper api get /v1/info
 \`\`\`
 

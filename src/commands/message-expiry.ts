@@ -24,6 +24,6 @@ export default class MessageExpiry extends Command {
     if (expiry !== null && (!Number.isInteger(expiry) || expiry < 0)) throw new Error('SECONDS must be a positive integer or "off"')
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
-    printData(await client.chats.update(chatID, { messageExpirySeconds: expiry }), flags.json ? 'json' : 'human')
+    await printData(await client.chats.update(chatID, { messageExpirySeconds: expiry }), flags.json ? 'json' : 'human')
   }
 }

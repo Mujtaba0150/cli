@@ -21,6 +21,6 @@ export default class AppE2EEVerificationCancel extends Command {
       baseURL: flags['base-url'],
       body: { txnID: args.txnID, code: flags.code, reason: flags.reason },
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

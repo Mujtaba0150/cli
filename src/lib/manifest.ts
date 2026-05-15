@@ -45,7 +45,6 @@ export const commandManifest = [
   { command: 'edit', description: apiCopy.messages.update },
   { command: 'export', description: 'Export accounts, chats, messages, Markdown transcripts, and attachments' },
   { command: 'focus', description: 'Focus Beeper Desktop or one chat' },
-  { command: 'interactive', description: 'Open the OpenTUI Beeper chat app' },
   { command: 'inbox', description: 'Move a chat to the primary inbox' },
   { command: 'llm', description: 'Print compact CLI help for agents' },
   { command: 'login', description: 'Authenticate with Beeper Desktop' },

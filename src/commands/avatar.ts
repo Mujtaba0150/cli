@@ -24,6 +24,6 @@ export default class Avatar extends Command {
     if (!flags.clear && !args.path) throw new Error('Provide PATH or pass --clear')
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
-    printData(await client.chats.update(chatID, { imgURL: flags.clear ? null : args.path }), flags.json ? 'json' : 'human')
+    await printData(await client.chats.update(chatID, { imgURL: flags.clear ? null : args.path }), flags.json ? 'json' : 'human')
   }
 }

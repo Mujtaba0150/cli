@@ -1,6 +1,7 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../lib/copy.js'
+import { printSuccess } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
 export default class Remind extends Command {
@@ -13,6 +14,7 @@ export default class Remind extends Command {
     'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
     'dismiss-on-message': Flags.boolean({ default: false, description: 'Cancel if someone messages in the chat' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     pick: Flags.integer({ description: cliCopy.flags.pick }),
   }
 
@@ -26,6 +28,10 @@ export default class Remind extends Command {
         remindAt: args.when,
       },
     })
-    this.log('Reminder set')
+    await printSuccess({
+      message: 'Reminder set',
+      detail: args.when,
+      data: { chatID, remindAt: args.when, dismissOnIncomingMessage: flags['dismiss-on-message'] },
+    }, flags.json ? 'json' : 'human')
   }
 }

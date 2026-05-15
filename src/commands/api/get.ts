@@ -16,6 +16,6 @@ export default class ApiGet extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ApiGet)
     const client = await createClient(flags)
-    printData(await client.get(args.path), flags.json ? 'json' : 'human')
+    await printData(await client.get(args.path), flags.json ? 'json' : 'human')
   }
 }

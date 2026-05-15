@@ -1,5 +1,6 @@
-import { Args, Command } from '@oclif/core'
+import { Args, Command, Flags } from '@oclif/core'
 import { updateConfig } from '../../lib/config.js'
+import { printSuccess } from '../../lib/output.js'
 
 export default class ConfigSet extends Command {
   static override summary = 'Set a CLI configuration value'
@@ -7,10 +8,17 @@ export default class ConfigSet extends Command {
     key: Args.string({ description: 'Config key to set', options: ['baseURL'], required: true }),
     value: Args.string({ description: 'Config value', required: true }),
   }
+  static override flags = {
+    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+  }
 
   async run(): Promise<void> {
-    const { args } = await this.parse(ConfigSet)
+    const { args, flags } = await this.parse(ConfigSet)
     await updateConfig(config => ({ ...config, [args.key]: args.value }))
-    this.log(`${args.key}=${args.value}`)
+    await printSuccess({
+      message: `Set ${args.key}`,
+      detail: args.value,
+      data: { [args.key]: args.value },
+    }, flags.json ? 'json' : 'human')
   }
 }

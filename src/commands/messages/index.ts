@@ -1,8 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { collectPage, printData, printIDs } from '../../lib/output.js'
+import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
+import { withSpinner } from '../../lib/ui.js'
 
 export default class MessagesIndex extends Command {
   static override summary = apiCopy.messages.list
@@ -26,14 +27,23 @@ export default class MessagesIndex extends Command {
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
     const cursor = flags.before ?? flags.after
     const direction = flags.after ? 'after' : flags.before ? 'before' : undefined
-    const items = await collectPage(client.messages.list(chatID, {
-      cursor,
-      direction,
-    }), flags.limit)
+    const useSpinner = !flags.json && !flags.ids
+    const items = useSpinner
+      ? await withSpinner('Loading messages…', () => collectPage(client.messages.list(chatID, { cursor, direction }), flags.limit), {
+        done: value => `${value.length} message${value.length === 1 ? '' : 's'}`,
+      })
+      : await collectPage(client.messages.list(chatID, { cursor, direction }), flags.limit)
     if (flags.ids) {
       printIDs(items)
       return
     }
-    printData(items, flags.json ? 'json' : 'human')
+    printList(items, flags.json ? 'json' : 'human', {
+      title: 'No messages yet',
+      subtitle: 'This chat is empty. Send the first message.',
+      suggestions: [
+        { command: `beeper send ${chatID} "<text>"`, hint: 'start the conversation' },
+        { command: `beeper watch ${chatID}`, hint: 'subscribe to events' },
+      ],
+    })
   }
 }

@@ -28,6 +28,6 @@ export default class Focus extends Command {
       draftText: flags.draft,
       messageID: args.message,
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

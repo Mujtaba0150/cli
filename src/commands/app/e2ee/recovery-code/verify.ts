@@ -19,6 +19,6 @@ export default class AppE2EERecoveryCodeVerify extends Command {
       baseURL: flags['base-url'],
       body: { recoveryCode: args.recoveryCode },
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

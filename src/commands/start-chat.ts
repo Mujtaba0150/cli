@@ -38,7 +38,7 @@ export default class StartChat extends Command {
       messageText: flags.message,
       user,
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }
 

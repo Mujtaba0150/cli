@@ -26,6 +26,6 @@ export default class Unreact extends Command {
       chatID,
       messageID: args.message,
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

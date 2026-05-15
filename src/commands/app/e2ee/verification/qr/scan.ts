@@ -19,6 +19,6 @@ export default class AppE2EEVerificationQRScan extends Command {
       baseURL: flags['base-url'],
       body: { data: args.data },
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

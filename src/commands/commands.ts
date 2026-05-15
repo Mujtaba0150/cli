@@ -10,6 +10,6 @@ export default class Commands extends Command {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Commands)
-    printData(commandManifest, flags.json ? 'json' : 'human')
+    await printData(commandManifest, flags.json ? 'json' : 'human')
   }
 }

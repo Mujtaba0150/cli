@@ -19,6 +19,6 @@ export default class CurrentUser extends Command {
     })
     const text = await response.text()
     if (!response.ok) throw new Error(text || `HTTP ${response.status}`)
-    printData(JSON.parse(text) as unknown, flags.json ? 'json' : 'human')
+    await printData(JSON.parse(text) as unknown, flags.json ? 'json' : 'human')
   }
 }

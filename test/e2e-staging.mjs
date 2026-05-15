@@ -729,9 +729,6 @@ async function runWatchAndRpcCommands(instance, context) {
   })
   coveredCommands.add('shell')
 
-  await runCli(['interactive', '--help'], { instance })
-  coveredCommands.add('interactive')
-
   await runCli(['watch', '--json', '--chat', context.chatID], {
     instance,
     timeoutMs: 5000,

@@ -20,6 +20,6 @@ export default class AuthStatus extends Command {
       expiresAt: config.auth?.expiresAt,
       scope: config.auth?.scope,
     }
-    printData(data, flags.json ? 'json' : 'human')
+    await printData(data, flags.json ? 'json' : 'human')
   }
 }

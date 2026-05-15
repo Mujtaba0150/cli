@@ -17,6 +17,6 @@ export default class AppE2EEVerificationStart extends Command {
       baseURL: flags['base-url'],
       body: flags['user-id'] ? { userID: flags['user-id'] } : {},
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

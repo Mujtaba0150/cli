@@ -28,6 +28,6 @@ export default class CreateChat extends Command {
       title: flags.title,
       type: flags.type as 'single' | 'group',
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

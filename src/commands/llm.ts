@@ -1,14 +1,21 @@
-import { Command } from '@oclif/core'
+import { Command, Flags } from '@oclif/core'
 import { commandManifest } from '../lib/manifest.js'
+import { printCommands } from '../lib/output.js'
 
 export default class LLM extends Command {
   static override summary = 'Print compact CLI help for agents'
+  static override flags = {
+    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+  }
 
   async run(): Promise<void> {
-    this.log('Beeper CLI')
-    this.log('Auth: beeper login')
-    this.log('Output: most commands accept --json; list commands accept --limit where useful.')
-    this.log('Common:')
-    for (const item of commandManifest) this.log(`- beeper ${item.command}: ${item.description}`)
+    const { flags } = await this.parse(LLM)
+    await printCommands(commandManifest, flags.json ? 'json' : 'human', {
+      title: 'Beeper CLI',
+      intro: [
+        'Auth: beeper login',
+        'Most commands accept --json. List commands accept --limit.',
+      ],
+    })
   }
 }

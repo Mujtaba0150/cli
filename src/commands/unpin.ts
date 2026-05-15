@@ -21,6 +21,6 @@ export default class Unpin extends Command {
     const { args, flags } = await this.parse(Unpin)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
-    printData(await client.chats.update(chatID, { isPinned: false }), flags.json ? 'json' : 'human')
+    await printData(await client.chats.update(chatID, { isPinned: false }), flags.json ? 'json' : 'human')
   }
 }

@@ -15,6 +15,6 @@ export default class AppE2EERecoveryCodeMarkBackedUp extends Command {
     const result = await appRequest<RecoveryCodeMarkBackedUpResponse>('POST', '/v1/app/e2ee/recovery-code/mark-backed-up', {
       baseURL: flags['base-url'],
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

@@ -1,6 +1,7 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../lib/copy.js'
+import { printSuccess } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
 export default class DeleteMessage extends Command {
@@ -13,6 +14,7 @@ export default class DeleteMessage extends Command {
     'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
     'for-everyone': Flags.boolean({ default: false, description: sdkParamCopy.forEveryone }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     pick: Flags.integer({ description: cliCopy.flags.pick }),
   }
 
@@ -24,6 +26,10 @@ export default class DeleteMessage extends Command {
       chatID,
       forEveryone: flags['for-everyone'] || undefined,
     })
-    this.log('Deleted')
+    await printSuccess({
+      message: flags['for-everyone'] ? 'Deleted for everyone' : 'Deleted',
+      detail: args.message,
+      data: { messageID: args.message, chatID, forEveryone: flags['for-everyone'] },
+    }, flags.json ? 'json' : 'human')
   }
 }

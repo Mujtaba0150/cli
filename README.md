@@ -73,7 +73,6 @@ beeper chats
 beeper messages "Family"
 beeper send "Family" "on my way" --wait
 beeper export --out ./beeper-export
-beeper interactive
 beeper api get /v1/info
 ```
 
@@ -161,7 +160,6 @@ future commands.
 | `focus` | Focus Beeper Desktop, optionally opening a chat or message |
 | `help` | Display help for beeper. |
 | `inbox` | Move a chat to the primary inbox |
-| `interactive` | Open the OpenTUI Beeper chat app |
 | `llm` | Print compact CLI help for agents |
 | `login` | Authenticate with local Beeper Desktop |
 | `logout` | Remove the locally stored Beeper Desktop token |
@@ -467,7 +465,7 @@ Flags:
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 
-Global flags: `--base-url`, `--debug`.
+Global flags: `--base-url`, `--debug`, `--json`.
 
 ### `beeper assets download`
 Download a Matrix file using its mxc:// or localmxc:// URL to the device running Beeper Desktop and return the local file URL.
@@ -537,6 +535,8 @@ Remove the locally stored Beeper Desktop token
 ```sh
 beeper auth logout
 ```
+
+Global flags: `--json`.
 
 ### `beeper auth status`
 Show local auth status and token metadata
@@ -734,12 +734,16 @@ Print the CLI config path
 beeper config path
 ```
 
+Global flags: `--json`.
+
 ### `beeper config reset`
 Reset CLI configuration
 
 ```sh
 beeper config reset
 ```
+
+Global flags: `--json`.
 
 ### `beeper config set`
 Set a CLI configuration value
@@ -754,6 +758,8 @@ Arguments:
 | --- | --- | --- |
 | `key` | yes | Config key to set |
 | `value` | yes | Config value |
+
+Global flags: `--json`.
 
 ### `beeper contacts list`
 List merged contacts for a specific account with cursor-based pagination.
@@ -848,7 +854,7 @@ Flags:
 | `--for-everyone` | boolean | True to request deletion for everyone when the network supports it; false to delete only for the authenticated user when supported. |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 
-Global flags: `--base-url`, `--debug`.
+Global flags: `--base-url`, `--debug`, `--json`.
 
 ### `beeper description`
 Set or clear a group chat description
@@ -1018,21 +1024,14 @@ Flags:
 
 Global flags: `--base-url`, `--debug`, `--json`.
 
-### `beeper interactive`
-Open the OpenTUI Beeper chat app
-
-```sh
-beeper interactive
-```
-
-Global flags: `--base-url`, `--debug`.
-
 ### `beeper llm`
 Print compact CLI help for agents
 
 ```sh
 beeper llm
 ```
+
+Global flags: `--json`.
 
 ### `beeper login`
 Authenticate with local Beeper Desktop
@@ -1065,6 +1064,8 @@ Remove the locally stored Beeper Desktop token
 ```sh
 beeper logout
 ```
+
+Global flags: `--json`.
 
 ### `beeper low-priority`
 Move a chat to Low Priority
@@ -1361,7 +1362,7 @@ Flags:
 | `--dismiss-on-message` | boolean | Cancel if someone messages in the chat |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 
-Global flags: `--base-url`, `--debug`.
+Global flags: `--base-url`, `--debug`, `--json`.
 
 ### `beeper reply`
 Send a text message to a specific chat. Supports replying to existing messages. Returns a pending message ID.
@@ -1640,7 +1641,7 @@ Flags:
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 
-Global flags: `--base-url`, `--debug`.
+Global flags: `--base-url`, `--debug`, `--json`.
 
 ### `beeper unmute`
 Unmute a chat
@@ -1748,7 +1749,7 @@ Flags:
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 
-Global flags: `--base-url`, `--debug`.
+Global flags: `--base-url`, `--debug`, `--json`.
 
 ### `beeper watch`
 Stream Desktop API WebSocket events

@@ -1,8 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
-import { collectPage, printData, printIDs } from '../../lib/output.js'
+import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
+import { withSpinner } from '../../lib/ui.js'
 
 export default class ChatsSearch extends Command {
   static override summary = apiCopy.chats.search
@@ -29,7 +30,7 @@ export default class ChatsSearch extends Command {
     const { args, flags } = await this.parse(ChatsSearch)
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })
-    const items = await collectPage(client.chats.search({
+    const params = {
       accountIDs,
       inbox: flags.inbox as 'primary' | 'low-priority' | 'archive' | undefined,
       includeMuted: flags['include-muted'],
@@ -39,11 +40,25 @@ export default class ChatsSearch extends Command {
       scope: flags.scope as 'titles' | 'participants' | undefined,
       type: flags.type as 'single' | 'group' | 'any' | undefined,
       unreadOnly: flags.unread || undefined,
-    }), flags.limit)
+    }
+    const useSpinner = !flags.json && !flags.ids
+    const items = useSpinner
+      ? await withSpinner(`Searching chats for "${args.query}"…`, () => collectPage(client.chats.search(params), flags.limit), {
+        done: value => `${value.length} match${value.length === 1 ? '' : 'es'}`,
+      })
+      : await collectPage(client.chats.search(params), flags.limit)
     if (flags.ids) {
       printIDs(items)
       return
     }
-    printData(items, flags.json ? 'json' : 'human')
+    printList(items, flags.json ? 'json' : 'human', {
+      title: 'No chats matched',
+      subtitle: `Nothing found for "${args.query}".`,
+      suggestions: [
+        { command: 'beeper chats', hint: 'see everything' },
+        { command: 'beeper search "<term>"', hint: 'search messages too' },
+        { command: 'beeper contacts <accountID> <query>', hint: 'find contacts to start a chat' },
+      ],
+    })
   }
 }

@@ -19,6 +19,6 @@ export default class AppE2EEVerificationSASConfirm extends Command {
       baseURL: flags['base-url'],
       body: { txnID: args.txnID },
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

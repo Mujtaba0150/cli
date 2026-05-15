@@ -33,7 +33,7 @@ export default class AccountsAdd extends Command {
     if (!args.account) {
       const bridges = await client.bridges.list()
       if (flags.json) {
-        printData(bridges, 'json')
+        await printData(bridges, 'json')
         return
       }
 
@@ -69,7 +69,7 @@ export default class AccountsAdd extends Command {
       fields: parseKeyValueFlags(flags.field, '--field'),
       nonInteractive: flags['non-interactive'],
     }) : step
-    if (flags.json) printData(result, 'json')
+    if (flags.json) await printData(result, 'json')
     else if (!flags.guided) printAccountLoginStep(result)
     else if ('complete' in result) this.log('Account was connected successfully!')
   }

@@ -18,6 +18,6 @@ export default class AssetsDownload extends Command {
     const { args, flags } = await this.parse(AssetsDownload)
     const client = await createClient(flags)
     const result = await client.assets.download({ url: args.url })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

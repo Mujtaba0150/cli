@@ -25,6 +25,6 @@ export default class AssetsUpload extends Command {
       fileName: flags['file-name'],
       mimeType: flags['mime-type'],
     })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

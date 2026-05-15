@@ -20,6 +20,6 @@ export default class Mute extends Command {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
     const result = await client.chats.update(chatID, { isMuted: true })
-    printData(result, flags.json ? 'json' : 'human')
+    await printData(result, flags.json ? 'json' : 'human')
   }
 }

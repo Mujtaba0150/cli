@@ -1,4 +1,6 @@
 import { Command, Flags } from '@oclif/core'
+import React from 'react'
+import { Box, Text, render as inkRender } from 'ink'
 import { loginWithPKCE } from '../../lib/oauth.js'
 import { readConfig, updateConfig } from '../../lib/config.js'
 import { findLocalDesktop, getDesktopAppStatus } from '../../lib/desktop-auth.js'
@@ -10,7 +12,29 @@ import {
   promptText,
   promptYesNo,
 } from '../../lib/app-api.js'
+import { AuthSignedIn } from '../../lib/ink/components.js'
+import { theme, glyphs } from '../../lib/ink/theme.js'
 import { printData } from '../../lib/output.js'
+
+async function showSignedIn(props: React.ComponentProps<typeof AuthSignedIn>): Promise<void> {
+  const instance = inkRender(<AuthSignedIn {...props} />, { exitOnCtrlC: false, patchConsole: false })
+  setTimeout(() => instance.unmount(), 0)
+  await instance.waitUntilExit().catch(() => undefined)
+}
+
+async function showStep(label: string, detail?: string): Promise<void> {
+  const node = (
+    <Box>
+      <Text color={theme.primary}>{glyphs.arrow}</Text>
+      <Text> </Text>
+      <Text color={theme.text}>{label}</Text>
+      {detail ? <Text color={theme.muted}>  {detail}</Text> : null}
+    </Box>
+  )
+  const instance = inkRender(node, { exitOnCtrlC: false, patchConsole: false })
+  setTimeout(() => instance.unmount(), 0)
+  await instance.waitUntilExit().catch(() => undefined)
+}
 
 export default class AuthLogin extends Command {
   static override summary = 'Authenticate with local Beeper Desktop'
@@ -57,26 +81,28 @@ export default class AuthLogin extends Command {
         scope: flags.scope,
       })
       if (flags.json) {
-        printData(token, 'json')
+        await printData(token, 'json')
         return
       }
-      this.log(`Authenticated as OAuth client ${token.clientID}`)
-      if (token.expires_in) this.log(`Token expires in ${token.expires_in}s`)
-      if (flags['no-save']) this.log('Token was not saved')
+      const detail = token.expires_in ? `token expires in ${token.expires_in}s` : undefined
+      await showSignedIn({ as: token.clientID, detail, saved: !flags['no-save'] })
       return
     }
 
+    if (!flags.json) await showStep('Starting email sign-in', baseURL)
     const start = await appRequest<{ request: string; type: string[] }>('POST', '/v1/app/login/start', {
       baseURL,
       token: false,
     })
     const email = flags.email ?? await promptText('Email: ')
+    if (!flags.json) await showStep('Sending one-time code', email)
     await appRequest<Record<string, never>>('POST', '/v1/app/login/email', {
       baseURL,
       token: false,
       body: { request: start.request, email },
     })
     const code = flags.code ?? await promptText('Code: ')
+    if (!flags.json) await showStep('Verifying code')
     let result = await appRequest<AppLoginOutput>('POST', '/v1/app/login/response', {
       baseURL,
       token: false,
@@ -100,8 +126,10 @@ export default class AuthLogin extends Command {
     required: Extract<AppLoginOutput, { registrationRequired: true }>,
     flags: { username?: string; 'accept-terms': boolean; json?: boolean },
   ): Promise<AppLoginSuccess> {
-    if (!flags.json && required.copy?.title) this.log(required.copy.title)
-    if (!flags.json && required.usernameSuggestions?.length) this.log(`Suggestions: ${required.usernameSuggestions.join(', ')}`)
+    if (!flags.json && required.copy?.title) await showStep(required.copy.title)
+    if (!flags.json && required.usernameSuggestions?.length) {
+      await showStep('Suggestions', required.usernameSuggestions.join(', '))
+    }
     const username = flags.username ?? await promptText(`${required.copy?.usernamePlaceholder ?? 'Username'}: `)
     const accepted = flags['accept-terms'] || await promptYesNo(required.copy?.terms ?? 'Accept Terms of Use and acknowledge Privacy Policy?')
     if (!accepted) throw new Error('Account creation requires --accept-terms or an interactive yes response.')
@@ -135,13 +163,13 @@ export default class AuthLogin extends Command {
     }
 
     if (options.json) {
-      printData(result, 'json')
+      await printData(result, 'json')
       return
     }
-
-    const user = result.matrix.userID
-    this.log(`Authenticated as ${user}`)
-    this.log(`App state: ${result.appState.state}`)
-    if (!options.save) this.log('Token was not saved')
+    await showSignedIn({
+      as: result.matrix.userID,
+      detail: `app state: ${result.appState.state}`,
+      saved: options.save,
+    })
   }
 }
