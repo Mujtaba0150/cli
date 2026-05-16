@@ -21,7 +21,7 @@ export default class ContactsList extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ContactsList)
     const client = await createClient(flags)
-    const accountIDs = await resolveAccountIDs(client, [args.account], { allowMultiplePerInput: true }) ?? [args.account]
+    const accountIDs = (await resolveAccountIDs(client, [args.account], { allowMultiplePerInput: true }))!
     const useSpinner = !flags.json && !flags.ids
     const load = async (): Promise<Array<Record<string, unknown>>> => {
       const collected: Array<Record<string, unknown>> = []
