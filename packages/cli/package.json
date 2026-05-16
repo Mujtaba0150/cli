@@ -102,11 +102,13 @@
     "figures": "^6.1.0",
     "ink": "^7.0.3",
     "ink-spinner": "^5.0.0",
-    "react": "^19.2.6"
+    "react": "^19.2.6",
+    "ws": "^8.20.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^19.2.14",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
     "typescript": "^5.7.2"
   }

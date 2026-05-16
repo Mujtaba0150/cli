@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core'
+import WebSocket from 'ws'
 import { BeeperCommand, writeEvent } from '../lib/command.js'
 import { requireToken } from '../lib/client.js'
 import { getBaseURL } from '../lib/config.js'
@@ -23,7 +24,7 @@ export default class Watch extends BeeperCommand {
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
 
     const subscribed = flags.chat?.length ? flags.chat : ['*']
-    const ws = new WebSocket(url, { headers: { Authorization: `Bearer ${token}` } } as unknown as string[])
+    const ws = new WebSocket(url, { headers: { Authorization: `Bearer ${token}` } })
 
     if (flags.json) {
       await this.runJSON(ws, subscribed, flags.events)
