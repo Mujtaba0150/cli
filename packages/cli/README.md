@@ -113,8 +113,8 @@ Most commands support:
 Use `beeper login --server-url URL` to remember a Desktop API server URL for
 future commands.
 
-`commands --json` prints a compact command manifest for tools and agents.
-`llm` prints a concise human-readable command guide.
+`beeper commands --json` prints a compact command manifest for tools and agents.
+`beeper llm` prints a concise human-readable command guide.
 
 ## Environment
 
@@ -873,13 +873,13 @@ Flags:
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--ids` | boolean | Print only chat IDs |
-| `--inbox=<primary|low-priority|archive>` | option |  |
+| `--inbox=<primary\|low-priority\|archive>` | option |  |
 | `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
 | `--last-activity-after=<value>` | option | Only chats with last activity after this ISO timestamp |
 | `--last-activity-before=<value>` | option | Only chats with last activity before this ISO timestamp |
 | `--limit=<value>` | option | Maximum chats to print Default: 20 |
-| `--scope=<titles|participants>` | option |  |
-| `--type=<single|group|any>` | option |  |
+| `--scope=<titles\|participants>` | option |  |
+| `--type=<single\|group\|any>` | option |  |
 | `--unread` | boolean | Only unread chats |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -1094,7 +1094,7 @@ Flags:
 | `--message=<value>` | option | Optional first message |
 | `--participant=<value>...` | option | Participant user ID Required. |
 | `--title=<value>` | option | Group title |
-| `--type=<single|group>` | option | Chat type Default: single |
+| `--type=<single\|group>` | option | Chat type Default: single |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1586,14 +1586,14 @@ Flags:
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--chat=<value>...` | option | Limit to Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available. Also accepts exact chat titles or search text. |
-| `--chat-type=<group|single>` | option | Limit to group chats or direct messages |
+| `--chat-type=<group\|single>` | option | Limit to group chats or direct messages |
 | `--date-after=<value>` | option | Only messages after this ISO timestamp |
 | `--date-before=<value>` | option | Only messages before this ISO timestamp |
 | `--exclude-low-priority` | boolean | Exclude low-priority chats. Use --no-exclude-low-priority to include all. |
 | `--ids` | boolean | Print only message IDs |
 | `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
-| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for more types. |
+| `--media=<any\|video\|image\|link\|file>...` | option | Filter by media type. Repeat for more types. |
 | `--sender=<value>` | option | me, others, or a user ID |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
