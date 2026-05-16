@@ -1,103 +1,25 @@
 {
-  "name": "beeper-cli",
-  "version": "0.0.0",
-  "description": "Beeper CLI",
-  "license": "MIT",
+  "name": "desktop-api-cli-monorepo",
+  "private": true,
   "type": "module",
-  "bin": {
-    "beeper": "./bin/run.js"
-  },
-  "files": [
-    "bin",
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "packageManager": "pnpm@10.25.0",
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
-    "check:api-copy": "npm run build && node scripts/check-api-copy.mjs",
-    "check:readme": "npm run build && node scripts/generate-readme.mjs --check",
-    "dev": "node --import tsx ./bin/dev.js",
-    "e2e:staging": "npm run build && node test/e2e-staging.mjs",
-    "pack:homebrew": "npm run build && node scripts/build-homebrew-archive.mjs",
-    "readme": "npm run build && node scripts/generate-readme.mjs",
-    "test": "npm run build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "oclif": {
-    "additionalHelpFlags": [
-      "-h"
-    ],
-    "commands": {
-      "strategy": "pattern",
-      "target": "./dist/commands",
-      "globPatterns": [
-        "**/*.{js,ts,tsx}"
-      ]
-    },
-    "bin": "beeper",
-    "dirname": "beeper",
-    "flexibleTaxonomy": true,
-    "helpOptions": {
-      "maxWidth": 100
-    },
-    "plugins": [
-      "@oclif/plugin-help",
-      "@oclif/plugin-autocomplete",
-      "@oclif/plugin-not-found"
-    ],
-    "topicSeparator": " ",
-    "topics": {
-      "api": {
-        "description": "Call raw Desktop API endpoints."
-      },
-      "app": {
-        "description": "Manage app login and encrypted messaging setup."
-      },
-      "accounts": {
-        "description": "Manage Beeper accounts."
-      },
-      "assets": {
-        "description": "Upload and download message assets."
-      },
-      "auth": {
-        "description": "Authenticate with local Beeper Desktop."
-      },
-      "chat": {
-        "description": "Open and inspect one chat."
-      },
-      "chats": {
-        "description": "List and search chats."
-      },
-      "config": {
-        "description": "Manage local CLI configuration."
-      },
-      "contacts": {
-        "description": "Search contacts across accounts."
-      },
-      "messages": {
-        "description": "List and search chat messages."
-      },
-      "send": {
-        "description": "Send messages."
-      }
-    }
-  },
-  "dependencies": {
-    "@beeper/desktop-api": "^5.0.0",
-    "@oclif/core": "^4.11.2",
-    "@oclif/plugin-autocomplete": "^3.2.49",
-    "@oclif/plugin-help": "^6.2.48",
-    "@oclif/plugin-not-found": "^3.2.85",
-    "figures": "^6.1.0",
-    "ink": "^7.0.3",
-    "ink-spinner": "^5.0.0",
-    "react": "^19.2.6"
+    "build": "pnpm -r build",
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm pack:packages",
+    "clean": "pnpm -r clean",
+    "changeset": "changeset",
+    "pack:packages": "mkdir -p .packs && pnpm -r --filter './packages/*' pack --pack-destination ./.packs",
+    "release": "pnpm check && pnpm changeset publish",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "version-packages": "changeset version"
   },
   "devDependencies": {
-    "@types/node": "^25.7.0",
-    "@types/react": "^19.2.14",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.31.0",
+    "@types/node": "^20.0.0",
+    "tsdown": "^0.21.10",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
   }
 }

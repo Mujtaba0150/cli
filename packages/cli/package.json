@@ -1,0 +1,104 @@
+{
+  "name": "beeper-cli",
+  "version": "0.0.0",
+  "description": "Beeper CLI",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "beeper": "./bin/run.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc -p tsconfig.json",
+    "check:api-copy": "pnpm build && node scripts/check-api-copy.mjs",
+    "check:readme": "pnpm build && node scripts/generate-readme.mjs --check",
+    "clean": "rm -rf dist",
+    "dev": "node --import tsx ./bin/dev.js",
+    "e2e:staging": "pnpm build && node test/e2e-staging.mjs",
+    "pack:homebrew": "pnpm build && node scripts/build-homebrew-archive.mjs",
+    "readme": "pnpm build && node scripts/generate-readme.mjs",
+    "test": "pnpm build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "oclif": {
+    "additionalHelpFlags": [
+      "-h"
+    ],
+    "commands": {
+      "strategy": "pattern",
+      "target": "./dist/commands",
+      "globPatterns": [
+        "**/*.{js,ts,tsx}"
+      ]
+    },
+    "bin": "beeper",
+    "dirname": "beeper",
+    "flexibleTaxonomy": true,
+    "helpOptions": {
+      "maxWidth": 100
+    },
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-autocomplete",
+      "@oclif/plugin-not-found"
+    ],
+    "topicSeparator": " ",
+    "topics": {
+      "api": {
+        "description": "Call raw Desktop API endpoints."
+      },
+      "app": {
+        "description": "Manage app login and encrypted messaging setup."
+      },
+      "accounts": {
+        "description": "Manage Beeper accounts."
+      },
+      "assets": {
+        "description": "Upload and download message assets."
+      },
+      "auth": {
+        "description": "Authenticate with local Beeper Desktop."
+      },
+      "chat": {
+        "description": "Open and inspect one chat."
+      },
+      "chats": {
+        "description": "List and search chats."
+      },
+      "config": {
+        "description": "Manage local CLI configuration."
+      },
+      "contacts": {
+        "description": "Search contacts across accounts."
+      },
+      "messages": {
+        "description": "List and search chat messages."
+      },
+      "send": {
+        "description": "Send messages."
+      }
+    }
+  },
+  "dependencies": {
+    "@beeper/desktop-api": "^5.0.0",
+    "@oclif/core": "^4.11.2",
+    "@oclif/plugin-autocomplete": "^3.2.49",
+    "@oclif/plugin-help": "^6.2.48",
+    "@oclif/plugin-not-found": "^3.2.85",
+    "figures": "^6.1.0",
+    "ink": "^7.0.3",
+    "ink-spinner": "^5.0.0",
+    "react": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.2.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2"
+  }
+}
