@@ -29,8 +29,9 @@ export async function readConfig(): Promise<Config> {
       baseURL: baseURL || parsed.baseURL || defaultBaseURL,
       auth: parsed.auth,
     }
-  } catch {
-    return { baseURL: baseURL || defaultBaseURL }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { baseURL: baseURL || defaultBaseURL }
+    throw error
   }
 }
 
