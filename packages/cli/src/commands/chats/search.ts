@@ -15,7 +15,7 @@ export default class ChatsSearch extends BeeperCommand {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
     ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
     inbox: Flags.string({ options: ['primary', 'low-priority', 'archive'] }),
-    'include-muted': Flags.boolean({ allowNo: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
+    'include-muted': Flags.boolean({ allowNo: true, default: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
     'last-activity-after': Flags.string({ description: 'Only chats with last activity after this ISO timestamp' }),
     'last-activity-before': Flags.string({ description: 'Only chats with last activity before this ISO timestamp' }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
