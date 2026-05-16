@@ -55,6 +55,7 @@ export async function loginWithPKCE(options: OAuthLoginOptions): Promise<TokenRe
       registered.client_id,
       result.code,
       pkce.codeVerifier,
+      redirectURI,
     )
 
     if (options.save !== false) {
@@ -94,12 +95,13 @@ async function registerClient(baseURL: string, clientName: string, redirectURI: 
   return response.json() as Promise<RegisterResponse>
 }
 
-async function exchangeToken(tokenEndpoint: string, clientID: string, code: string, codeVerifier: string): Promise<TokenResponse> {
+async function exchangeToken(tokenEndpoint: string, clientID: string, code: string, codeVerifier: string, redirectURI: string): Promise<TokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     client_id: clientID,
     code,
     code_verifier: codeVerifier,
+    redirect_uri: redirectURI,
   })
   const response = await fetch(tokenEndpoint, {
     method: 'POST',
