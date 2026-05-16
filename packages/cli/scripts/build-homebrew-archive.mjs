@@ -5,10 +5,12 @@ import {cp, mkdir, mkdtemp, readFile, rm, stat, writeFile} from 'node:fs/promise
 import {tmpdir} from 'node:os';
 import {basename, join, resolve} from 'node:path';
 import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
-const root = resolve(new URL('..', import.meta.url).pathname);
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const workspaceRoot = resolve(root, '../..');
 const packageJsonPath = join(root, 'package.json');
-const packageLockPath = join(root, 'package-lock.json');
+const pnpmLockPath = join(workspaceRoot, 'pnpm-lock.yaml');
 const distPath = join(root, 'dist');
 const outDir = join(root, 'dist', 'release');
 
@@ -27,7 +29,8 @@ await mkdir(join(workDir, 'libexec'), {recursive: true});
 await mkdir(outDir, {recursive: true});
 
 await cp(packageJsonPath, join(workDir, 'libexec', 'package.json'));
-await cp(packageLockPath, join(workDir, 'libexec', 'package-lock.json'));
+await cp(pnpmLockPath, join(workDir, 'libexec', 'pnpm-lock.yaml'));
+await writeFile(join(workDir, 'libexec', 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
 await cp(join(root, 'bin'), join(workDir, 'libexec', 'bin'), {recursive: true});
 await cp(distPath, join(workDir, 'libexec', 'dist'), {
   recursive: true,
@@ -43,7 +46,7 @@ exec node "$prefix/libexec/bin/run.js" "$@"
   {mode: 0o755},
 );
 
-await run('npm', ['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], {
+await run('pnpm', ['install', '--prod', '--frozen-lockfile', '--ignore-scripts'], {
   cwd: join(workDir, 'libexec'),
 });
 await rm(archivePath, {force: true});
@@ -73,7 +76,7 @@ await rm(workDir, {recursive: true, force: true});
 
 async function ensureBuilt() {
   if (!existsSync(distPath)) {
-    throw new Error('dist/ does not exist. Run npm run build before packaging.');
+    throw new Error('dist/ does not exist. Run pnpm build before packaging.');
   }
 
   const distStats = await stat(distPath);
@@ -82,7 +85,7 @@ async function ensureBuilt() {
   }
 
   if (!existsSync(join(distPath, 'commands'))) {
-    throw new Error('dist/commands does not exist. Run npm run build before packaging.');
+    throw new Error('dist/commands does not exist. Run pnpm build before packaging.');
   }
 }
 
