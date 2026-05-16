@@ -20,14 +20,16 @@ export default class RPC extends BeeperCommand {
 
     for await (const line of rl) {
       if (!line.trim()) continue
+      let requestID: string | number | null = null
 
       try {
         const request = JSON.parse(line) as RPCRequest
+        requestID = request.id ?? null
         const args = normalizeArgs(request)
         if (args[0] === 'rpc' || args[0] === 'shell') throw new Error(`Unsupported nested command: ${args[0]}`)
         const result = await runCli(args)
         process.stdout.write(`${JSON.stringify({
-          id: request.id ?? null,
+          id: requestID,
           ok: result.code === 0,
           code: result.code,
           signal: result.signal,
@@ -36,7 +38,7 @@ export default class RPC extends BeeperCommand {
         })}\n`)
       } catch (error) {
         process.stdout.write(`${JSON.stringify({
-          id: null,
+          id: requestID,
           ok: false,
           error: error instanceof Error ? error.message : String(error),
         })}\n`)
