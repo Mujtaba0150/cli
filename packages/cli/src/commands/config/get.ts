@@ -12,11 +12,15 @@ export default class ConfigGet extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ConfigGet)
     const config = await readConfig()
+    const safeConfig = {
+      ...config,
+      auth: config.auth ? { ...config.auth, accessToken: '[redacted]' } : config.auth,
+    }
     const format = flags.json ? 'json' : 'human'
     if (args.key) {
-      await printData(config[args.key as 'baseURL' | 'auth'], format)
+      await printData(safeConfig[args.key as 'baseURL' | 'auth'], format)
       return
     }
-    await printConfig(config as unknown as Record<string, unknown>, format)
+    await printConfig(safeConfig as unknown as Record<string, unknown>, format)
   }
 }
