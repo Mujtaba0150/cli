@@ -23,8 +23,9 @@ export default class MessagesIndex extends BeeperCommand {
     const { args, flags } = await this.parse(MessagesIndex)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
+    if (flags.before && flags.after) this.error('Use only one of --before or --after')
     const cursor = flags.before ?? flags.after
-    const direction = flags.after ? 'after' : flags.before ? 'before' : undefined
+    const direction = flags.before ? 'before' : flags.after ? 'after' : undefined
     const useSpinner = !flags.json && !flags.ids
     const items = useSpinner
       ? await withSpinner('Loading messages…', () => collectPage(client.messages.list(chatID, { cursor, direction }), flags.limit), {
