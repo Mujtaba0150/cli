@@ -16,6 +16,7 @@ export default class Logout extends BeeperCommand {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ token, token_type_hint: 'access_token' }),
+        signal: AbortSignal.timeout(5000),
       }).catch(() => undefined)
       revoked = Boolean(response?.ok)
     }
