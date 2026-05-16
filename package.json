@@ -32,7 +32,7 @@
       "strategy": "pattern",
       "target": "./dist/commands",
       "globPatterns": [
-        "**/*.js"
+        "**/*.{js,ts,tsx}"
       ]
     },
     "bin": "beeper",
@@ -77,6 +77,9 @@
       },
       "messages": {
         "description": "List and search chat messages."
+      },
+      "send": {
+        "description": "Send messages."
       }
     }
   },

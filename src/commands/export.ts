@@ -1,9 +1,10 @@
-import { Command, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { exportBeeperData } from '../lib/export/index.js'
 import { resolveAccountIDs, resolveChatID } from '../lib/resolve.js'
 
-export default class Export extends Command {
+export default class Export extends BeeperCommand {
   static override summary = 'Export accounts, chats, messages, Markdown transcripts, and attachments.'
   static override description = [
     'Creates a resumable Beeper Desktop export using the official Desktop API SDK.',
@@ -12,9 +13,7 @@ export default class Export extends Command {
 
   static override flags = {
     account: Flags.string({ multiple: true, description: 'Limit to an account selector. Repeat to include more accounts.' }),
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
     chat: Flags.string({ multiple: true, description: 'Limit to a chat selector. Repeat to include more chats.' }),
-    debug: Flags.boolean({ default: false }),
     force: Flags.boolean({ default: false, description: 'Re-export chats even if checkpoint state says they are complete.' }),
     'limit-chats': Flags.integer({ description: 'Maximum chats to export. Intended for testing large exports.' }),
     'limit-messages': Flags.integer({ description: 'Maximum messages per chat. Intended for testing large exports.' }),
@@ -37,6 +36,7 @@ export default class Export extends Command {
       accountIDs,
       chatIDs,
       downloadAttachments: !flags['no-attachments'],
+      events: flags.events,
       force: flags.force,
       limitChats: flags['limit-chats'],
       limitMessages: flags['limit-messages'],

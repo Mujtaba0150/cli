@@ -1,15 +1,10 @@
-import { Command, Flags } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { readConfig } from '../lib/config.js'
 import { printData } from '../lib/output.js'
-import { withSpinner } from '../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../lib/ink/spinner.js'
 
-export default class Status extends Command {
+export default class Status extends BeeperCommand {
   static override summary = 'Check Beeper Desktop API status'
-  static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
-    debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Status)

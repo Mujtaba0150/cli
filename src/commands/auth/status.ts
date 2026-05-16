@@ -1,12 +1,9 @@
-import { Command, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { readConfig } from '../../lib/config.js'
 import { printData } from '../../lib/output.js'
 
-export default class AuthStatus extends Command {
+export default class AuthStatus extends BeeperCommand {
   static override summary = 'Show local auth status and token metadata'
-  static override flags = {
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthStatus)

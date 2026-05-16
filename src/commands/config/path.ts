@@ -1,11 +1,8 @@
-import { Command, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { configPath } from '../../lib/config.js'
 
-export default class ConfigPath extends Command {
+export default class ConfigPath extends BeeperCommand {
   static override summary = 'Print the CLI config path'
-  static override flags = {
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ConfigPath)

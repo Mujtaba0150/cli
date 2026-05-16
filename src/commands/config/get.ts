@@ -1,14 +1,12 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { readConfig } from '../../lib/config.js'
 import { printConfig, printData } from '../../lib/output.js'
 
-export default class ConfigGet extends Command {
+export default class ConfigGet extends BeeperCommand {
   static override summary = 'Print CLI configuration'
   static override args = {
     key: Args.string({ description: 'Optional config key to print', options: ['baseURL', 'auth'], required: false }),
-  }
-  static override flags = {
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
   }
 
   async run(): Promise<void> {

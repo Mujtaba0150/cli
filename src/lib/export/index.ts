@@ -12,6 +12,7 @@ export type ExportOptions = {
   accountIDs?: string[]
   chatIDs?: string[]
   downloadAttachments: boolean
+  events?: boolean
   force: boolean
   limitChats?: number
   limitMessages?: number
@@ -543,5 +544,6 @@ function indent(value: string, spaces: number): string {
 }
 
 function progress(options: ExportOptions, message: string): void {
+  if (options.events) process.stderr.write(`${JSON.stringify({ event: 'export.progress', data: { message }, ts: new Date().toISOString() })}\n`)
   if (!options.quiet) process.stderr.write(`${message}\n`)
 }

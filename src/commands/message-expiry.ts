@@ -1,10 +1,11 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { cliCopy } from '../lib/copy.js'
 import { printData } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
-export default class MessageExpiry extends Command {
+export default class MessageExpiry extends BeeperCommand {
   static override summary = 'Set or clear disappearing-message expiry'
   static override args = {
     chat: Args.string({ description: cliCopy.args.chatSelector, required: true }),
@@ -12,14 +13,12 @@ export default class MessageExpiry extends Command {
   }
 
   static override flags = {
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     pick: Flags.integer({ description: cliCopy.flags.pick }),
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessageExpiry)
+    ensureWritable(flags)
     const expiry = args.seconds.toLowerCase() === 'off' ? null : Number(args.seconds)
     if (expiry !== null && (!Number.isInteger(expiry) || expiry < 0)) throw new Error('SECONDS must be a positive integer or "off"')
     const client = await createClient(flags)

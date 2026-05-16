@@ -1,21 +1,19 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
 import { collectPage, printData, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
-import { withSpinner } from '../../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
-export default class ContactsList extends Command {
+export default class ContactsList extends BeeperCommand {
   static override summary = apiCopy.contacts.list
   static override args = {
     account: Args.string({ description: cliCopy.args.accountSelector, required: true }),
   }
 
   static override flags = {
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
     ids: Flags.boolean({ default: false, description: 'Print only contact user IDs' }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     limit: Flags.integer({ default: 50, description: 'Maximum contacts to print' }),
     query: Flags.string({ description: 'Optional blended contact lookup query' }),
   }

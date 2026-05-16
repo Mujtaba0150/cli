@@ -1,23 +1,21 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
-import { withSpinner } from '../../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
-export default class ChatsSearch extends Command {
+export default class ChatsSearch extends BeeperCommand {
   static override summary = apiCopy.chats.search
   static override args = {
     query: Args.string({ description: sdkParamCopy.searchQuery, required: true }),
   }
   static override flags = {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
     ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
     inbox: Flags.string({ options: ['primary', 'low-priority', 'archive'] }),
     'include-muted': Flags.boolean({ allowNo: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     'last-activity-after': Flags.string({ description: 'Only chats with last activity after this ISO timestamp' }),
     'last-activity-before': Flags.string({ description: 'Only chats with last activity before this ISO timestamp' }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),

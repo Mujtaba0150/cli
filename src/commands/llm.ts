@@ -1,12 +1,9 @@
-import { Command, Flags } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { commandManifest } from '../lib/manifest.js'
 import { printCommands } from '../lib/output.js'
 
-export default class LLM extends Command {
+export default class LLM extends BeeperCommand {
   static override summary = 'Print compact CLI help for agents'
-  static override flags = {
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LLM)

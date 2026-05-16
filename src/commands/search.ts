@@ -1,17 +1,13 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { printData } from '../lib/output.js'
-import { withSpinner } from '../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../lib/ink/spinner.js'
 
-export default class Search extends Command {
+export default class Search extends BeeperCommand {
   static override summary = 'Search chats and messages'
   static override args = {
     query: Args.string({ description: 'Literal search query', required: true }),
-  }
-  static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
-    debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
   }
 
   async run(): Promise<void> {

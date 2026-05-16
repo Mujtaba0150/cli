@@ -1,4 +1,4 @@
-import { Command } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { createInterface } from 'node:readline/promises'
 import { stdin as input } from 'node:process'
 import { splitCommandLine } from '../lib/argv.js'
@@ -11,7 +11,7 @@ type RPCRequest = {
   id?: string | number | null
 }
 
-export default class RPC extends Command {
+export default class RPC extends BeeperCommand {
   static override summary = 'Run newline-delimited JSON command RPC'
   static override description = 'Reads JSON lines like {"id":1,"command":"send CHAT hello"} or {"id":1,"args":["status","--json"]}.'
 

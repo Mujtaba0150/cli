@@ -1,10 +1,10 @@
-import { Command } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { splitCommandLine } from '../lib/argv.js'
 import { runCli } from '../lib/runner.js'
 
-export default class Shell extends Command {
+export default class Shell extends BeeperCommand {
   static override summary = 'Run an interactive Beeper CLI shell'
 
   async run(): Promise<void> {

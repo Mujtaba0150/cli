@@ -1,21 +1,16 @@
-import { Command, Flags } from '@oclif/core'
+import { BeeperCommand } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { apiCopy, cliCopy } from '../lib/copy.js'
 import { printData, printList } from '../lib/output.js'
-import { withSpinner } from '../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../lib/ink/spinner.js'
 
 function accountItems(accounts: unknown): unknown[] {
   if (Array.isArray(accounts)) return accounts
   return (accounts as { items?: unknown[] }).items ?? []
 }
 
-export default class Accounts extends Command {
+export default class Accounts extends BeeperCommand {
   static override summary = apiCopy.accounts.list
-  static override flags = {
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
-  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Accounts)
@@ -40,7 +35,7 @@ export default class Accounts extends Command {
       suggestions: [
         { command: 'beeper accounts add', hint: 'browse and connect a network' },
         { command: 'beeper accounts add WhatsApp', hint: 'connect a specific network' },
-        { command: 'beeper auth login', hint: 'sign in to Beeper Desktop first' },
+        { command: 'beeper login', hint: 'sign in to Beeper Desktop first' },
       ],
     })
   }

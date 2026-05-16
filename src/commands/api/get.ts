@@ -1,15 +1,14 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 
-export default class ApiGet extends Command {
+export default class ApiGet extends BeeperCommand {
   static override summary = 'Call a raw Desktop API GET path'
   static override args = {
     path: Args.string({ description: 'API path, for example /v1/info', required: true }),
   }
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
-    debug: Flags.boolean({ default: false }),
     json: Flags.boolean({ default: true, allowNo: true, description: 'Print JSON' }),
   }
 

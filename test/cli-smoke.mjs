@@ -36,18 +36,14 @@ assert.equal(new Set(manifestNames).size, manifestNames.length, 'command manifes
 const help = ok('--help')
 assert.match(help, /\bchat\b/, 'help should expose canonical chat command')
 assert.match(help, /\bchats\b/, 'help should expose canonical chats command')
-assert.match(help, /\bthread\b/, 'help should expose compatibility thread alias')
+assert.doesNotMatch(help, /\bthread\b|\bthreads\b|\btail\b|\bwhoami\b/, 'help must not expose compatibility aliases')
 assert.doesNotMatch(help, /\bfailed-sends\b|\bscheduled\b|\blocal\s+stats\b/, 'help must not expose stale local DB commands')
 
 for (const command of [
   ['chat', '--help'],
-  ['chat', 'open', '--help'],
   ['chats', '--help'],
-  ['thread', '--help'],
-  ['threads', '--help'],
-  ['tail', '--help'],
-  ['send-file', '--help'],
-  ['reply-file', '--help'],
+  ['send', 'text', '--help'],
+  ['send', 'file', '--help'],
   ['watch', '--help'],
   ['current-user', '--help'],
   ['export', '--help'],
@@ -62,7 +58,6 @@ for (const command of [
   ['message-expiry', '--help'],
   ['login', '--help'],
   ['logout', '--help'],
-  ['whoami', '--help'],
   ['config', 'get', '--help'],
   ['config', 'set', '--help'],
   ['config', 'reset', '--help'],
@@ -71,8 +66,8 @@ for (const command of [
   ok(...command)
 }
 
-assert.match(ok('send', '--help'), /--pick/, 'send should expose --pick for ambiguous chat names')
-assert.match(ok('send', '--help'), /--wait/, 'send should expose --wait')
+assert.match(ok('send', 'text', '--help'), /--pick/, 'send text should expose --pick for ambiguous chat names')
+assert.match(ok('send', 'text', '--help'), /--wait/, 'send text should expose --wait')
 assert.match(ok('messages', '--help'), /--pick/, 'messages should expose --pick for ambiguous chat names')
 assert.match(ok('chats', '--help'), /--account=<value>\.\.\./, 'chats should accept account selectors')
 assert.match(ok('export', '--help'), /--out/, 'export should expose output directory selection')
@@ -81,11 +76,10 @@ assert.match(ok('login', '--help'), /--server-url/, 'login should expose --serve
 
 const commandsJSON = JSON.parse(ok('commands', '--json'))
 assert.equal(commandsJSON.length, commandManifest.length, 'commands --json should expose the full manifest')
-assert(commandsJSON.some(item => item.command === 'threads'), 'commands --json should include alias commands')
 assert(commandsJSON.some(item => item.command === 'chat'), 'commands --json should include canonical chat command')
-assert(commandsJSON.some(item => item.command === 'chat open'), 'commands --json should include chat open alias')
-assert(commandsJSON.some(item => item.command === 'tail'), 'commands --json should include tail alias')
-assert(commandsJSON.some(item => item.command === 'whoami'), 'commands --json should include whoami alias')
+assert(commandsJSON.some(item => item.command === 'send text'), 'commands --json should include send text')
+assert(commandsJSON.some(item => item.command === 'send file'), 'commands --json should include send file')
+assert(!commandsJSON.some(item => ['thread', 'threads', 'tail', 'whoami'].includes(item.command)), 'commands --json must not include compatibility aliases')
 assert(!commandsJSON.some(item => item.command.includes('serve')), 'commands --json must not include serve')
 assert(!commandsJSON.some(item => item.command.includes('base64')), 'commands --json must not include base64 asset variants')
 

@@ -235,7 +235,7 @@ async function loginInstance(instance) {
   if (status?.state === 'needs-login') {
     const username = instance.email.match(/\+(\d+)@/)?.[1] ? `staging-user${RegExp.$1}` : `staging-user${runID}${instance.index}`
     const result = await runCli([
-      'auth', 'login',
+      'login',
       '--app-login',
       '--server-url', instance.baseURL,
       '--email', instance.email,
@@ -244,11 +244,10 @@ async function loginInstance(instance) {
       '--accept-terms',
       '--json',
     ], { instance })
-    const body = parseJSON(result.stdout, 'auth login --app-login')
+    const body = parseJSON(result.stdout, 'login --app-login')
     instance.userID = body.matrix?.userID
     instance.accessToken = body.desktopAPI?.accessToken
     assert(instance.accessToken, `login did not return a Desktop API token for ${instance.profile}`)
-    coveredCommands.add('auth login')
     coveredCommands.add('login')
     return
   }
@@ -322,7 +321,7 @@ async function buildMessagingContext(instance) {
 
   const chats = parseJSON((await runCli(['chats', '--json', '--limit', '20'], { instance })).stdout, 'chats')
   coveredCommands.add('chats')
-  coveredCommands.add('threads')
+  coveredCommands.add('chats')
 
   let chat = firstWritableChat(firstArray(chats))
   if (!chat && report.instances[1]?.userID) {
@@ -381,37 +380,37 @@ async function runAuthenticatedReadCommands(instance, context) {
   await runCli(['doctor', '--json'], { instance })
   await runCli(['app', 'status', '--json'], { instance })
   await runCli(['current-user', '--json'], { instance })
-  await runCli(['whoami', '--json'], { instance })
+  await runCli(['current-user', '--json'], { instance })
   await runCli(['api', 'get', '/v1/info', '--json'], { instance })
   await runCli(['api', 'post', '/v1/search', '--body', JSON.stringify({ query: 'cli' }), '--json'], { instance, allowFailure: true })
   await runCli(['chats', 'search', 'cli', '--json', '--limit', '5'], { instance, allowFailure: true })
   await runCli(['search', 'cli', '--json'], { instance, allowFailure: true })
   await runCli(['chat', context.chatID, '--json'], { instance })
-  await runCli(['thread', context.chatID, '--json'], { instance })
+  await runCli(['chat', context.chatID, '--json'], { instance })
   await runCli(['messages', 'search', 'cli', '--json', '--limit', '5'], { instance, allowFailure: true })
   await runCli(['contacts', 'list', context.accountID, '--json'], { instance, allowFailure: true })
   await runCli(['contacts', 'search', 'staging-user', '--account', context.accountID, '--json'], { instance, allowFailure: true })
 
   for (const command of [
-    'status', 'doctor', 'app status', 'current-user', 'whoami', 'api get', 'api post',
-    'chats search', 'search', 'chat', 'thread', 'messages search', 'contacts list', 'contacts search',
+    'status', 'doctor', 'app status', 'current-user', 'current-user', 'api get', 'api post',
+    'chats search', 'search', 'chat', 'chat', 'messages search', 'contacts list', 'contacts search',
   ]) coveredCommands.add(command)
 }
 
 async function runMessagingCommands(instance, context, fixture) {
-  const send = parseJSON((await runCli(['send', context.chatID, `cli e2e send ${runID}`, '--json'], { instance })).stdout, 'send')
-  coveredCommands.add('send')
+  const send = parseJSON((await runCli(['send', 'text', context.chatID, `cli e2e send ${runID}`, '--json'], { instance })).stdout, 'send text')
+  coveredCommands.add('send text')
   context.pendingMessageID = send.pendingMessageID
   if (!context.messageID) context.messageID = send.messageID ?? send.id ?? send.pendingMessageID
 
-  await runCli(['send-file', context.chatID, fixture, `file ${runID}`, '--json'], { instance, allowFailure: true })
-  coveredCommands.add('send-file')
+  await runCli(['send', 'file', context.chatID, fixture, `file ${runID}`, '--json'], { instance, allowFailure: true })
+  coveredCommands.add('send file')
   await runCli(['draft', context.chatID, `draft ${runID}`, '--json'], { instance })
   await runCli(['clear-draft', context.chatID, '--json'], { instance })
   await runCli(['read', context.chatID, '--json'], { instance })
   await runCli(['unread', context.chatID, '--json'], { instance })
-  await runCli(['mark-read', context.chatID, '--json'], { instance })
-  await runCli(['mark-unread', context.chatID, '--json'], { instance })
+  await runCli(['read', context.chatID, '--json'], { instance })
+  await runCli(['unread', context.chatID, '--json'], { instance })
   await runCli(['mute', context.chatID, '--json'], { instance })
   await runCli(['unmute', context.chatID, '--json'], { instance })
   await runCli(['pin', context.chatID, '--json'], { instance })
@@ -426,7 +425,7 @@ async function runMessagingCommands(instance, context, fixture) {
   await runCli(['avatar', context.chatID, '--clear', '--json'], { instance, allowFailure: true })
   await runCli(['notify-anyway', context.chatID, '--json'], { instance, allowFailure: true })
   await runCli(['focus', '--base-url', instance.baseURL], { instance, allowFailure: true })
-  await runCli(['chat', 'open', context.chatID, '--base-url', instance.baseURL], { instance, allowFailure: true })
+  await runCli(['focus', context.chatID, '--base-url', instance.baseURL], { instance, allowFailure: true })
 
   const reminderWhen = new Date(Date.now() + 60 * 60 * 1000).toISOString()
   await runCli(['remind', context.chatID, reminderWhen], { instance, allowFailure: true })
@@ -434,8 +433,8 @@ async function runMessagingCommands(instance, context, fixture) {
 
   if (context.messageID) {
     await runCli(['message', context.chatID, context.messageID, '--json'], { instance, allowFailure: true })
-    await runCli(['reply', context.chatID, context.messageID, `reply ${runID}`, '--json'], { instance, allowFailure: true })
-    await runCli(['reply-file', context.chatID, context.messageID, fixture, `reply file ${runID}`, '--json'], { instance, allowFailure: true })
+    await runCli(['send', 'text', context.chatID, `reply ${runID}`, '--reply-to', context.messageID, '--json'], { instance, allowFailure: true })
+    await runCli(['send', 'file', context.chatID, fixture, `reply file ${runID}`, '--reply-to', context.messageID, '--json'], { instance, allowFailure: true })
     await runCli(['react', context.chatID, context.messageID, '👍', '--json'], { instance, allowFailure: true })
     await runCli(['unreact', context.chatID, context.messageID, '👍', '--json'], { instance, allowFailure: true })
     await runCli(['edit', context.chatID, context.messageID, `edited ${runID}`, '--json'], { instance, allowFailure: true })
@@ -447,10 +446,10 @@ async function runMessagingCommands(instance, context, fixture) {
   await runCli(['export', '--limit-chats', '1', '--limit-messages', '3', '--no-attachments', '--quiet', '--out', path.join(workDir, 'export')], { instance })
 
   for (const command of [
-    'send-file', 'draft', 'clear-draft', 'read', 'unread', 'mark-read', 'mark-unread',
+    'send text', 'send file', 'draft', 'clear-draft', 'read', 'unread',
     'mute', 'unmute', 'pin', 'unpin', 'archive', 'unarchive', 'low-priority', 'inbox',
-    'message-expiry', 'title', 'description', 'avatar', 'notify-anyway', 'focus', 'chat open', 'remind',
-    'unremind', 'message', 'reply', 'reply-file', 'react', 'unreact', 'edit',
+    'message-expiry', 'title', 'description', 'avatar', 'notify-anyway', 'focus', 'focus', 'remind',
+    'unremind', 'message', 'send text', 'send file', 'react', 'unreact', 'edit',
     'delete-message', 'assets upload', 'assets download', 'export',
   ]) coveredCommands.add(command)
 
@@ -520,7 +519,7 @@ async function runRawEndpointCommands(instance, context, fixture) {
     ['GET', '/_matrix/client/v3/profile/{userId}', `/_matrix/client/v3/profile/${encodeURIComponent(instance.userID ?? 'missing-user')}`],
     ['POST', '/_matrix/client/v3/join/{roomIdOrAlias}', `/_matrix/client/v3/join/${encodeURIComponent(context.chatID)}`, {}],
     ['POST', '/_matrix/client/v3/rooms/{roomId}/leave', `/_matrix/client/v3/rooms/${encodeURIComponent(matrixRoomForLeave ?? '!invalid-cli-e2e-room:beeper-staging.com')}/leave`, {}],
-    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/whoami', bridgeProvisionEndpoint(context, '/v3/whoami')],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/current-user', bridgeProvisionEndpoint(context, '/v3/current-user')],
     ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/flows', bridgeProvisionEndpoint(context, '/v3/login/flows')],
     ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/logins', bridgeProvisionEndpoint(context, '/v3/logins')],
     ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/start/{flowID}', bridgeProvisionEndpoint(context, '/v3/login/start/invalid-flow'), {}],
@@ -615,21 +614,21 @@ function commandEndpointCoverage() {
     ['POST', '/v1/chats/{chatID}/archive', 'archive, unarchive'],
     ['POST', '/v1/chats/{chatID}/reminders', 'remind'],
     ['DELETE', '/v1/chats/{chatID}/reminders', 'unremind'],
-    ['POST', '/v1/chats/{chatID}/read', 'read, mark-read'],
-    ['POST', '/v1/chats/{chatID}/unread', 'unread, mark-unread'],
+    ['POST', '/v1/chats/{chatID}/read', 'read'],
+    ['POST', '/v1/chats/{chatID}/unread', 'unread'],
     ['POST', '/v1/chats/{chatID}/notify-anyway', 'notify-anyway'],
-    ['POST', '/v1/chats/{chatID}/messages', 'send, reply, send-file, reply-file'],
+    ['POST', '/v1/chats/{chatID}/messages', 'send text, send file'],
     ['PUT', '/v1/chats/{chatID}/messages/{messageID}', 'edit'],
     ['DELETE', '/v1/chats/{chatID}/messages/{messageID}', 'delete-message'],
     ['POST', '/v1/chats/{chatID}/messages/{messageID}/reactions', 'react'],
     ['DELETE', '/v1/chats/{chatID}/messages/{messageID}/reactions/{reactionKey}', 'unreact'],
     ['POST', '/v1/assets/download', 'assets download'],
-    ['POST', '/v1/assets/upload', 'assets upload, send-file, reply-file'],
-    ['POST', '/v1/app/login/start', 'auth login --app-login'],
-    ['POST', '/v1/app/login/email', 'auth login --app-login'],
-    ['POST', '/v1/app/login/response', 'auth login --app-login'],
-    ['POST', '/v1/app/login/register', 'auth login --app-login for new staging-user account'],
-    ['GET', '/v1/app/status', 'app status, auth login smart probe'],
+    ['POST', '/v1/assets/upload', 'assets upload, send file'],
+    ['POST', '/v1/app/login/start', 'login --app-login'],
+    ['POST', '/v1/app/login/email', 'login --app-login'],
+    ['POST', '/v1/app/login/response', 'login --app-login'],
+    ['POST', '/v1/app/login/register', 'login --app-login for new staging-user account'],
+    ['GET', '/v1/app/status', 'app status, login smart probe'],
     ['POST', '/v1/app/e2ee/recovery-code/verify', 'app e2ee recovery-code verify'],
     ['POST', '/v1/app/e2ee/recovery-code/reset', 'app e2ee recovery-code reset begin'],
     ['POST', '/v1/app/e2ee/recovery-code/reset/confirm', 'app e2ee recovery-code reset confirm'],
@@ -735,14 +734,12 @@ async function runWatchAndRpcCommands(instance, context) {
     allowTimeout: true,
   })
   coveredCommands.add('watch')
-  coveredCommands.add('tail')
+  coveredCommands.add('watch')
 }
 
 async function runCleanupCommands(instance) {
-  await runCli(['auth', 'logout'], { instance, allowFailure: true })
   await runCli(['logout'], { instance, allowFailure: true })
   await runCli(['config', 'reset'], { instance, allowFailure: true })
-  coveredCommands.add('auth logout')
   coveredCommands.add('logout')
   coveredCommands.add('config reset')
 }
@@ -883,12 +880,12 @@ function commandFromArgs(args) {
   const aliases = {
     login: 'login',
     logout: 'logout',
-    tail: 'tail',
-    thread: 'thread',
-    threads: 'threads',
-    whoami: 'whoami',
-    'mark-read': 'mark-read',
-    'mark-unread': 'mark-unread',
+    watch: 'watch',
+    chat: 'chat',
+    chats: 'chats',
+    'current-user': 'current-user',
+    'read': 'read',
+    'unread': 'unread',
   }
   const joined = []
   for (const arg of args) {

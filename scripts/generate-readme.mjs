@@ -8,7 +8,7 @@ const commands = [...config.commands]
   .filter(command => !command.hidden)
   .sort((a, b) => displayID(a.id).localeCompare(displayID(b.id)));
 
-const globalFlags = new Set(['base-url', 'debug', 'json']);
+const globalFlags = new Set(['base-url', 'debug', 'events', 'json', 'read-only']);
 const commandList = commands.map(command => {
   const id = displayID(command.id);
   return `| \`${id}\` | ${escapeTable(text(command.summary || command.description || ''))} |`;
@@ -23,6 +23,19 @@ Command-line access to the [Beeper Desktop API](https://developers.beeper.com/de
 The CLI is built with TypeScript, oclif, and the official \`@beeper/desktop-api\`
 SDK. The command reference below is generated from the oclif command metadata in
 the built CLI.
+
+## Inspiration
+
+This CLI is shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI
+that gets the command-line product shape right. The Beeper CLI borrows the same
+basic taste: workflow-first commands, human-readable output by default, exact
+\`--json\` for scripts, \`--events\` for long-running automation, \`--read-only\`
+for safe agent/tool use, and command names that optimize for what people are
+trying to do rather than for raw API resource names.
+
+When in doubt, the model is simple: make the default output pleasant to read,
+make machine output boring and stable, keep write commands explicit, and expose
+one obvious command for each job.
 
 ## Install
 
@@ -89,7 +102,8 @@ beeper status
 beeper accounts
 beeper chats
 beeper messages "Family"
-beeper send "Family" "on my way" --wait
+beeper send text "Family" "on my way" --wait
+beeper send file "Family" ./photo.jpg "from today"
 beeper export --out ./beeper-export
 beeper api get /v1/info
 \`\`\`
@@ -109,6 +123,8 @@ Most commands support:
 
 - app-like text by default, optimized for scanning chats, messages, contacts, accounts, and assets
 - \`--json\` for exact API-shaped structured output
+- \`--events\` for NDJSON lifecycle events on stderr from long-running commands
+- \`--read-only\` to reject commands that modify Beeper or local CLI state
 - \`--debug\` for SDK debug logging
 - \`--base-url\` to point at a different local Desktop API server
 

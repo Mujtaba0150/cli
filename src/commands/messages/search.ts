@@ -1,27 +1,25 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
-import { withSpinner } from '../../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
-export default class MessagesSearch extends Command {
+export default class MessagesSearch extends BeeperCommand {
   static override summary = apiCopy.messages.search
   static override args = {
     query: Args.string({ description: sdkParamCopy.searchQuery, required: false }),
   }
   static override flags = {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     chat: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.chatSelector}` }),
     'chat-type': Flags.string({ options: ['group', 'single'], description: 'Limit to group chats or direct messages' }),
     'date-after': Flags.string({ description: 'Only messages after this ISO timestamp' }),
     'date-before': Flags.string({ description: 'Only messages before this ISO timestamp' }),
-    debug: Flags.boolean({ default: false }),
     'exclude-low-priority': Flags.boolean({ allowNo: true, description: 'Exclude low-priority chats. Use --no-exclude-low-priority to include all.' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
     'include-muted': Flags.boolean({ allowNo: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     limit: Flags.integer({ default: 50, description: 'Maximum messages to print' }),
     media: Flags.string({ multiple: true, options: ['any', 'video', 'image', 'link', 'file'], description: 'Filter by media type. Repeat for more types.' }),
     sender: Flags.string({ description: 'me, others, or a user ID' }),

@@ -1,12 +1,12 @@
-import { Command, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
+import { BeeperCommand, writeEvent } from '../lib/command.js'
 import { requireToken } from '../lib/client.js'
 import { getBaseURL } from '../lib/config.js'
 import { startStream } from '../lib/output.js'
 
-export default class Watch extends Command {
+export default class Watch extends BeeperCommand {
   static override summary = 'Stream Desktop API WebSocket events'
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
     chat: Flags.string({ char: 'c', multiple: true, description: 'Chat ID to subscribe to. Defaults to all chats.' }),
     json: Flags.boolean({ default: false, description: 'Print raw JSON, one event per line' }),
   }
@@ -26,20 +26,28 @@ export default class Watch extends Command {
     const ws = new WebSocket(url, { headers: { Authorization: `Bearer ${token}` } } as unknown as string[])
 
     if (flags.json) {
-      await this.runJSON(ws, subscribed)
+      await this.runJSON(ws, subscribed, flags.events)
       return
     }
-    await this.runHuman(ws, subscribed, baseURL)
+    await this.runHuman(ws, subscribed, baseURL, flags.events)
   }
 
-  private async runJSON(ws: WebSocket, subscribed: string[]): Promise<void> {
-    ws.addEventListener('open', () => ws.send(JSON.stringify({ type: 'subscriptions.set', chatIDs: subscribed })))
+  private async runJSON(ws: WebSocket, subscribed: string[], events: boolean): Promise<void> {
+    ws.addEventListener('open', () => {
+      if (events) writeEvent('watch.open', { subscribed })
+      ws.send(JSON.stringify({ type: 'subscriptions.set', chatIDs: subscribed }))
+    })
     ws.addEventListener('message', event => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
+      if (events) writeEvent('watch.message')
       process.stdout.write(`${data}\n`)
     })
-    ws.addEventListener('error', () => this.error('WebSocket connection failed', { exit: 1 }))
+    ws.addEventListener('error', () => {
+      if (events) writeEvent('watch.error', { message: 'WebSocket connection failed' })
+      this.error('WebSocket connection failed', { exit: 1 })
+    })
     ws.addEventListener('close', event => {
+      if (events) writeEvent('watch.close', { code: event.code, reason: event.reason })
       if (event.code !== 1000) this.error(`WebSocket closed: ${event.code} ${event.reason}`, { exit: 1 })
     })
     await new Promise<void>(resolve => {
@@ -48,7 +56,7 @@ export default class Watch extends Command {
     })
   }
 
-  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string): Promise<void> {
+  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string, events: boolean): Promise<void> {
     const stream = await startStream({ baseURL, subscribed })
     let closed = false
 
@@ -60,11 +68,13 @@ export default class Watch extends Command {
     }
 
     ws.addEventListener('open', () => {
+      if (events) writeEvent('watch.open', { subscribed })
       stream.setConnected(true)
       ws.send(JSON.stringify({ type: 'subscriptions.set', chatIDs: subscribed }))
     })
     ws.addEventListener('message', event => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
+      if (events) writeEvent('watch.message')
       try {
         const parsed = JSON.parse(data) as Record<string, unknown>
         stream.push({
@@ -78,10 +88,12 @@ export default class Watch extends Command {
       }
     })
     ws.addEventListener('error', () => {
+      if (events) writeEvent('watch.error', { message: 'WebSocket connection failed' })
       stream.setConnected(false)
       stream.setStatus('connection error')
     })
     ws.addEventListener('close', event => {
+      if (events) writeEvent('watch.close', { code: event.code, reason: event.reason })
       stream.setConnected(false)
       if (event.code !== 1000) stream.setStatus(`closed ${event.code}${event.reason ? ` ${event.reason}` : ''}`)
       void finish()

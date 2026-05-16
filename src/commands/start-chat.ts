@@ -1,10 +1,11 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { apiCopy, cliCopy } from '../lib/copy.js'
 import { printData } from '../lib/output.js'
 import { listAccountIDs, resolveAccountIDs, userQueryFromInput } from '../lib/resolve.js'
 
-export default class StartChat extends Command {
+export default class StartChat extends BeeperCommand {
   static override summary = apiCopy.chats.start
   static override args = {
     query: Args.string({ description: 'Phone, email, username, user ID, or name', required: false }),
@@ -12,11 +13,8 @@ export default class StartChat extends Command {
   static override flags = {
     account: Flags.string({ multiple: true, description: `${cliCopy.args.accountSelector}. Omit to try every account.` }),
     'allow-invite': Flags.boolean({ default: false, description: 'Allow invite-based DM creation when required' }),
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
     email: Flags.string({ description: 'Email address' }),
     id: Flags.string({ description: 'Known user ID' }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     message: Flags.string({ description: 'Optional first message' }),
     name: Flags.string({ description: 'Display name hint' }),
     phone: Flags.string({ description: 'Phone number' }),
@@ -25,6 +23,7 @@ export default class StartChat extends Command {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(StartChat)
+    ensureWritable(flags)
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true }) ?? await listAccountIDs(client)
     const user: Record<string, string> = args.query ? userQueryFromInput(args.query) : {}

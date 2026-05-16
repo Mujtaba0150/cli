@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Flags } from '@oclif/core'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import type { BridgeAvailability } from '@beeper/desktop-api/resources/bridges.js'
 import type { AuthListFlowsResponse } from '@beeper/desktop-api/resources/matrix/bridges/auth.js'
 import { createClient } from '../../lib/client.js'
@@ -9,25 +10,23 @@ import { printData } from '../../lib/output.js'
 
 type AccountType = BridgeAvailability
 
-export default class AccountsAdd extends Command {
+export default class AccountsAdd extends BeeperCommand {
   static override summary = 'Add a Beeper account'
   static override args = {
     account: Args.string({ description: 'Account type to add, for example WhatsApp, Discord, or local-whatsapp' }),
   }
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
     cookie: Flags.string({ description: 'Cookie value for non-interactive login, in name=value form. Repeat for multiple cookies.', multiple: true }),
-    debug: Flags.boolean({ default: false }),
     field: Flags.string({ description: 'Field value for non-interactive login, in id=value form. Repeat for multiple fields.', multiple: true }),
     flow: Flags.string({ description: 'Login flow ID. If omitted, Desktop chooses the default flow.' }),
     guided: Flags.boolean({ default: true, allowNo: true, description: 'Prompt through login steps until completion' }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
     'login-id': Flags.string({ description: 'Existing login ID to re-login as' }),
     'non-interactive': Flags.boolean({ default: false, description: 'Do not prompt; require --flow, --field, and --cookie values when needed.' }),
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsAdd)
+    ensureWritable(flags)
     const client = await createClient(flags)
 
     if (!args.account) {

@@ -1,9 +1,10 @@
-import { Command, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
 import React from 'react'
 import { Box, Text, render as inkRender } from 'ink'
-import { loginWithPKCE } from '../../lib/oauth.js'
-import { readConfig, updateConfig } from '../../lib/config.js'
-import { findLocalDesktop, getDesktopAppStatus } from '../../lib/desktop-auth.js'
+import { BeeperCommand, ensureWritable } from '../lib/command.js'
+import { loginWithPKCE } from '../lib/oauth.js'
+import { readConfig, updateConfig } from '../lib/config.js'
+import { findLocalDesktop, getDesktopAppStatus } from '../lib/desktop-auth.js'
 import {
   type AppLoginOutput,
   type AppLoginSuccess,
@@ -11,10 +12,10 @@ import {
   isRegistrationRequired,
   promptText,
   promptYesNo,
-} from '../../lib/app-api.js'
-import { AuthSignedIn } from '../../lib/ink/components.js'
-import { theme, glyphs } from '../../lib/ink/theme.js'
-import { printData } from '../../lib/output.js'
+} from '../lib/app-api.js'
+import { AuthSignedIn } from '../lib/ink/components.js'
+import { theme, glyphs } from '../lib/ink/theme.js'
+import { printData } from '../lib/output.js'
 
 async function showSignedIn(props: React.ComponentProps<typeof AuthSignedIn>): Promise<void> {
   const instance = inkRender(<AuthSignedIn {...props} />, { exitOnCtrlC: false, patchConsole: false })
@@ -36,20 +37,18 @@ async function showStep(label: string, detail?: string): Promise<void> {
   await instance.waitUntilExit().catch(() => undefined)
 }
 
-export default class AuthLogin extends Command {
+export default class Login extends BeeperCommand {
   static override summary = 'Authenticate with local Beeper Desktop'
   static override flags = {
     'server-url': Flags.string({
-      aliases: ['base-url'],
       description: 'Beeper Desktop API server URL',
     }),
     email: Flags.string({ description: 'Email address to send a sign-in code to' }),
     code: Flags.string({ description: 'Email sign-in code' }),
     username: Flags.string({ description: 'Username to create if registration is required' }),
     'accept-terms': Flags.boolean({ default: false, description: 'Accept the Terms of Use and acknowledge the Privacy Policy when creating an account' }),
-    'app-login': Flags.boolean({ default: false, description: 'Sign in the local Beeper Desktop app itself instead of requesting a Desktop API token from an already signed-in app' }),
+    'app-login': Flags.boolean({ default: false, description: 'Sign in the local Beeper Desktop app itself instead of requesting a Desktop API token from an already-signed-in app' }),
     'no-save': Flags.boolean({ default: false, description: 'Do not store the returned Desktop API token' }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
     oauth: Flags.boolean({ default: false, description: 'Use the OAuth2 PKCE Desktop API authorization flow' }),
     'client-name': Flags.string({ default: 'Beeper CLI', description: 'OAuth client name shown in Beeper Desktop' }),
     'no-open': Flags.boolean({ default: false, description: 'Print the authorization URL instead of opening a browser' }),
@@ -57,11 +56,13 @@ export default class AuthLogin extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(AuthLogin)
+    const { flags } = await this.parse(Login)
+    ensureWritable(flags)
     const config = await readConfig()
+    const baseURLFlag = flags['server-url'] ?? flags['base-url']
     const desktop = await findLocalDesktop({
-      baseURL: flags['server-url'] ?? config.baseURL,
-      scan: !flags['server-url'],
+      baseURL: baseURLFlag ?? config.baseURL,
+      scan: !baseURLFlag,
     })
     const baseURL = desktop.baseURL
 
@@ -109,10 +110,7 @@ export default class AuthLogin extends Command {
       body: { request: start.request, response: code },
     })
 
-    if (isRegistrationRequired(result)) {
-      result = await this.register(baseURL, result, flags)
-    }
-
+    if (isRegistrationRequired(result)) result = await this.register(baseURL, result, flags)
     await this.finishLogin(baseURL, result, { json: flags.json, save: !flags['no-save'] })
   }
 

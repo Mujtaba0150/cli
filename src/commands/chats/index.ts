@@ -1,18 +1,16 @@
-import { Command, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
-import { withSpinner } from '../../lib/ui.js'
+import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
-export default class ChatsIndex extends Command {
+export default class ChatsIndex extends BeeperCommand {
   static override summary = apiCopy.chats.list
   static override flags = {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
-    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
-    debug: Flags.boolean({ default: false }),
     ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
-    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
   }
 
