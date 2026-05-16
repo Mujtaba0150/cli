@@ -32,6 +32,9 @@ export default class StartChat extends BeeperCommand {
     if (flags.id) user.id = flags.id
     if (flags.phone) user.phoneNumber = flags.phone
     if (flags.username) user.username = flags.username
+    if (Object.keys(user).length === 0) {
+      throw new Error('Provide a query or at least one of: --email, --id, --phone, --username, --name')
+    }
     const result = await tryStartChat(client, accountIDs, {
       allowInvite: flags['allow-invite'] || undefined,
       messageText: flags.message,
