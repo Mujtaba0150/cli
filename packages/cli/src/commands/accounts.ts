@@ -1,6 +1,6 @@
 import { BeeperCommand } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
-import { apiCopy, cliCopy } from '../lib/copy.js'
+import { apiCopy } from '../lib/copy.js'
 import { printData, printList } from '../lib/output.js'
 import { withInkSpinner as withSpinner } from '../lib/ink/spinner.js'
 
