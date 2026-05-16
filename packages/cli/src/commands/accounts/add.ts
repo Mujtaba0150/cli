@@ -51,10 +51,12 @@ export default class AccountsAdd extends BeeperCommand {
     if (!flowID) {
       const flows = await client.matrix.bridges.auth.listFlows(accountType.bridgeID)
       const loginFlows = flows.flows ?? []
-      if (loginFlows.length > 1 && flags['non-interactive']) throw new Error(`Multiple sign-in methods are available for ${accountType.displayName}. Pass --flow.`)
-      flowID = loginFlows.length > 1 && flags.guided && !flags.json
-        ? await chooseLoginFlow(loginFlows)
-        : loginFlows[0]?.id
+      if (loginFlows.length > 1) {
+        if (flags.guided && !flags.json && !flags['non-interactive']) flowID = await chooseLoginFlow(loginFlows)
+        else throw new Error(`Multiple sign-in methods are available for ${accountType.displayName}. Pass --flow.`)
+      } else {
+        flowID = loginFlows[0]?.id
+      }
       if (!flowID) throw new Error(`No login flows returned for ${accountType.displayName}.`)
       if (!flags.json && loginFlows.length > 1) this.log(`Using flow ${flowID}`)
     }
@@ -69,8 +71,7 @@ export default class AccountsAdd extends BeeperCommand {
       nonInteractive: flags['non-interactive'],
     }) : step
     if (flags.json) await printData(result, 'json')
-    else if (!flags.guided) printAccountLoginStep(result)
-    else if ('complete' in result) this.log('Account was connected successfully!')
+    else printAccountLoginStep(result)
   }
 }
 
