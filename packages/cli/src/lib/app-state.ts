@@ -1,21 +1,12 @@
+import type { AppSessionResponse } from '@beeper/desktop-api/resources/app'
+import type { QrConfirmScannedResponse, SASConfirmResponse, SASStartResponse, VerificationAcceptResponse, VerificationCreateResponse } from '@beeper/desktop-api/resources/app/verifications'
 import { appRequest, promptYesNo } from './app-api.js'
 
-export type AppState = {
-  state: ReadinessState | string
-  matrix?: { userID?: string; deviceID?: string; homeserver?: string }
-  verification?: {
-    state: string
-    availableActions?: string[]
-    verificationID?: string
-    sas?: { emojis?: string; decimals?: string }
-    error?: { code?: string; reason?: string }
-  }
-}
+export type AppState = AppSessionResponse
 
-export type ReadinessState =
+export type ReadinessState = AppState['state']
   | 'no-target'
   | 'target-unreachable'
-  | 'needs-login'
   | 'login-in-progress'
   | 'initializing'
   | 'needs-cross-signing-setup'
@@ -35,13 +26,14 @@ export type Readiness = {
 }
 
 export function nextAppStep(state: AppState, targetID?: string): string | undefined {
+  const appState = state.state as ReadinessState
   const target = targetID && targetID !== 'desktop' ? ` -t ${targetID}` : ''
-  if (state.state === 'ready') return undefined
-  if (state.state === 'needs-login') return `Run: beeper setup${target}`
-  if (state.state === 'needs-verification') return `Run: beeper verify${target}`
-  if (state.state === 'needs-secrets' || state.state === 'needs-recovery-key') return `Run: beeper verify recovery-key${target}`
-  if (state.state === 'needs-cross-signing-setup') return `Run: beeper verify reset-recovery-key${target}`
-  return `Waiting for app state: ${state.state}`
+  if (appState === 'ready') return undefined
+  if (appState === 'needs-login') return `Run: beeper setup${target}`
+  if (appState === 'needs-verification') return `Run: beeper verify${target}`
+  if (appState === 'needs-secrets' || appState === 'needs-recovery-key') return `Run: beeper verify recovery-key${target}`
+  if (appState === 'needs-cross-signing-setup') return `Run: beeper verify reset-recovery-key${target}`
+  return `Waiting for app state: ${appState}`
 }
 
 export async function evaluateReadiness(options: { baseURL?: string; target?: string; token?: string | false } = {}): Promise<Readiness> {
@@ -75,10 +67,10 @@ export async function driveVerification(options: { baseURL?: string; target?: st
   for (;;) {
     const verification = state.verification
     const actions = new Set(verification?.availableActions ?? [])
-    const id = verification?.verificationID
+    const id = verification?.id
 
     if (!verification) {
-      state = (await appRequest<{ session: AppState }>('POST', '/v1/app/setup/verifications', {
+      state = (await appRequest<VerificationCreateResponse>('POST', '/v1/app/setup/verifications', {
         ...options,
         body: options.userID ? { userID: options.userID } : {},
       })).session
@@ -86,12 +78,12 @@ export async function driveVerification(options: { baseURL?: string; target?: st
     }
 
     if (actions.has('accept') && id) {
-      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/accept`, options)).session
+      state = (await appRequest<VerificationAcceptResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/accept`, options)).session
       continue
     }
 
     if (actions.has('sas.start') && id) {
-      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/start`, options)).session
+      state = (await appRequest<SASStartResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/start`, options)).session
       continue
     }
 
@@ -101,12 +93,12 @@ export async function driveVerification(options: { baseURL?: string; target?: st
         process.stdout.write(`Verify that this matches on the other device:\n${sas?.emojis ?? sas?.decimals ?? '(no SAS data)'}\n`)
         if (!await promptYesNo('Do they match?')) throw new Error('Verification cancelled.')
       }
-      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/confirm`, options)).session
+      state = (await appRequest<SASConfirmResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/confirm`, options)).session
       continue
     }
 
     if (actions.has('qr.confirmScanned') && id) {
-      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).session
+      state = (await appRequest<QrConfirmScannedResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).session
       continue
     }
 

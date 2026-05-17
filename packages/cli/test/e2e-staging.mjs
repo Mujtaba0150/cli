@@ -32,6 +32,7 @@ const report = {
   phases,
   targets: [],
   commands: [],
+  failures: [],
   notes: [],
 }
 
@@ -39,6 +40,7 @@ const previousReport = await readPreviousReport()
 if (previousReport?.runID === runID) {
   report.targets = previousReport.targets ?? []
   report.commands = previousReport.commands ?? []
+  report.failures = previousReport.failures ?? []
   report.notes = previousReport.notes ?? []
 }
 
@@ -68,6 +70,10 @@ async function main() {
   report.finishedAt = new Date().toISOString()
   await writeReport()
   console.log(`staging e2e report: ${reportPath}`)
+  if (report.failures.length) {
+    console.error(`${report.failures.length} staging e2e failure${report.failures.length === 1 ? '' : 's'}; see report for details.`)
+    process.exitCode = 1
+  }
 }
 
 async function phasePlan() {
@@ -86,6 +92,7 @@ async function phasePlan() {
 }
 
 async function phaseTargets() {
+  report.targets = plannedTargets()
   for (const target of plannedTargets()) {
     const args = target.kind === 'desktop'
       ? ['targets', 'create', 'desktop', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
@@ -93,14 +100,17 @@ async function phaseTargets() {
     const result = runCli(args, { allowFailure: true })
     if (result.status !== 0 && !`${result.stderr}${result.stdout}`.includes('already exists')) fail(result, args)
     recordCommand('targets', args, result)
+    await writeReport()
   }
   const list = runCli(['targets', 'list', '--json'])
   recordCommand('targets', ['targets', 'list', '--json'], list)
+  await writeReport()
 }
 
 async function phaseInstallServer() {
   const result = runCli(['install', 'server', '--server-env', 'staging', '--json'])
   recordCommand('install-server', ['install', 'server', '--server-env', 'staging', '--json'], result)
+  await writeReport()
 }
 
 async function phaseStart() {
@@ -109,34 +119,40 @@ async function phaseStart() {
     const result = runCli(args, { env: serverEnv(), allowFailure: true })
     recordCommand('start', args, result)
     if (result.status !== 0) {
-      report.notes.push(`start failed for ${target.name}: ${result.stderr || result.stdout}`)
+      recordFailure('start', target, result.stderr || result.stdout)
       continue
     }
-    await waitForInfo(target)
+    try {
+      await waitForInfo(target)
+    } catch (error) {
+      recordFailure('start', target, error)
+    }
+    await writeReport()
   }
 }
 
 async function phaseLogin() {
   for (const target of plannedTargets()) {
-    await waitForInfo(target)
-    const email = target.email
-    const username = usernameForEmail(email)
-    const start = await appRequest(target, 'POST', '/v1/app/setup/start')
-    await appRequest(target, 'POST', '/v1/app/setup/email', { setupRequestID: start.setupRequestID, email })
-    const response = await appRequest(target, 'POST', '/v1/app/setup/response', { setupRequestID: start.setupRequestID, response: otp })
-    const login = response.registrationRequired
-      ? await appRequest(target, 'POST', '/v1/app/setup/register', {
-        setupRequestID: response.setupRequestID,
-        leadToken: response.leadToken,
-        username,
-        acceptTerms: true,
-      })
-      : response
-    target.matrix = login.matrix
-    target.accessToken = login.matrix?.accessToken
-    assert(target.accessToken, `login did not return an access token for ${target.name}`)
-    await saveTargetAuth(target)
-    report.notes.push(`signed in ${target.name} as ${email}`)
+    try {
+      await waitForInfo(target)
+      const email = target.email
+      const username = usernameForEmail(email)
+      const startArgs = ['setup', '--target', target.name, '--email', email, '--username', username, '--json']
+      const startResult = runCli(startArgs, { allowFailure: true })
+      recordCommand('login', startArgs, startResult)
+      if (startResult.status !== 0) fail(startResult, startArgs)
+      const codeArgs = ['setup', '--target', target.name, '--code', otp, '--accept-terms', '--json']
+      const codeResult = runCli(codeArgs, { allowFailure: true })
+      recordCommand('login', codeArgs, codeResult)
+      if (codeResult.status !== 0) fail(codeResult, codeArgs)
+      const body = parseEnvelope(codeResult.stdout)
+      target.matrix = body?.data?.login?.matrix ?? body?.data?.login?.session?.matrix
+      target.accessToken = await loadTargetAccessToken(target)
+      assert(target.accessToken, `setup did not persist an access token for ${target.name}`)
+      report.notes.push(`signed in ${target.name} as ${email}`)
+    } catch (error) {
+      recordFailure('login', target, error)
+    }
     await writeReport()
   }
 }
@@ -159,7 +175,7 @@ async function phaseReadiness() {
 async function phaseVerify() {
   const targets = plannedTargets().filter(target => target.accessToken)
   if (targets.length < 2) {
-    report.notes.push('verify phase needs at least two signed-in targets for device-to-device auth.')
+    recordFailure('verify', undefined, 'verify phase needs at least two signed-in targets for device-to-device auth.')
     return
   }
   for (const target of targets) {
@@ -181,7 +197,7 @@ async function phaseVerify() {
 async function phaseMessaging() {
   const [sender, receiver] = plannedTargets().filter(target => target.accessToken)
   if (!sender || !receiver?.matrix?.userID) {
-    report.notes.push('messaging phase needs two signed-in targets with Matrix user IDs.')
+    recordFailure('messaging', undefined, 'messaging phase needs two signed-in targets with Matrix user IDs.')
     return
   }
   const env = { BEEPER_ACCESS_TOKEN: sender.accessToken }
@@ -190,7 +206,7 @@ async function phaseMessaging() {
   const body = parseEnvelope(start.stdout)
   const chatID = body?.data?.chat?.id ?? body?.data?.id ?? body?.data?.chatID
   if (!chatID) {
-    report.notes.push('Could not infer chat ID from chats start; run send/list commands manually with the chat ID from the target UI.')
+    recordFailure('messaging', sender, 'Could not infer chat ID from chats start; run send/list commands manually with the chat ID from the target UI.')
     return
   }
   for (const args of [
@@ -276,6 +292,13 @@ function recordCommand(phase, args, result) {
   })
 }
 
+function recordFailure(phase, target, error) {
+  const message = error instanceof Error ? error.message : String(error)
+  const failure = { phase, target: target?.name, message }
+  report.failures.push(failure)
+  report.notes.push(`${phase} failed${target?.name ? ` for ${target.name}` : ''}: ${message}`)
+}
+
 async function waitForInfo(target) {
   const deadline = Date.now() + 180_000
   while (Date.now() < deadline) {
@@ -290,27 +313,10 @@ async function waitForInfo(target) {
   throw new Error(`Timed out waiting for ${target.name} on ${target.baseURL}`)
 }
 
-async function appRequest(target, method, endpoint, body) {
-  const response = await fetch(new URL(endpoint, target.baseURL), {
-    method,
-    headers: body ? { 'content-type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(30_000),
-  })
-  if (!response.ok) throw new Error(`${method} ${target.name} ${endpoint} failed: ${response.status} ${await response.text()}`)
-  if (response.status === 204) return {}
-  const text = await response.text()
-  return text ? JSON.parse(text) : {}
-}
-
-async function saveTargetAuth(target) {
+async function loadTargetAccessToken(target) {
   const targetPath = path.join(configDir, 'targets', `${target.name}.json`)
   const current = JSON.parse(await readFile(targetPath, 'utf8'))
-  current.auth = {
-    accessToken: target.accessToken,
-    tokenType: 'Bearer',
-  }
-  await writeFile(targetPath, `${JSON.stringify(current, null, 2)}\n`, { mode: 0o600 })
+  return current.auth?.accessToken
 }
 
 function parseEnvelope(stdout) {

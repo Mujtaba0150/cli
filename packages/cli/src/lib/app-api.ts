@@ -1,38 +1,13 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { getAccessToken, resolveTarget, updateTargetCache } from './targets.js'
-import type { AppState } from './app-state.js'
+import type { LoginRegisterResponse, LoginResponseResponse } from '@beeper/desktop-api/resources/app/login'
+import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/login/verification/recovery-key/reset'
 
-export type AppLoginSuccess = {
-  session?: AppState
-  appState?: AppState
-  matrix: { accessToken: string; deviceID?: string; homeserver?: string; userID?: string }
-  [key: string]: unknown
-}
-
-export type AppRegistrationRequired = {
-  registrationRequired: true
-  setupRequestID: string
-  leadToken: string
-  copy?: {
-    terms?: string
-    title?: string
-    usernamePlaceholder?: string
-    [key: string]: unknown
-  }
-  usernameSuggestions?: string[]
-  [key: string]: unknown
-}
-
-export type AppLoginOutput = AppLoginSuccess | AppRegistrationRequired
-
-export type AppMutationResponse = {
-  appState: AppState
-}
-
-export type AppRecoveryCodeResetBeginResponse = AppMutationResponse & {
-  recoveryCode?: string
-}
+export type AppLoginSuccess = LoginResponseResponse.Success | LoginRegisterResponse
+export type AppRegistrationRequired = LoginResponseResponse.RegistrationRequired
+export type AppLoginOutput = LoginResponseResponse | LoginRegisterResponse
+export type AppRecoveryCodeResetBeginResponse = ResetCreateResponse
 
 export async function appRequest<T>(
   method: 'GET' | 'POST',

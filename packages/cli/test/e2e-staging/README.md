@@ -32,7 +32,7 @@ The plan output shows the target names, ports, emails, and follow-up command.
 
 Use this when a staging server binary already exists or `BEEPER_SERVER_BIN` is
 set. This creates isolated targets, starts them, signs them in through the app
-setup API, checks readiness, attempts device verification commands, runs a small
+CLI setup flow, checks readiness, attempts device verification commands, runs a small
 messaging pass, and stops managed server targets.
 
 ```sh

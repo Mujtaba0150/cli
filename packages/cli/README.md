@@ -268,7 +268,11 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--accept-terms` | boolean | Accept Terms of Use when creating a new account |
+| `--code=<value>` | option | Email sign-in code for a pending setup login |
+| `--email=<value>` | option | Email address for first-run sign-in |
 | `--install` | boolean | Allow installing missing managed runtime |
+| `--username=<value>` | option | Username to create when the account is new |
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 

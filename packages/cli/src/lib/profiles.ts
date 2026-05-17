@@ -33,6 +33,24 @@ export async function startProfile(target: Target): Promise<ProfileRun | { id: s
   return startServerProfile(target)
 }
 
+export async function launchDesktopApp(target?: Target): Promise<{ id: string; startedAt: string }> {
+  const installations = await readInstallations().catch(() => ({ desktop: undefined }))
+  const args = installations.desktop?.path ? ['-n', installations.desktop.path, '--args'] : ['-n', '-a', 'Beeper', '--args']
+  args.push('--no-enforce-app-location')
+  if (target?.port) args.push(`--pas-port=${target.port}`)
+  if (target?.serverEnv) args.push(`--server-env=${target.serverEnv}`)
+  const env = target?.dataDir
+    ? {
+        ...process.env,
+        ALLOW_MULTIPLE_INSTANCES: 'true',
+        BEEPER_PROFILE: target.profile ?? target.id,
+        BEEPER_USER_DATA_DIR: target.dataDir,
+      }
+    : process.env
+  spawn('open', args, { detached: true, stdio: 'ignore', env }).unref()
+  return { id: target?.id ?? 'desktop', startedAt: new Date().toISOString() }
+}
+
 export async function stopProfile(target: Target): Promise<void> {
   assertProfile(target)
   if (target.type === 'desktop') throw new Error('Quit Beeper Desktop from the app.')
@@ -110,22 +128,7 @@ export async function readRun(id: string): Promise<ProfileRun | undefined> {
 }
 
 async function startDesktopProfile(target: Target): Promise<{ id: string; startedAt: string }> {
-  const installations = await readInstallations().catch(() => ({ desktop: undefined }))
-  const args = installations.desktop?.path ? ['-n', installations.desktop.path, '--args'] : ['-n', '-a', 'Beeper', '--args']
-  args.push('--no-enforce-app-location')
-  if (target.port) args.push(`--pas-port=${target.port}`)
-  if (target.serverEnv) args.push(`--server-env=${target.serverEnv}`)
-  spawn('open', args, {
-    detached: true,
-    stdio: 'ignore',
-    env: {
-      ...process.env,
-      ALLOW_MULTIPLE_INSTANCES: 'true',
-      BEEPER_PROFILE: target.profile ?? target.id,
-      BEEPER_USER_DATA_DIR: target.dataDir!,
-    },
-  }).unref()
-  return { id: target.id, startedAt: new Date().toISOString() }
+  return launchDesktopApp(target)
 }
 
 async function startServerProfile(target: Target): Promise<ProfileRun> {

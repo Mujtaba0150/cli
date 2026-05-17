@@ -2,6 +2,7 @@ import { constants as fsConstants } from 'node:fs'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import type { LoginResponseResponse, LoginStartResponse } from '@beeper/desktop-api/resources/app/login'
 
 export type StoredAuth = {
   accessToken: string
@@ -11,12 +12,24 @@ export type StoredAuth = {
   tokenType: 'Bearer'
 }
 
+type LoginRegistrationRequired = Extract<LoginResponseResponse, { registrationRequired: true }>
+
 export type Target = {
   id: string
   type: 'desktop' | 'server' | 'remote'
   name?: string
   baseURL: string
   auth?: StoredAuth
+  setup?: {
+    login?: {
+      createdAt: string
+      email: string
+      leadToken?: LoginRegistrationRequired['leadToken']
+      setupRequestID: LoginStartResponse['setupRequestID']
+      username?: string
+      usernameSuggestions?: LoginRegistrationRequired['usernameSuggestions']
+    }
+  }
   managed?: boolean
   dataDir?: string
   profile?: string
@@ -155,11 +168,17 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   if (targetID) {
     const target = await readTarget(targetID)
     if (!target) throw new Error(`Unknown Beeper target "${targetID}". Run \`beeper targets list\`.`)
-    return target
+    return withConfigAuth(target, config)
   }
   const targets = await listTargets()
-  if (targets.length === 1 && targets[0]) return targets[0]
+  if (targets.length === 1 && targets[0]) return withConfigAuth(targets[0], config)
   return { id: 'desktop', type: 'desktop', name: 'Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
+}
+
+function withConfigAuth(target: Target, config: Config): Target {
+  if (target.auth || target.type !== 'desktop' || !config.auth) return target
+  if (config.baseURL && config.baseURL !== target.baseURL) return target
+  return { ...target, auth: config.auth }
 }
 
 export async function createProfileTarget(type: ManagedTargetType, id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
