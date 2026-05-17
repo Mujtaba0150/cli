@@ -5,8 +5,14 @@ import { collectPage, printData } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesContext extends BeeperCommand {
-  static override summary = 'Show message context'
-  static override flags = { chat: Flags.string({ required: true }), id: Flags.string({ required: true }), before: Flags.integer({ default: 10 }), after: Flags.integer({ default: 10 }), pick: Flags.integer() }
+  static override summary = 'Show messages around a target message'
+  static override flags = {
+    chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    id: Flags.string({ required: true, description: 'Target message ID to center the window on' }),
+    before: Flags.integer({ default: 10, description: 'Number of messages to include before the target' }),
+    after: Flags.integer({ default: 10, description: 'Number of messages to include after the target' }),
+    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+  }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesContext)
     const client = await createClient(flags)

@@ -6,7 +6,12 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesEdit extends BeeperCommand {
   static override summary = 'Edit a message'
-  static override flags = { chat: Flags.string({ required: true }), id: Flags.string({ required: true }), pick: Flags.integer(), message: Flags.string({ required: true }), }
+  static override flags = {
+    chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    id: Flags.string({ required: true, description: 'Message ID to edit (must be one of your own messages with no attachments)' }),
+    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    message: Flags.string({ required: true, description: 'New message text' }),
+  }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesEdit)
     ensureWritable(flags)

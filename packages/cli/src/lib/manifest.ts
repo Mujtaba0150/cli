@@ -337,7 +337,10 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'messages list',
     description: 'List chat messages',
-    examples: ['beeper messages list --chat "Family" --limit 50'],
+    examples: [
+      'beeper messages list --chat "Family" --limit 50',
+      'beeper messages list --chat "Family" --before-cursor "<messageID>" --limit 100',
+    ],
   },
   {
     command: 'messages search',
@@ -345,6 +348,7 @@ export const commandManifest: ManifestCommand[] = [
     examples: [
       'beeper messages search invoice',
       'beeper messages search --chat "Family" --sender me --media image',
+      'beeper messages search "flight" --after 2026-01-01 --before 2026-02-01',
     ],
   },
   {
@@ -382,7 +386,8 @@ export const commandManifest: ManifestCommand[] = [
     description: 'Export one chat\'s messages to JSON',
     examples: [
       'beeper messages export --chat "Family" --output family.json',
-      'beeper messages export --chat "Family" --after 2026-01-01 --output -',
+      'beeper messages export --chat "Family" --after 2026-01-01T00:00:00Z --output -',
+      'beeper messages export --chat "Family" --before-cursor "<messageID>" --limit 500',
     ],
   },
   {

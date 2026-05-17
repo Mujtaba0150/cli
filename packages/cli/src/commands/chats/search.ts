@@ -5,9 +5,13 @@ import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 
 export default class ChatsSearch extends BeeperCommand {
-  static override summary = 'Search chats'
-  static override args = { query: Args.string({ required: true }) }
-  static override flags = { account: Flags.string({ multiple: true }), ids: Flags.boolean({ default: false }), limit: Flags.integer({ default: 20 }) }
+  static override summary = 'Search chats by title or participant'
+  static override args = { query: Args.string({ required: true, description: 'Search query (title, participant, or network)' }) }
+  static override flags = {
+    account: Flags.string({ multiple: true, description: 'Limit to Account ID, network, bridge, or account user' }),
+    ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
+    limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
+  }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChatsSearch)
     const client = await createClient(flags)

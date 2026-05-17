@@ -16,8 +16,8 @@ export default class MessagesSearch extends BeeperCommand {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
     chat: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.chatSelector}` }),
     'chat-type': Flags.string({ options: ['group', 'single'], description: 'Limit to group chats or direct messages' }),
-    'date-after': Flags.string({ description: 'Only messages after this ISO timestamp' }),
-    'date-before': Flags.string({ description: 'Only messages before this ISO timestamp' }),
+    after: Flags.string({ description: 'Only messages at or after this ISO timestamp' }),
+    before: Flags.string({ description: 'Only messages at or before this ISO timestamp' }),
     'exclude-low-priority': Flags.boolean({ allowNo: true, description: 'Exclude low-priority chats. Use --no-exclude-low-priority to include all.' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
     'include-muted': Flags.boolean({ allowNo: true, default: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
@@ -30,7 +30,7 @@ export default class MessagesSearch extends BeeperCommand {
     const { args, flags } = await this.parse(MessagesSearch)
     const hasFilter = Boolean(
       flags.account?.length || flags.chat?.length || flags['chat-type']
-      || flags['date-after'] || flags['date-before'] || flags.media?.length
+      || flags.after || flags.before || flags.media?.length
       || flags.sender,
     )
     if (!args.query && !hasFilter) {
@@ -45,8 +45,8 @@ export default class MessagesSearch extends BeeperCommand {
       accountIDs,
       chatIDs,
       chatType: flags['chat-type'] as 'group' | 'single' | undefined,
-      dateAfter: flags['date-after'],
-      dateBefore: flags['date-before'],
+      dateAfter: flags.after,
+      dateBefore: flags.before,
       excludeLowPriority: flags['exclude-low-priority'],
       includeMuted: flags['include-muted'],
       mediaTypes: flags.media as Array<'any' | 'video' | 'image' | 'link' | 'file'> | undefined,

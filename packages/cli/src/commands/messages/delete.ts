@@ -6,7 +6,12 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesDelete extends BeeperCommand {
   static override summary = 'Delete a message'
-  static override flags = { chat: Flags.string({ required: true }), id: Flags.string({ required: true }), pick: Flags.integer(), 'for-everyone': Flags.boolean({ default: false }), }
+  static override flags = {
+    chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    id: Flags.string({ required: true, description: 'Message ID to delete (final message ID; pending IDs are rejected)' }),
+    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    'for-everyone': Flags.boolean({ default: false, description: 'Delete for everyone when the network supports it (otherwise deletes only for you)' }),
+  }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesDelete)
     ensureWritable(flags)

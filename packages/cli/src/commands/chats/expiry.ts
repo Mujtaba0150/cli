@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsExpiry extends BeeperCommand {
   static override summary = 'Set disappearing-message expiry'
-  static override flags = { chat: Flags.string({ required: true }), pick: Flags.integer(), seconds: Flags.string({ required: true }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), seconds: Flags.string({ required: true, description: 'Disappearing-message expiry in seconds, or "off" to disable' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsExpiry)
     ensureWritable(flags)

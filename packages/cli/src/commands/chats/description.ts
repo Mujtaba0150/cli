@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsDescription extends BeeperCommand {
   static override summary = 'Set a chat description'
-  static override flags = { chat: Flags.string({ required: true }), pick: Flags.integer(), description: Flags.string(), clear: Flags.boolean({ default: false }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), description: Flags.string({ description: 'New chat description' }), clear: Flags.boolean({ default: false, description: 'Clear the existing description instead of setting one' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsDescription)
     ensureWritable(flags)

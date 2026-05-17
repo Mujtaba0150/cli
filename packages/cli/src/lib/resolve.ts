@@ -1,7 +1,10 @@
+import { readConfig } from './targets.js'
+
 type AnyRecord = Record<string, any>
 
 export type AccountResolutionOptions = {
   allowMultiplePerInput?: boolean
+  applyDefault?: boolean
 }
 
 export type ChatResolutionOptions = {
@@ -14,11 +17,16 @@ export async function resolveAccountIDs(
   inputs?: string[],
   options: AccountResolutionOptions = {},
 ): Promise<string[] | undefined> {
-  if (!inputs?.length) return undefined
+  let effectiveInputs = inputs
+  if (!effectiveInputs?.length && options.applyDefault !== false) {
+    const config = await readConfig().catch(() => ({} as { defaultAccount?: string }))
+    if (config.defaultAccount) effectiveInputs = [config.defaultAccount]
+  }
+  if (!effectiveInputs?.length) return undefined
 
   const accounts = accountItems(await client.accounts.list())
   const resolved: string[] = []
-  for (const input of inputs) {
+  for (const input of effectiveInputs) {
     const matches = matchAccounts(accounts, input)
     if (matches.length === 0) throw new Error(`No account matches "${input}"`)
     if (matches.length > 1 && !options.allowMultiplePerInput) {

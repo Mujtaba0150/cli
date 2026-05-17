@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsMute extends BeeperCommand {
   static override summary = 'Mute a chat'
-  static override flags = { chat: Flags.string({ required: true }), pick: Flags.integer(), duration: Flags.string({ description: 'Mute duration, such as 8h' }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), duration: Flags.string({ description: 'Mute duration, such as 8h' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsMute)
     ensureWritable(flags)

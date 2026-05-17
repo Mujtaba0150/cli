@@ -13,7 +13,7 @@ const workDir = process.env.BEEPER_E2E_WORKDIR || path.join(tmpdir(), `beeper-cl
 const configDir = process.env.BEEPER_E2E_CONFIG_DIR || path.join(workDir, 'cli-config')
 const reportPath = process.env.BEEPER_E2E_REPORT || path.join(workDir, 'report.json')
 const emailBase = Number(process.env.BEEPER_E2E_EMAIL_BASE || (900000 + Math.floor(Math.random() * 50000)))
-const otp = process.env.BEEPER_E2E_OTP || '[REDACTED_OTP]'
+const otp = process.env.BEEPER_E2E_OTP?.trim()
 const accountCount = Number(process.env.BEEPER_E2E_ACCOUNT_COUNT || 3)
 const portStart = Number(process.env.BEEPER_E2E_PORT_START || 24_573)
 const desktopCount = Number(process.env.BEEPER_E2E_DESKTOP_TARGETS || 1)
@@ -22,6 +22,11 @@ const phases = (process.env.BEEPER_E2E_PHASES || process.argv.slice(2).join(',')
   .split(',')
   .map(phase => phase.trim())
   .filter(Boolean)
+
+if (phases.includes('login') && !otp) {
+  console.error('BEEPER_E2E_OTP is required for the login phase. Set it in the environment and rerun the staging E2E harness.')
+  process.exit(1)
+}
 
 const report = {
   runID,
@@ -86,7 +91,7 @@ async function phasePlan() {
   report.targets = targets
   const commands = [
     'pnpm --dir packages/cli build',
-    `BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
+    `BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
     `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets list --json`,
   ]
   report.commands.push(...commands.map(command => ({ phase: 'plan', command })))
@@ -183,7 +188,7 @@ async function phaseVerify() {
   const targets = (await plannedTargetsWithAuth()).filter(target => target.accessToken)
   if (targets.length < 2) {
     recordBlock('verify', undefined, 'verify phase needs at least two signed-in targets for device-to-device auth.', [
-      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login node packages/cli/test/e2e-staging.mjs`,
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=verify,readiness node packages/cli/test/e2e-staging.mjs`,
     ])
     return
@@ -210,7 +215,7 @@ async function phaseMessaging() {
   const receiver = signedInTargets.find(target => target.matrix?.userID && target.matrix.userID !== sender?.matrix?.userID)
   if (!sender || !receiver?.matrix?.userID) {
     recordBlock('messaging', undefined, 'messaging phase needs two signed-in targets with Matrix user IDs.', [
-      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=messaging node packages/cli/test/e2e-staging.mjs`,
     ])
     return
@@ -260,7 +265,7 @@ async function phaseVerifySameAccountDevices(targets) {
   const pair = [...byUserID.values()].find(group => group.length >= 2)
   if (!pair) {
     recordBlock('verify', undefined, 'Device-to-device verification needs two targets signed into the same QA account.', [
-      `BEEPER_E2E_EMAIL_1=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_2=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_3=staging-user+123457@beeper.com BEEPER_E2E_ACCOUNT_COUNT=3 BEEPER_E2E_DESKTOP_TARGETS=0 BEEPER_E2E_SERVER_TARGETS=3 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_EMAIL_1=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_2=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_3=staging-user+123457@beeper.com BEEPER_E2E_ACCOUNT_COUNT=3 BEEPER_E2E_DESKTOP_TARGETS=0 BEEPER_E2E_SERVER_TARGETS=3 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup node packages/cli/test/e2e-staging.mjs`,
     ])
     return
   }
@@ -474,7 +479,7 @@ function recordLoginBlock(target, args, result) {
     recordBlock('login', target, 'Sign in to the isolated Desktop target, then rerun the login/readiness phases.', [
       `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets start ${target.name} --json`,
       `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js setup --target ${target.name} --local --json`,
-      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
     ])
     return
   }
@@ -482,7 +487,7 @@ function recordLoginBlock(target, args, result) {
     recordBlock('login', target, 'Complete Server setup sign-in, then rerun the login/readiness phases.', [
       `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets start ${target.name} --json`,
       `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js api post /v1/app/setup/start --target ${target.name} --no-auth`,
-      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
     ])
     return
   }

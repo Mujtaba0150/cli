@@ -8,7 +8,7 @@ import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsShow extends BeeperCommand {
   static override summary = 'Show target details'
-  static override args = { name: Args.string({ required: false }) }
+  static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsShow)
     const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })

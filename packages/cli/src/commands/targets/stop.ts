@@ -8,13 +8,13 @@ import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsStop extends BeeperCommand {
   static override summary = 'Stop a managed target'
-  static override args = { name: Args.string({ required: false }) }
+  static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsStop)
     ensureWritable(flags)
     const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
-    if (!target.managed) throw new Error(`Target "${target.id}" is remote and cannot be stoped locally.`)
+    if (!target.managed) throw new Error(`Target "${target.id}" is remote and cannot be stopped locally.`)
     await stopProfile(target); await printSuccess({ message: `Stopped target: ${target.id}`, data: { target } }, flags.json ? 'json' : 'human')
   }
 }

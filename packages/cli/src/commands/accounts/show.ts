@@ -1,12 +1,14 @@
-import { Args, Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { Args } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess, collectPage, printList } from '../../lib/output.js'
-import { resolveAccountID, resolveAccountIDs } from '../../lib/resolve.js'
+import { printData } from '../../lib/output.js'
+import { resolveAccountID } from '../../lib/resolve.js'
 
 export default class AccountsShow extends BeeperCommand {
   static override summary = 'Show account details'
-  static override args = { account: Args.string({ required: true }) }
+  static override args = {
+    account: Args.string({ required: true, description: 'Account selector (ID, network, bridge, or user identity)' }),
+  }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsShow)
     const client = await createClient(flags)

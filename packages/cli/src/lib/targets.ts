@@ -36,6 +36,7 @@ export type ManagedTargetType = 'desktop' | 'server'
 
 export type Config = {
   defaultTarget?: string
+  defaultAccount?: string
   baseURL?: string
   auth?: StoredAuth
 }
@@ -114,12 +115,12 @@ export async function listTargets(): Promise<Target[]> {
       return undefined
     }
   }))
-  return targets.filter((target): target is Target => !!target).sort((a, b) => a.id.localeCompare(b.id))
+  return targets.filter((target): target is Target => !!target).map(normalizeLocalTarget).sort((a, b) => a.id.localeCompare(b.id))
 }
 
 export async function readTarget(id: string): Promise<Target | undefined> {
   try {
-    return JSON.parse(await readFile(targetPath(id), 'utf8')) as Target
+    return normalizeLocalTarget(JSON.parse(await readFile(targetPath(id), 'utf8')) as Target)
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
@@ -178,6 +179,13 @@ function withConfigAuth(target: Target, config: Config): Target {
   if (target.auth || target.type !== 'desktop' || !config.auth) return target
   if (config.baseURL && config.baseURL !== target.baseURL) return target
   return { ...target, auth: config.auth }
+}
+
+function normalizeLocalTarget(target: Target): Target {
+  if (!target.managed || target.type === 'remote') return target
+  const port = target.port ?? target.runtime?.port
+  if (!port) return target
+  return { ...target, baseURL: `http://127.0.0.1:${port}` }
 }
 
 export async function createProfileTarget(type: ManagedTargetType, id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {

@@ -6,18 +6,19 @@ import { printSuccess } from '../../lib/output.js'
 export default class ConfigSet extends BeeperCommand {
   static override summary = 'Set a CLI configuration value'
   static override args = {
-    key: Args.string({ description: 'Config key to set', options: ['defaultTarget'], required: true }),
-    value: Args.string({ description: 'Config value', required: true }),
+    key: Args.string({ description: 'Config key to set', options: ['defaultTarget', 'defaultAccount'], required: true }),
+    value: Args.string({ description: 'Config value (pass "" to clear)', required: true }),
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ConfigSet)
     ensureWritable(flags)
-    await updateConfig(config => ({ ...config, [args.key]: args.value }))
+    const nextValue = args.value === '' ? undefined : args.value
+    await updateConfig(config => ({ ...config, [args.key]: nextValue }))
     await printSuccess({
-      message: `Set ${args.key}`,
-      detail: args.value,
-      data: { [args.key]: args.value },
+      message: nextValue === undefined ? `Cleared ${args.key}` : `Set ${args.key}`,
+      detail: nextValue,
+      data: { [args.key]: nextValue },
     }, flags.json ? 'json' : 'human')
   }
 }

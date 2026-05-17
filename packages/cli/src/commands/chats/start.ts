@@ -6,9 +6,12 @@ import { createMatrixDM } from '../../lib/matrix-direct.js'
 import { listAccountIDs, resolveAccountID, userQueryFromInput } from '../../lib/resolve.js'
 
 export default class ChatsStart extends BeeperCommand {
-  static override summary = 'Start a chat'
-  static override args = { user: Args.string({ required: true }) }
-  static override flags = { account: Flags.string(), title: Flags.string() }
+  static override summary = 'Start a chat with a user or phone number'
+  static override args = { user: Args.string({ required: true, description: 'User ID, phone number, email, or display name' }) }
+  static override flags = {
+    account: Flags.string({ description: 'Account selector. Defaults to the single available account or the matrix account.' }),
+    title: Flags.string({ description: 'Optional initial title for a new group chat' }),
+  }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChatsStart)
     ensureWritable(flags)

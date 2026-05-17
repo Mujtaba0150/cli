@@ -8,7 +8,7 @@ import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsRemove extends BeeperCommand {
   static override summary = 'Remove a target'
-  static override args = { name: Args.string({ required: true }) }
+  static override args = { name: Args.string({ required: true, description: 'Target name' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsRemove)
     ensureWritable(flags)

@@ -8,7 +8,7 @@ import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsStart extends BeeperCommand {
   static override summary = 'Start a managed target'
-  static override args = { name: Args.string({ required: false }) }
+  static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsStart)
     ensureWritable(flags)

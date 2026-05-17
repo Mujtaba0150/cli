@@ -6,7 +6,7 @@ import { printConfig, printData } from '../../lib/output.js'
 export default class ConfigGet extends BeeperCommand {
   static override summary = 'Print CLI configuration'
   static override args = {
-    key: Args.string({ description: 'Optional config key to print', options: ['baseURL', 'auth'], required: false }),
+    key: Args.string({ description: 'Optional config key to print', options: ['baseURL', 'auth', 'defaultTarget', 'defaultAccount'], required: false }),
   }
 
   async run(): Promise<void> {
@@ -18,7 +18,7 @@ export default class ConfigGet extends BeeperCommand {
     }
     const format = flags.json ? 'json' : 'human'
     if (args.key) {
-      await printData(safeConfig[args.key as 'baseURL' | 'auth'], format)
+      await printData(safeConfig[args.key as keyof typeof safeConfig], format)
       return
     }
     await printConfig(safeConfig as unknown as Record<string, unknown>, format)

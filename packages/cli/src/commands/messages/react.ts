@@ -6,7 +6,13 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesReact extends BeeperCommand {
   static override summary = 'React to a message'
-  static override flags = { chat: Flags.string({ required: true }), id: Flags.string({ required: true }), pick: Flags.integer(), reaction: Flags.string({ required: true }), transaction: Flags.string(), }
+  static override flags = {
+    chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    id: Flags.string({ required: true, description: 'Message ID to react to' }),
+    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    reaction: Flags.string({ required: true, description: 'Reaction key (emoji, shortcode, or custom emoji key)' }),
+    transaction: Flags.string({ description: 'Optional transaction ID for deduplication' }),
+  }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesReact)
     ensureWritable(flags)

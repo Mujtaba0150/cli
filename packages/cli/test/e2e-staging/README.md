@@ -12,8 +12,9 @@ not launch apps, download artifacts, or touch the default Desktop instance.
   `<workdir>/cli-config`.
 - Use non-default PAS ports. The default starts at `24573`, not `23373`.
 - Every test target uses `--server-env staging`.
-- QA users should be `staging-user@example.invalid`; the fixed OTP is `[REDACTED_OTP]`
-  only for scripts that explicitly target verified setup-login APIs.
+- QA users should be `staging-user@example.invalid`; provide the QA OTP via
+  `BEEPER_E2E_OTP` only for scripts that explicitly target verified setup-login
+  APIs.
 - Do not run `install-server` unless you intend to download the staging server
   artifact.
 
@@ -37,11 +38,13 @@ with `beeper setup --local` and Server targets with `beeper setup --oauth`,
 checks readiness, attempts device verification commands, runs a small messaging
 pass, and stops managed server targets.
 Server targets sign in through the public setup API using `beeper api post
---no-auth` and the QA OTP. Desktop targets still use `beeper setup --local`
-after the isolated Desktop profile has been signed in through the app UI.
+--no-auth` and the QA OTP from `BEEPER_E2E_OTP`. Desktop targets still use
+`beeper setup --local` after the isolated Desktop profile has been signed in
+through the app UI.
 
 ```sh
 BEEPER_E2E_RUN_ID=qa-$(date +%Y%m%d-%H%M%S) \
+BEEPER_E2E_OTP="$QA_OTP" \
 BEEPER_E2E_PHASES=targets,start,login,readiness,verify,messaging,cleanup \
 BEEPER_E2E_ACCOUNT_COUNT=3 \
 BEEPER_E2E_DESKTOP_TARGETS=1 \
@@ -60,6 +63,7 @@ Only run this when you want the CLI to download the staging server artifact:
 
 ```sh
 BEEPER_E2E_RUN_ID=qa-$(date +%Y%m%d-%H%M%S) \
+BEEPER_E2E_OTP="$QA_OTP" \
 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup \
 node packages/cli/test/e2e-staging.mjs
 ```
@@ -100,6 +104,7 @@ Complete the browser or Desktop UI step, then rerun:
 
 ```sh
 BEEPER_E2E_RUN_ID=<same-run-id> \
+BEEPER_E2E_OTP="$QA_OTP" \
 BEEPER_E2E_PHASES=login,readiness,verify,messaging,cleanup \
 node packages/cli/test/e2e-staging.mjs
 ```

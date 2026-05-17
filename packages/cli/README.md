@@ -215,11 +215,11 @@ explicit writes, and names based on what people are trying to do.
 | `accounts add` | Add a Beeper account |
 | `accounts show` | Show account details |
 | `accounts remove` | Remove an account |
-| `accounts use` | Select an account |
+| `accounts use` | Select a default account for account-scoped commands |
 | `chats list` | List chats |
-| `chats search` | Search chats |
+| `chats search` | Search chats by title or participant |
 | `chats show` | Show chat details |
-| `chats start` | Start a chat |
+| `chats start` | Start a chat with a user or phone number |
 | `chats archive` | Archive a chat |
 | `chats unarchive` | Unarchive a chat |
 | `chats pin` | Pin a chat |
@@ -237,12 +237,12 @@ explicit writes, and names based on what people are trying to do.
 | `chats expiry` | Set disappearing-message expiry |
 | `chats remind` | Set a chat reminder |
 | `chats unremind` | Clear a chat reminder |
-| `chats focus` | Focus Beeper Desktop |
+| `chats focus` | Focus Beeper Desktop on a chat |
 | `chats label` | Add or remove a label on a chat |
 | `messages list` | List chat messages |
 | `messages search` | Search messages across chats |
 | `messages show` | Show one message |
-| `messages context` | Show message context |
+| `messages context` | Show messages around a target message |
 | `messages edit` | Edit a message |
 | `messages delete` | Delete a message |
 | `messages react` | React to a message |
@@ -467,7 +467,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | yes |  |
+| `name` | yes | Target name |
 
 Examples:
 
@@ -488,7 +488,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -510,7 +510,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -532,7 +532,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -553,7 +553,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -574,7 +574,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -595,7 +595,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -616,7 +616,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -637,7 +637,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | no |  |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -658,7 +658,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `name` | yes |  |
+| `name` | yes | Target name |
 
 Examples:
 
@@ -983,7 +983,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>...` | option | Filter by account selector |
-| `--ids` | boolean |  |
+| `--ids` | boolean | Print only account IDs |
 
 Examples:
 
@@ -1039,7 +1039,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `account` | yes |  |
+| `account` | yes | Account selector (ID, network, bridge, or user identity) |
 
 Examples:
 
@@ -1060,7 +1060,7 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `account` | yes |  |
+| `account` | yes | Account selector (ID, network, bridge, or user identity) |
 
 Examples:
 
@@ -1071,17 +1071,19 @@ beeper accounts remove whatsapp-main
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper accounts use`
-Select an account
+Select a default account for account-scoped commands
 
 ```sh
 beeper accounts use <account>
 ```
 
+Persists the choice in CLI config. Account-scoped commands that take --account fall back to this default when --account is omitted. Use `beeper accounts use ""` (or `beeper config set defaultAccount ""`) to clear.
+
 Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `account` | yes |  |
+| `account` | yes | Account selector (ID, network, bridge, user identity), or "" to clear. |
 
 Examples:
 
@@ -1122,7 +1124,7 @@ beeper chats list --unread --no-muted --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats search`
-Search chats
+Search chats by title or participant
 
 ```sh
 beeper chats search <query>
@@ -1132,15 +1134,15 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `query` | yes |  |
+| `query` | yes | Search query (title, participant, or network) |
 
 Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--account=<value>...` | option |  |
-| `--ids` | boolean |  |
-| `--limit=<value>` | option | Default: 20 |
+| `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--ids` | boolean | Print only chat IDs |
+| `--limit=<value>` | option | Maximum chats to print Default: 20 |
 
 Examples:
 
@@ -1161,9 +1163,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--max-participants=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--max-participants=<value>` | option | Limit number of participants returned in chat details |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1175,7 +1177,7 @@ beeper chats show --chat '!abc:beeper.com'
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats start`
-Start a chat
+Start a chat with a user or phone number
 
 ```sh
 beeper chats start <user>
@@ -1185,14 +1187,14 @@ Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `user` | yes |  |
+| `user` | yes | User ID, phone number, email, or display name |
 
 Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--account=<value>` | option |  |
-| `--title=<value>` | option |  |
+| `--account=<value>` | option | Account selector. Defaults to the single available account or the matrix account. |
+| `--title=<value>` | option | Optional initial title for a new group chat |
 
 Examples:
 
@@ -1214,8 +1216,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1236,8 +1238,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1258,8 +1260,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1280,8 +1282,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1302,9 +1304,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--duration=<value>` | option | Mute duration, such as 8h |
-| `--pick=<value>` | option |  |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1325,8 +1327,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1347,9 +1349,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--message=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1370,9 +1372,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--message=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1417,8 +1419,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1462,10 +1464,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--clear` | boolean |  |
-| `--description=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--clear` | boolean | Clear the existing description instead of setting one |
+| `--description=<value>` | option | New chat description |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1487,10 +1489,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--clear` | boolean |  |
-| `--file=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--clear` | boolean | Clear the existing avatar instead of setting a new one |
+| `--file=<value>` | option | Image file to upload as the new avatar |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1539,9 +1541,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
-| `--seconds=<value>` | option | Required. |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--seconds=<value>` | option | Disappearing-message expiry in seconds, or "off" to disable Required. |
 
 Examples:
 
@@ -1562,10 +1564,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--dismiss-on-message` | boolean |  |
-| `--pick=<value>` | option |  |
-| `--when=<value>` | option | Required. |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--dismiss-on-message` | boolean | Dismiss the reminder automatically when a new message arrives |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--when=<value>` | option | ISO timestamp when the reminder should trigger Required. |
 
 Examples:
 
@@ -1587,8 +1589,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1599,7 +1601,7 @@ beeper chats unremind --chat "Family"
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats focus`
-Focus Beeper Desktop
+Focus Beeper Desktop on a chat
 
 ```sh
 beeper chats focus
@@ -1609,11 +1611,11 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--attachment=<value>` | option |  |
-| `--chat=<value>` | option | Required. |
-| `--draft=<value>` | option |  |
-| `--message=<value>` | option |  |
-| `--pick=<value>` | option |  |
+| `--attachment=<value>` | option | Prefill the chat composer with this attachment file path |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--draft=<value>` | option | Prefill the chat composer with this draft text |
+| `--message=<value>` | option | Scroll Desktop to this message ID after focusing |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1661,17 +1663,18 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--after=<value>` | option |  |
-| `--before=<value>` | option |  |
-| `--chat=<value>` | option | Required. |
-| `--ids` | boolean |  |
-| `--limit=<value>` | option | Default: 50 |
-| `--pick=<value>` | option |  |
+| `--after-cursor=<value>` | option | Paginate messages newer than this message ID |
+| `--before-cursor=<value>` | option | Paginate messages older than this message ID |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--ids` | boolean | Print only message IDs |
+| `--limit=<value>` | option | Maximum messages to print Default: 50 |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
 ```sh
 beeper messages list --chat "Family" --limit 50
+beeper messages list --chat "Family" --before-cursor "<messageID>" --limit 100
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1696,10 +1699,10 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--after=<value>` | option | Only messages at or after this ISO timestamp |
+| `--before=<value>` | option | Only messages at or before this ISO timestamp |
 | `--chat=<value>...` | option | Limit to Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available. Also accepts exact chat titles or search text. |
 | `--chat-type=<group|single>` | option | Limit to group chats or direct messages |
-| `--date-after=<value>` | option | Only messages after this ISO timestamp |
-| `--date-before=<value>` | option | Only messages before this ISO timestamp |
 | `--exclude-low-priority` | boolean | Exclude low-priority chats. Use --no-exclude-low-priority to include all. |
 | `--ids` | boolean | Print only message IDs |
 | `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
@@ -1712,6 +1715,7 @@ Examples:
 ```sh
 beeper messages search invoice
 beeper messages search --chat "Family" --sender me --media image
+beeper messages search "flight" --after 2026-01-01 --before 2026-02-01
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1727,9 +1731,9 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--id=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID, pendingMessageID, or Matrix event ID Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1740,7 +1744,7 @@ beeper messages show --chat "Family" --id <messageID>
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages context`
-Show message context
+Show messages around a target message
 
 ```sh
 beeper messages context
@@ -1750,11 +1754,11 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--after=<value>` | option | Default: 10 |
-| `--before=<value>` | option | Default: 10 |
-| `--chat=<value>` | option | Required. |
-| `--id=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--after=<value>` | option | Number of messages to include after the target Default: 10 |
+| `--before=<value>` | option | Number of messages to include before the target Default: 10 |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Target message ID to center the window on Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1775,10 +1779,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--id=<value>` | option | Required. |
-| `--message=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID to edit (must be one of your own messages with no attachments) Required. |
+| `--message=<value>` | option | New message text Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1799,10 +1803,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--for-everyone` | boolean |  |
-| `--id=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--for-everyone` | boolean | Delete for everyone when the network supports it (otherwise deletes only for you) |
+| `--id=<value>` | option | Message ID to delete (final message ID; pending IDs are rejected) Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
 
@@ -1823,11 +1827,11 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--id=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
-| `--reaction=<value>` | option | Required. |
-| `--transaction=<value>` | option |  |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID to react to Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
+| `--transaction=<value>` | option | Optional transaction ID for deduplication |
 
 Examples:
 
@@ -1848,10 +1852,10 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--chat=<value>` | option | Required. |
-| `--id=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
-| `--reaction=<value>` | option | Required. |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID whose reaction to remove Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--reaction=<value>` | option | Reaction key previously added (emoji, shortcode, or custom emoji key) Required. |
 
 Examples:
 
@@ -1874,9 +1878,11 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--after=<value>` | option | Only messages after this ISO timestamp |
+| `--after=<value>` | option | Only messages at or after this ISO timestamp (client-side filter) |
+| `--after-cursor=<value>` | option | Paginate messages newer than this message ID |
 | `--asc` | boolean | Order oldest first (default: newest first) |
-| `--before=<value>` | option | Only messages before this ISO timestamp |
+| `--before=<value>` | option | Only messages at or before this ISO timestamp (client-side filter) |
+| `--before-cursor=<value>` | option | Paginate messages older than this message ID |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--limit=<value>` | option | Maximum messages to export |
 | `-o, --output=<value>` | option | Output path; - writes JSON to stdout Default: - |
@@ -1886,7 +1892,8 @@ Examples:
 
 ```sh
 beeper messages export --chat "Family" --output family.json
-beeper messages export --chat "Family" --after 2026-01-01 --output -
+beeper messages export --chat "Family" --after 2026-01-01T00:00:00Z --output -
+beeper messages export --chat "Family" --before-cursor "<messageID>" --limit 500
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1902,13 +1909,13 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--message=<value>` | option | Required. |
-| `--pick=<value>` | option |  |
-| `--reply-to=<value>` | option |  |
-| `--to=<value>` | option | Required. |
-| `--wait` | boolean |  |
-| `--wait-interval=<value>` | option | Default: 750 |
-| `--wait-timeout=<value>` | option | Default: 30000 |
+| `--message=<value>` | option | Message text to send Required. |
+| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-interval=<value>` | option | Poll interval (ms) while --wait is set Default: 750 |
+| `--wait-timeout=<value>` | option | Maximum time (ms) to wait when --wait is set Default: 30000 |
 
 Examples:
 
@@ -1930,16 +1937,16 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--caption=<value>` | option |  |
-| `--file=<value>` | option | Required. |
-| `--file-name=<value>` | option |  |
-| `--mime-type=<value>` | option |  |
-| `--pick=<value>` | option |  |
-| `--reply-to=<value>` | option |  |
-| `--to=<value>` | option | Required. |
-| `--wait` | boolean |  |
-| `--wait-interval=<value>` | option | Default: 750 |
-| `--wait-timeout=<value>` | option | Default: 30000 |
+| `--caption=<value>` | option | Optional caption to send alongside the file |
+| `--file=<value>` | option | Local file path to upload (max 500 MB) Required. |
+| `--file-name=<value>` | option | Override the displayed filename |
+| `--mime-type=<value>` | option | Override MIME type detection |
+| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-interval=<value>` | option | Poll interval (ms) while --wait is set Default: 750 |
+| `--wait-timeout=<value>` | option | Maximum time (ms) to wait when --wait is set Default: 30000 |
 
 Examples:
 
@@ -2384,7 +2391,7 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `key` | yes | Config key to set |
-| `value` | yes | Config value |
+| `value` | yes | Config value (pass "" to clear) |
 
 Examples:
 

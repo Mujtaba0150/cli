@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsRemind extends BeeperCommand {
   static override summary = 'Set a chat reminder'
-  static override flags = { chat: Flags.string({ required: true }), pick: Flags.integer(), when: Flags.string({ required: true }), 'dismiss-on-message': Flags.boolean({ default: false }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), when: Flags.string({ required: true, description: 'ISO timestamp when the reminder should trigger' }), 'dismiss-on-message': Flags.boolean({ default: false, description: 'Dismiss the reminder automatically when a new message arrives' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsRemind)
     ensureWritable(flags)
