@@ -246,8 +246,8 @@ async function loginInstance(instance) {
     ], { instance })
     const body = parseJSON(result.stdout, 'login --app-login')
     instance.userID = body.matrix?.userID
-    instance.accessToken = body.desktopAPI?.accessToken
-    assert(instance.accessToken, `login did not return a Desktop API token for ${instance.profile}`)
+    instance.accessToken = body.matrix?.accessToken
+    assert(instance.accessToken, `login did not return a Matrix access token for ${instance.profile}`)
     coveredCommands.add('login')
     return
   }
