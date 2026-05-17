@@ -1,5 +1,6 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { appRequest } from '../../lib/app-api.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 
@@ -11,13 +12,18 @@ export default class ApiPost extends BeeperCommand {
   static override flags = {
     body: Flags.string({ default: '{}', description: 'JSON request body' }),
     json: Flags.boolean({ default: true, allowNo: true, description: 'Print JSON' }),
+    'no-auth': Flags.boolean({ default: false, description: 'Call a public API path without a bearer token' }),
   }
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ApiPost)
     ensureWritable(flags)
-    const client = await createClient(flags)
     const body = JSON.parse(flags.body) as Record<string, unknown>
+    if (flags['no-auth']) {
+      await printData(await appRequest('POST', args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')
+      return
+    }
+    const client = await createClient(flags)
     await printData(await client.post(args.path, { body }), flags.json ? 'json' : 'human')
   }
 }

@@ -36,6 +36,9 @@ set. This creates isolated targets, starts them, authenticates Desktop targets
 with `beeper setup --local` and Server targets with `beeper setup --oauth`,
 checks readiness, attempts device verification commands, runs a small messaging
 pass, and stops managed server targets.
+Server targets sign in through the public setup API using `beeper api post
+--no-auth` and the QA OTP. Desktop targets still use `beeper setup --local`
+after the isolated Desktop profile has been signed in through the app UI.
 
 ```sh
 BEEPER_E2E_RUN_ID=qa-$(date +%Y%m%d-%H%M%S) \
@@ -48,6 +51,8 @@ node packages/cli/test/e2e-staging.mjs
 ```
 
 The report is written to `/tmp/beeper-cli-e2e-<run-id>/report.json` by default.
+Expected human steps are written under `blocked` with concrete follow-up
+commands. Real harness failures are written under `failures`.
 
 ## Downloading Beeper Server
 
@@ -86,6 +91,16 @@ the target names and ports, complete the UI action, then rerun:
 ```sh
 BEEPER_E2E_RUN_ID=<same-run-id> \
 BEEPER_E2E_PHASES=verify,readiness \
+node packages/cli/test/e2e-staging.mjs
+```
+
+If login is blocked, the report includes target-specific commands for opening
+the isolated target and rerunning `setup --local` or the setup API commands.
+Complete the browser or Desktop UI step, then rerun:
+
+```sh
+BEEPER_E2E_RUN_ID=<same-run-id> \
+BEEPER_E2E_PHASES=login,readiness,verify,messaging,cleanup \
 node packages/cli/test/e2e-staging.mjs
 ```
 

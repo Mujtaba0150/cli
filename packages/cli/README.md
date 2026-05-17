@@ -1723,6 +1723,12 @@ Arguments:
 | --- | --- | --- |
 | `path` | yes | API path, for example /v1/info |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
+
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper api post`
@@ -1743,6 +1749,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--body=<value>` | option | JSON request body Default: {} |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 

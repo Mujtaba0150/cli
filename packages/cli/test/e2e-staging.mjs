@@ -13,6 +13,7 @@ const workDir = process.env.BEEPER_E2E_WORKDIR || path.join(tmpdir(), `beeper-cl
 const configDir = process.env.BEEPER_E2E_CONFIG_DIR || path.join(workDir, 'cli-config')
 const reportPath = process.env.BEEPER_E2E_REPORT || path.join(workDir, 'report.json')
 const emailBase = Number(process.env.BEEPER_E2E_EMAIL_BASE || (900000 + Math.floor(Math.random() * 50000)))
+const otp = process.env.BEEPER_E2E_OTP || '[REDACTED_OTP]'
 const accountCount = Number(process.env.BEEPER_E2E_ACCOUNT_COUNT || 3)
 const portStart = Number(process.env.BEEPER_E2E_PORT_START || 24_573)
 const desktopCount = Number(process.env.BEEPER_E2E_DESKTOP_TARGETS || 1)
@@ -31,6 +32,7 @@ const report = {
   phases,
   targets: [],
   commands: [],
+  blocked: [],
   failures: [],
   notes: [],
 }
@@ -39,6 +41,7 @@ const previousReport = await readPreviousReport()
 if (previousReport?.runID === runID) {
   report.targets = previousReport.targets ?? []
   report.commands = previousReport.commands ?? []
+  report.blocked = previousReport.blocked ?? []
   report.failures = previousReport.failures ?? []
   report.notes = previousReport.notes ?? []
 }
@@ -72,6 +75,9 @@ async function main() {
   if (report.failures.length) {
     console.error(`${report.failures.length} staging e2e failure${report.failures.length === 1 ? '' : 's'}; see report for details.`)
     process.exitCode = 1
+  } else if (report.blocked.length) {
+    console.error(`${report.blocked.length} staging e2e manual block${report.blocked.length === 1 ? '' : 's'}; see report for next actions.`)
+    process.exitCode = 2
   }
 }
 
@@ -134,17 +140,22 @@ async function phaseLogin() {
   for (const target of plannedTargets()) {
     try {
       await waitForInfo(target)
-      const args = target.kind === 'desktop'
-        ? ['setup', '--target', target.name, '--local', '--json']
-        : ['setup', '--target', target.name, '--oauth', '--yes', '--json']
-      const result = runCli(args, { allowFailure: true })
-      recordCommand('login', args, result)
-      if (result.status !== 0) fail(result, args)
-      const body = parseEnvelope(result.stdout)
-      target.matrix = body?.data?.readiness?.app?.matrix
+      if (target.kind === 'server') {
+        if (!await loginServerViaSetupAPI(target)) continue
+      } else {
+        const args = ['setup', '--target', target.name, '--local', '--json']
+        const result = runCli(args, { allowFailure: true })
+        recordCommand('login', args, result)
+        if (result.status !== 0) {
+          recordLoginBlock(target, args, result)
+          continue
+        }
+        const body = parseEnvelope(result.stdout)
+        target.matrix = body?.data?.readiness?.app?.matrix
+      }
       target.accessToken = await loadTargetAccessToken(target)
       assert(target.accessToken, `setup did not persist an access token for ${target.name}`)
-      report.notes.push(`authenticated ${target.name} with ${target.kind === 'desktop' ? 'local Desktop session' : 'OAuth'}`)
+      report.notes.push(`authenticated ${target.name} with ${target.kind === 'desktop' ? 'local Desktop session' : 'setup API'}`)
     } catch (error) {
       recordFailure('login', target, error)
     }
@@ -170,7 +181,10 @@ async function phaseReadiness() {
 async function phaseVerify() {
   const targets = plannedTargets().filter(target => target.accessToken)
   if (targets.length < 2) {
-    recordFailure('verify', undefined, 'verify phase needs at least two signed-in targets for device-to-device auth.')
+    recordBlock('verify', undefined, 'verify phase needs at least two signed-in targets for device-to-device auth.', [
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=verify,readiness node packages/cli/test/e2e-staging.mjs`,
+    ])
     return
   }
   for (const target of targets) {
@@ -192,7 +206,10 @@ async function phaseVerify() {
 async function phaseMessaging() {
   const [sender, receiver] = plannedTargets().filter(target => target.accessToken)
   if (!sender || !receiver?.matrix?.userID) {
-    recordFailure('messaging', undefined, 'messaging phase needs two signed-in targets with Matrix user IDs.')
+    recordBlock('messaging', undefined, 'messaging phase needs two signed-in targets with Matrix user IDs.', [
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=messaging node packages/cli/test/e2e-staging.mjs`,
+    ])
     return
   }
   const env = { BEEPER_ACCESS_TOKEN: sender.accessToken }
@@ -282,8 +299,8 @@ function recordCommand(phase, args, result) {
     phase,
     command: `beeper ${args.join(' ')}`,
     status: result.status,
-    stdout: result.stdout.slice(0, 4000),
-    stderr: result.stderr.slice(0, 4000),
+    stdout: redactCommandOutput(result.stdout).slice(0, 4000),
+    stderr: redactCommandOutput(result.stderr).slice(0, 4000),
   })
 }
 
@@ -292,6 +309,115 @@ function recordFailure(phase, target, error) {
   const failure = { phase, target: target?.name, message }
   report.failures.push(failure)
   report.notes.push(`${phase} failed${target?.name ? ` for ${target.name}` : ''}: ${message}`)
+}
+
+function redactCommandOutput(value) {
+  return String(value)
+    .replace(/"accessToken"\s*:\s*"[^"]+"/g, '"accessToken":"[redacted]"')
+    .replace(/"access_token"\s*:\s*"[^"]+"/g, '"access_token":"[redacted]"')
+}
+
+function recordBlock(phase, target, message, actions = []) {
+  const block = { phase, target: target?.name, message, actions }
+  report.blocked.push(block)
+  report.notes.push(`${phase} blocked${target?.name ? ` for ${target.name}` : ''}: ${message}`)
+}
+
+function recordLoginBlock(target, args, result) {
+  const output = `${result.stderr}${result.stdout}`
+  const command = `beeper ${args.join(' ')}`
+  if (target.kind === 'desktop' && /signed-in local Beeper Desktop session|missing access_token/i.test(output)) {
+    recordBlock('login', target, 'Sign in to the isolated Desktop target, then rerun the login/readiness phases.', [
+      `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets start ${target.name} --json`,
+      `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js setup --target ${target.name} --local --json`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+    ])
+    return
+  }
+  if (target.kind === 'server' && /OAuth authorization failed|needs-login|server_error/i.test(output)) {
+    recordBlock('login', target, 'Complete Server setup sign-in, then rerun the login/readiness phases.', [
+      `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets start ${target.name} --json`,
+      `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js api post /v1/app/setup/start --target ${target.name} --no-auth`,
+      `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
+    ])
+    return
+  }
+  recordFailure('login', target, new Error(`${command} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`))
+}
+
+async function loginServerViaSetupAPI(target) {
+  const start = runCli(['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], { allowFailure: true })
+  recordCommand('login', ['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], start)
+  if (start.status !== 0) {
+    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], start)
+    return false
+  }
+  const setupRequestID = parseEnvelope(start.stdout)?.data?.setupRequestID
+  if (!setupRequestID) {
+    recordFailure('login', target, `setup start did not return setupRequestID for ${target.name}`)
+    return false
+  }
+
+  const emailBody = JSON.stringify({ setupRequestID, email: target.email })
+  const email = runCli(['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], { allowFailure: true })
+  recordCommand('login', ['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], email)
+  if (email.status !== 0) {
+    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], email)
+    return false
+  }
+
+  const responseBody = JSON.stringify({ setupRequestID, response: otp })
+  const response = runCli(['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], { allowFailure: true })
+  recordCommand('login', ['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], response)
+  if (response.status !== 0) {
+    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], response)
+    return false
+  }
+
+  let data = parseEnvelope(response.stdout)?.data
+  if (data?.registrationRequired) {
+    const registerBody = JSON.stringify({
+      acceptTerms: true,
+      leadToken: data.leadToken,
+      setupRequestID: data.setupRequestID ?? setupRequestID,
+      username: usernameForEmail(target.email) ?? data.usernameSuggestions?.[0],
+    })
+    const register = runCli(['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], { allowFailure: true })
+    recordCommand('login', ['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], register)
+    if (register.status !== 0) {
+      recordLoginBlock(target, ['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], register)
+      return false
+    }
+    data = parseEnvelope(register.stdout)?.data
+  }
+
+  const token = data?.matrix?.accessToken
+  if (!token) {
+    recordFailure('login', target, `setup API did not return a Matrix access token for ${target.name}`)
+    return false
+  }
+  target.matrix = {
+    deviceID: data.matrix.deviceID,
+    homeserver: data.matrix.homeserver,
+    userID: data.matrix.userID,
+  }
+  await saveTargetAuth(target, {
+    accessToken: token,
+    source: 'manual',
+    tokenType: 'Bearer',
+  })
+  return true
+}
+
+async function saveTargetAuth(target, auth) {
+  const targetPath = path.join(configDir, 'targets', `${target.name}.json`)
+  const current = JSON.parse(await readFile(targetPath, 'utf8'))
+  await writeFile(targetPath, `${JSON.stringify({ ...current, auth }, null, 2)}\n`, { mode: 0o600 })
+}
+
+function usernameForEmail(email) {
+  const digits = email.match(/\+(\d+)@/)?.[1]
+  return digits ? `staging-user${digits}` : undefined
 }
 
 async function waitForInfo(target) {
