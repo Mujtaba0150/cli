@@ -13,9 +13,9 @@ export default class AppE2EEVerificationQRConfirmScanned extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationQRConfirmScanned)
     ensureWritable(flags)
-    const result = await appRequest<QrConfirmScannedResponse>('POST', '/v1/app/e2ee/verification/qr/confirm-scanned', {
+    const result = await appRequest<QrConfirmScannedResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/qr/confirm-scanned`, {
       baseURL: flags['base-url'],
-      body: { txnID: args.txnID },
+      target: flags.target,
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

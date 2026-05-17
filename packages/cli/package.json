@@ -89,6 +89,15 @@
       },
       "send": {
         "description": "Send messages."
+      },
+      "target": {
+        "description": "Manage Beeper targets."
+      },
+      "desktop": {
+        "description": "Manage Beeper Desktop."
+      },
+      "server": {
+        "description": "Manage Beeper Server."
       }
     }
   },

@@ -15,6 +15,7 @@ export default class AppE2EEVerificationStart extends BeeperCommand {
     ensureWritable(flags)
     const result = await appRequest<VerificationStartResponse>('POST', '/v1/app/e2ee/verification', {
       baseURL: flags['base-url'],
+      target: flags.target,
       body: flags['user-id'] ? { userID: flags['user-id'] } : {},
     })
     await printData(result, flags.json ? 'json' : 'human')

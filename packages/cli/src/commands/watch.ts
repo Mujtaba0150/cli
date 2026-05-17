@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core'
 import WebSocket from 'ws'
 import { BeeperCommand, writeEvent } from '../lib/command.js'
 import { requireToken } from '../lib/client.js'
-import { getBaseURL } from '../lib/config.js'
+import { getBaseURL } from '../lib/targets.js'
 import { startStream } from '../lib/output.js'
 
 export default class Watch extends BeeperCommand {

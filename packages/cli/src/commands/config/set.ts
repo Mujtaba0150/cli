@@ -1,12 +1,12 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { updateConfig } from '../../lib/config.js'
+import { updateConfig } from '../../lib/targets.js'
 import { printSuccess } from '../../lib/output.js'
 
 export default class ConfigSet extends BeeperCommand {
   static override summary = 'Set a CLI configuration value'
   static override args = {
-    key: Args.string({ description: 'Config key to set', options: ['baseURL'], required: true }),
+    key: Args.string({ description: 'Config key to set', options: ['defaultTarget'], required: true }),
     value: Args.string({ description: 'Config value', required: true }),
   }
 

@@ -1,5 +1,5 @@
 import { BeeperCommand } from '../../lib/command.js'
-import { configPath } from '../../lib/config.js'
+import { configPath } from '../../lib/targets.js'
 
 export default class ConfigPath extends BeeperCommand {
   static override summary = 'Print the CLI config path'

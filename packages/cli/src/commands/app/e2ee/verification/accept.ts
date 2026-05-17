@@ -13,9 +13,9 @@ export default class AppE2EEVerificationAccept extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationAccept)
     ensureWritable(flags)
-    const result = await appRequest<VerificationAcceptResponse>('POST', '/v1/app/e2ee/verification/accept', {
+    const result = await appRequest<VerificationAcceptResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/accept`, {
       baseURL: flags['base-url'],
-      body: { txnID: args.txnID },
+      target: flags.target,
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

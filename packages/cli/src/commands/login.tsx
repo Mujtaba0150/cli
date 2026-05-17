@@ -3,7 +3,7 @@ import React from 'react'
 import { Box, Text, render as inkRender } from 'ink'
 import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { loginWithPKCE } from '../lib/oauth.js'
-import { readConfig, updateConfig } from '../lib/config.js'
+import { readConfig, resolveTarget, saveTargetAuth } from '../lib/targets.js'
 import { findLocalDesktop, getDesktopAppStatus } from '../lib/desktop-auth.js'
 import {
   type AppLoginOutput,
@@ -16,6 +16,7 @@ import {
 import { AuthSignedIn } from '../lib/ink/components.js'
 import { theme, glyphs } from '../lib/ink/theme.js'
 import { printData } from '../lib/output.js'
+import { nextAppStep } from '../lib/app-state.js'
 
 async function showSignedIn(props: React.ComponentProps<typeof AuthSignedIn>): Promise<void> {
   const instance = inkRender(<AuthSignedIn {...props} />, { exitOnCtrlC: false, patchConsole: false })
@@ -60,9 +61,10 @@ export default class Login extends BeeperCommand {
     ensureWritable(flags)
     const config = await readConfig()
     const baseURLFlag = flags['server-url'] ?? flags['base-url']
+    const target = await resolveTarget({ target: flags.target, baseURL: baseURLFlag })
     const desktop = await findLocalDesktop({
-      baseURL: baseURLFlag ?? config.baseURL,
-      scan: !baseURLFlag,
+      baseURL: target.baseURL ?? config.baseURL,
+      scan: !baseURLFlag && target.id === 'desktop',
     })
     const baseURL = desktop.baseURL
 
@@ -78,9 +80,18 @@ export default class Login extends BeeperCommand {
         baseURL,
         clientName: flags['client-name'],
         openBrowser: !flags['no-open'],
-        save: !flags['no-save'],
+        save: false,
         scope: flags.scope,
       })
+      if (!flags['no-save']) {
+        await saveTargetAuth({ ...target, baseURL }, {
+          accessToken: token.access_token,
+          clientID: token.clientID,
+          expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
+          scope: token.scope,
+          tokenType: token.token_type,
+        })
+      }
       if (flags.json) {
         await printData(token, 'json')
         return
@@ -111,7 +122,7 @@ export default class Login extends BeeperCommand {
     })
 
     if (isRegistrationRequired(result)) result = await this.register(baseURL, result, flags)
-    await this.finishLogin(baseURL, result, { json: flags.json, save: !flags['no-save'] })
+    await this.finishLogin(target, baseURL, result, { json: flags.json, save: !flags['no-save'] })
   }
 
   private async shouldUseAppLogin(baseURL: string): Promise<boolean> {
@@ -144,29 +155,27 @@ export default class Login extends BeeperCommand {
   }
 
   private async finishLogin(
+    target: Awaited<ReturnType<typeof resolveTarget>>,
     baseURL: string,
     result: AppLoginSuccess,
     options: { json: boolean; save: boolean },
   ): Promise<void> {
     if (options.save) {
-      await updateConfig(config => ({
-        ...config,
-        baseURL,
-        auth: {
-          accessToken: result.desktopAPI.accessToken,
-          scope: result.desktopAPI.scope,
-          tokenType: result.desktopAPI.tokenType,
-        },
-      }))
+      await saveTargetAuth({ ...target, baseURL }, {
+        accessToken: result.desktopAPI.accessToken,
+        scope: result.desktopAPI.scope,
+        tokenType: result.desktopAPI.tokenType,
+      })
     }
 
     if (options.json) {
       await printData(result, 'json')
       return
     }
+    const next = nextAppStep(result.appState, target.id)
     await showSignedIn({
       as: result.matrix.userID,
-      detail: `app state: ${result.appState.state}`,
+      detail: next ?? 'E2EE ready',
       saved: options.save,
     })
   }

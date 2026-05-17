@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { AddressInfo } from 'node:net'
 import { spawn } from 'node:child_process'
 import { createPKCEPair, createState } from './pkce.js'
-import { updateConfig } from './config.js'
+import { updateConfig } from './targets.js'
 
 export type OAuthLoginOptions = {
   baseURL: string

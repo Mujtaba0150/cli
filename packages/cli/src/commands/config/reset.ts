@@ -1,5 +1,5 @@
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { resetConfig } from '../../lib/config.js'
+import { resetConfig } from '../../lib/targets.js'
 import { printSuccess } from '../../lib/output.js'
 
 export default class ConfigReset extends BeeperCommand {

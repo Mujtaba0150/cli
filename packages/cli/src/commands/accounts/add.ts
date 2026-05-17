@@ -28,9 +28,10 @@ export default class AccountsAdd extends BeeperCommand {
     const { args, flags } = await this.parse(AccountsAdd)
     ensureWritable(flags)
     const client = await createClient(flags)
+    const api = client as any
 
     if (!args.account) {
-      const bridges = await client.bridges.list()
+      const bridges = await api.bridges.list()
       if (flags.json) {
         await printData(bridges, 'json')
         return
@@ -40,7 +41,7 @@ export default class AccountsAdd extends BeeperCommand {
       return
     }
 
-    const bridges = await client.bridges.list()
+    const bridges = await api.bridges.list()
     const accountType = resolveAccountType(bridges.items, args.account)
     if (accountType.status !== 'available') {
       const suffix = accountType.statusText ? `: ${accountType.statusText}` : ''
@@ -49,7 +50,7 @@ export default class AccountsAdd extends BeeperCommand {
 
     let flowID = flags.flow
     if (!flowID) {
-      const flows = await client.matrix.bridges.auth.listFlows(accountType.bridgeID)
+      const flows = await api.matrix.bridges.auth.listFlows(accountType.bridgeID)
       const loginFlows = flows.flows ?? []
       if (loginFlows.length > 1) {
         if (flags.guided && !flags.json && !flags['non-interactive']) flowID = await chooseLoginFlow(loginFlows)
@@ -61,7 +62,7 @@ export default class AccountsAdd extends BeeperCommand {
       if (!flags.json && loginFlows.length > 1) this.log(`Using flow ${flowID}`)
     }
 
-    const step = await client.matrix.bridges.auth.startLogin(flowID, {
+    const step = await api.matrix.bridges.auth.startLogin(flowID, {
       bridgeID: accountType.bridgeID,
       login_id: flags['login-id'],
     })

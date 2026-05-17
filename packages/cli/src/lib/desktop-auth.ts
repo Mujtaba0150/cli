@@ -1,4 +1,4 @@
-import { readConfig } from './config.js'
+import { readConfig } from './targets.js'
 import { loginWithPKCE } from './oauth.js'
 
 export type DesktopAppStatus = {
@@ -15,7 +15,7 @@ const scanPorts = Array.from({ length: 20 }, (_, index) => defaultPort + index)
 
 export async function findLocalDesktop(options: { baseURL?: string; scan?: boolean; timeoutMs?: number } = {}): Promise<DesktopProbe> {
   const config = await readConfig()
-  const preferred = options.baseURL ?? config.baseURL
+  const preferred = options.baseURL ?? config.baseURL ?? 'http://127.0.0.1:23373'
   const candidates = candidateBaseURLs(preferred, options.scan ?? true)
   const timeoutMs = options.timeoutMs ?? 500
 

@@ -11,6 +11,7 @@ export default class AppE2EERecoveryCodeMarkBackedUp extends BeeperCommand {
     ensureWritable(flags)
     const result = await appRequest<RecoveryCodeMarkBackedUpResponse>('POST', '/v1/app/e2ee/recovery-code/mark-backed-up', {
       baseURL: flags['base-url'],
+      target: flags.target,
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

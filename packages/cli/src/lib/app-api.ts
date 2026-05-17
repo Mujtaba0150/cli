@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
-import { getAccessToken, readConfig } from './config.js'
+import { getAccessToken, resolveTarget, updateTargetCache } from './targets.js'
 import type { AppStatusResponse } from '@beeper/desktop-api/resources/app/app.js'
 import type {
   LoginRegisterResponse,
@@ -22,11 +22,11 @@ export type AppRecoveryCodeResetBeginResponse = ResetBeginResponse
 export async function appRequest<T>(
   method: 'GET' | 'POST',
   path: string,
-  options: { baseURL?: string; body?: Record<string, unknown>; token?: string | false } = {},
+  options: { baseURL?: string; body?: Record<string, unknown>; token?: string | false; target?: string } = {},
 ): Promise<T> {
-  const config = await readConfig()
-  const baseURL = options.baseURL ?? config.baseURL
-  const token = options.token === false ? undefined : options.token ?? await getAccessToken()
+  const target = await resolveTarget({ target: options.target, baseURL: options.baseURL })
+  const baseURL = target.baseURL
+  const token = options.token === false ? undefined : options.token ?? await getAccessToken(target)
   const headers: Record<string, string> = {}
   if (token) headers.authorization = `Bearer ${token}`
   if (options.body) headers['content-type'] = 'application/json'
@@ -39,7 +39,11 @@ export async function appRequest<T>(
   if (!response.ok) throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`)
   if (response.status === 204) return undefined as T
   const text = await response.text()
-  return (text ? JSON.parse(text) : {}) as T
+  const data = (text ? JSON.parse(text) : {}) as T
+  if (method === 'GET' && path === '/v1/app/status') {
+    await updateTargetCache(target, { baseURL, appState: data }).catch(() => undefined)
+  }
+  return data
 }
 
 export async function promptText(label: string): Promise<string> {

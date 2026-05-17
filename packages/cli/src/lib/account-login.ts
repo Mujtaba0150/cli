@@ -7,7 +7,7 @@ import type {
   AuthSubmitUserInputResponse,
   AuthWaitForStepResponse,
 } from '@beeper/desktop-api/resources/matrix/bridges/auth.js'
-import type BeeperDesktop from '@beeper/desktop-api'
+import type { BeeperDesktop } from '@beeper/desktop-api'
 
 export type AccountLoginStep =
   | AuthStartLoginResponse
@@ -59,6 +59,7 @@ export function printAccountLoginStep(step: AccountLoginStep): void {
 }
 
 export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: string, initialStep: AccountLoginStep, options: AccountLoginOptions = {}): Promise<AccountLoginStep> {
+  const matrix = (client as any).matrix
   let step = initialStep
   for (;;) {
     printAccountLoginStep(step)
@@ -70,7 +71,7 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
 
     if ('display_and_wait' in step) {
       await promptText('Press Enter after completing this step.')
-      step = await client.matrix.bridges.auth.waitForStep(stepID, { bridgeID, loginProcessID })
+      step = await matrix.bridges.auth.waitForStep(stepID, { bridgeID, loginProcessID })
       continue
     }
 
@@ -95,7 +96,7 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
         const value = await promptText(`${field.name}${fallback}: `)
         body[field.id] = value || field.default_value || ''
       }
-      step = await client.matrix.bridges.auth.submitUserInput(stepID, { bridgeID, loginProcessID, body })
+      step = await matrix.bridges.auth.submitUserInput(stepID, { bridgeID, loginProcessID, body })
       continue
     }
 
@@ -110,7 +111,7 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
         if (options.nonInteractive) throw new Error(`Missing required cookie ${field.name}. Pass --cookie ${field.name}=... or run without --non-interactive.`)
         body[field.name] = await promptSecret(`${field.name}: `)
       }
-      step = await client.matrix.bridges.auth.submitCookies(stepID, { bridgeID, loginProcessID, body })
+      step = await matrix.bridges.auth.submitCookies(stepID, { bridgeID, loginProcessID, body })
       continue
     }
 

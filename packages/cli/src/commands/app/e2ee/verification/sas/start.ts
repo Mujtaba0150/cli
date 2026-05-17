@@ -13,9 +13,9 @@ export default class AppE2EEVerificationSASStart extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationSASStart)
     ensureWritable(flags)
-    const result = await appRequest<SaStartResponse>('POST', '/v1/app/e2ee/verification/sas/start', {
+    const result = await appRequest<SaStartResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/sas/start`, {
       baseURL: flags['base-url'],
-      body: { txnID: args.txnID },
+      target: flags.target,
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

@@ -7,7 +7,7 @@ export default class CurrentUser extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(CurrentUser)
-    const user = await appRequest<unknown>('GET', '/oauth/userinfo', { baseURL: flags['base-url'] })
+    const user = await appRequest<unknown>('GET', '/oauth/userinfo', { baseURL: flags['base-url'], target: flags.target })
     await printData(user, flags.json ? 'json' : 'human')
   }
 }

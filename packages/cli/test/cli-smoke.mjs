@@ -80,24 +80,25 @@ assert(commandsJSON.some(item => item.command === 'chat'), 'commands --json shou
 assert(commandsJSON.some(item => item.command === 'send text'), 'commands --json should include send text')
 assert(commandsJSON.some(item => item.command === 'send file'), 'commands --json should include send file')
 assert(!commandsJSON.some(item => ['thread', 'threads', 'tail', 'whoami'].includes(item.command)), 'commands --json must not include compatibility aliases')
-assert(!commandsJSON.some(item => item.command.includes('serve')), 'commands --json must not include serve')
+assert(!commandsJSON.some(item => item.command === 'serve'), 'commands --json must not include serve')
 assert(!commandsJSON.some(item => item.command.includes('base64')), 'commands --json must not include base64 asset variants')
 
 const configDir = '/tmp/beeper-cli-test-config'
+rmSync(configDir, { recursive: true, force: true })
 const configEnv = { ...process.env, BEEPER_CLI_CONFIG_DIR: configDir }
-let config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'set', 'baseURL', 'http://127.0.0.1:23373'], {
+let config = spawnSync(process.execPath, ['./bin/run.js', 'target', 'add', 'local', 'http://127.0.0.1:23373', '--default'], {
   cwd: root,
   encoding: 'utf8',
   env: configEnv,
 })
 assert.equal(config.status, 0, config.stderr)
-config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'get', 'baseURL'], {
+config = spawnSync(process.execPath, ['./bin/run.js', 'target', 'info', '--json'], {
   cwd: root,
   encoding: 'utf8',
-  env: { ...configEnv, BEEPER_DESKTOP_BASE_URL: 'http://127.0.0.1:24444' },
+  env: configEnv,
 })
 assert.equal(config.status, 0, config.stderr)
-assert.match(config.stdout, /127\.0\.0\.1:24444/)
+assert.match(config.stdout, /127\.0\.0\.1:23373/)
 config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'reset'], {
   cwd: root,
   encoding: 'utf8',

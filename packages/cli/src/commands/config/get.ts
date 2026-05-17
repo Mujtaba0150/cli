@@ -1,6 +1,6 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
-import { readConfig } from '../../lib/config.js'
+import { readConfig } from '../../lib/targets.js'
 import { printConfig, printData } from '../../lib/output.js'
 
 export default class ConfigGet extends BeeperCommand {

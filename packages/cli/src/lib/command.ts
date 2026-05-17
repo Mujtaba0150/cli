@@ -2,7 +2,8 @@ import { Command, Flags } from '@oclif/core'
 
 export abstract class BeeperCommand extends Command {
   static override baseFlags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'base-url': Flags.string({ description: 'Beeper API base URL (overrides target)' }),
+    target: Flags.string({ char: 't', description: 'Beeper target' }),
     debug: Flags.boolean({ default: false, description: 'Print SDK debug logging' }),
     events: Flags.boolean({ default: false, description: 'Emit NDJSON lifecycle events on stderr' }),
     json: Flags.boolean({ default: false, description: 'Print JSON' }),

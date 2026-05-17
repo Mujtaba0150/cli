@@ -1,6 +1,6 @@
 import { BeeperCommand } from '../lib/command.js'
 import { createClient, requireToken } from '../lib/client.js'
-import { readConfig } from '../lib/config.js'
+import { readConfig } from '../lib/targets.js'
 import { printData } from '../lib/output.js'
 import { createInkSpinner as createSpinner } from '../lib/ink/spinner.js'
 

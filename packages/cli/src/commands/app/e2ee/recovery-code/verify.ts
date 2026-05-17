@@ -15,6 +15,7 @@ export default class AppE2EERecoveryCodeVerify extends BeeperCommand {
     ensureWritable(flags)
     const result = await appRequest<RecoveryCodeVerifyResponse>('POST', '/v1/app/e2ee/recovery-code/verify', {
       baseURL: flags['base-url'],
+      target: flags.target,
       body: { recoveryCode: args.recoveryCode },
     })
     await printData(result, flags.json ? 'json' : 'human')

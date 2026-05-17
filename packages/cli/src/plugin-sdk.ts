@@ -1,4 +1,4 @@
-import type BeeperDesktop from '@beeper/desktop-api'
+import type { BeeperDesktop } from '@beeper/desktop-api'
 
 export { Args, Command, Flags, ux } from '@oclif/core'
 export { BeeperCommand, ensureWritable, writeEvent } from './lib/command.js'
@@ -12,7 +12,7 @@ export {
   writeConfig,
   type Config,
   type StoredAuth,
-} from './lib/config.js'
+} from './lib/targets.js'
 export { createClient as createBeeperClient, requireToken } from './lib/client.js'
 export {
   collectPage,
@@ -28,7 +28,7 @@ export {
   type Suggestion,
 } from './lib/output.js'
 
-export type BeeperClient = InstanceType<typeof BeeperDesktop>
+export type BeeperClient = BeeperDesktop
 
 export type BeeperPluginContext = {
   baseURL?: string

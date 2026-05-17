@@ -13,9 +13,9 @@ export default class AppE2EEVerificationSASConfirm extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationSASConfirm)
     ensureWritable(flags)
-    const result = await appRequest<SaConfirmResponse>('POST', '/v1/app/e2ee/verification/sas/confirm', {
+    const result = await appRequest<SaConfirmResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/sas/confirm`, {
       baseURL: flags['base-url'],
-      body: { txnID: args.txnID },
+      target: flags.target,
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

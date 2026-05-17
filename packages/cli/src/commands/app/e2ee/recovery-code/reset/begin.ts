@@ -19,6 +19,7 @@ export default class AppE2EERecoveryCodeResetBegin extends BeeperCommand {
     const recoveryCode = flags['recovery-code'] ?? (!flags.json && input.isTTY ? await promptSecret('Existing recovery key (optional): ') : undefined)
     const result = await appRequest<ResetBeginResponse>('POST', '/v1/app/e2ee/recovery-code/reset', {
       baseURL: flags['base-url'],
+      target: flags.target,
       body: recoveryCode ? { recoveryCode } : {},
     })
     await printData(result, flags.json ? 'json' : 'human')

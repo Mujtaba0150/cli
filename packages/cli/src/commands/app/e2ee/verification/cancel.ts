@@ -17,9 +17,10 @@ export default class AppE2EEVerificationCancel extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationCancel)
     ensureWritable(flags)
-    const result = await appRequest<VerificationCancelResponse>('POST', '/v1/app/e2ee/verification/cancel', {
+    const result = await appRequest<VerificationCancelResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/cancel`, {
       baseURL: flags['base-url'],
-      body: { txnID: args.txnID, code: flags.code, reason: flags.reason },
+      target: flags.target,
+      body: { code: flags.code, reason: flags.reason },
     })
     await printData(result, flags.json ? 'json' : 'human')
   }

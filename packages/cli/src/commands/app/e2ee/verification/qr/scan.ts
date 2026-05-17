@@ -15,6 +15,7 @@ export default class AppE2EEVerificationQRScan extends BeeperCommand {
     ensureWritable(flags)
     const result = await appRequest<QrScanResponse>('POST', '/v1/app/e2ee/verification/qr/scan', {
       baseURL: flags['base-url'],
+      target: flags.target,
       body: { data: args.data },
     })
     await printData(result, flags.json ? 'json' : 'human')

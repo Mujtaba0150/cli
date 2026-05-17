@@ -29,26 +29,6 @@ brew install beeper/tap/beeper-cli
 
 The installed command is `beeper`.
 
-## Plugins
-
-Beeper CLI supports oclif plugins for third-party commands:
-
-```sh
-beeper plugins
-beeper plugins install beeper-cli-plugin-example
-beeper plugins uninstall beeper-cli-plugin-example
-```
-
-Plugin authors should depend on the stable SDK entrypoint instead of importing
-CLI internals:
-
-```ts
-import { BeeperCommand, createBeeperClient, ensureWritable } from 'beeper-cli/plugin-sdk'
-```
-
-Plugins should use namespaced commands such as `beeper github issue create` and
-must treat installed plugins as trusted code, because plugins run arbitrary Node.js.
-
 ## Local Development
 
 ```sh
@@ -133,8 +113,8 @@ Most commands support:
 Use `beeper login --server-url URL` to remember a Desktop API server URL for
 future commands.
 
-`beeper commands --json` prints a compact command manifest for tools and agents.
-`beeper llm` prints a concise human-readable command guide.
+`commands --json` prints a compact command manifest for tools and agents.
+`llm` prints a concise human-readable command guide.
 
 ## Environment
 
@@ -222,6 +202,14 @@ future commands.
 | `delete-message.d` |  |
 | `description` | Set or clear a group chat description |
 | `description.d` |  |
+| `desktop profiles` | List Beeper Desktop profiles |
+| `desktop profiles delete` | Delete a Beeper Desktop profile |
+| `desktop profiles delete.d` |  |
+| `desktop profiles index.d` |  |
+| `desktop profiles launch` | Launch a Beeper Desktop profile |
+| `desktop profiles launch.d` |  |
+| `desktop profiles new` | Create a Beeper Desktop profile |
+| `desktop profiles new.d` |  |
 | `doctor` | Verify Desktop API reachability and authentication |
 | `doctor.d` |  |
 | `draft` | Set a chat draft |
@@ -257,6 +245,16 @@ future commands.
 | `notify-anyway.d` |  |
 | `pin` | Pin a chat |
 | `pin.d` |  |
+| `plugins` | List installed plugins. |
+| `plugins add` | Installs a plugin into beeper. |
+| `plugins inspect` | Displays installation properties of a plugin. |
+| `plugins install` | Installs a plugin into beeper. |
+| `plugins link` | Links a plugin into the CLI for development. |
+| `plugins remove` | Removes a plugin from the CLI. |
+| `plugins reset` | Remove all user-installed and linked plugins. |
+| `plugins uninstall` | Removes a plugin from the CLI. |
+| `plugins unlink` | Removes a plugin from the CLI. |
+| `plugins update` | Update installed plugins. |
 | `react` | Add a reaction to an existing message. |
 | `react.d` |  |
 | `read` | Mark a chat as read, optionally through a specific message ID. |
@@ -271,12 +269,28 @@ future commands.
 | `send file.d` |  |
 | `send text` | Send a text message to a specific chat. Supports replying to existing messages. Returns a pending message ID. |
 | `send text.d` |  |
+| `server launch` | Launch a local Beeper Server target |
+| `server launch.d` |  |
+| `server new` | Create a local Beeper Server target |
+| `server new.d` |  |
+| `setup` | Set up a Beeper target |
+| `setup.d` |  |
 | `shell` | Run an interactive Beeper CLI shell |
 | `shell.d` |  |
 | `start-chat` | Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper Desktop v4.2.808+. |
 | `start-chat.d` |  |
 | `status` | Check Beeper Desktop API status |
 | `status.d` |  |
+| `target add` | Connect to an existing Beeper client |
+| `target add.d` |  |
+| `target info` | Show Beeper target details |
+| `target info.d` |  |
+| `target list` | List Beeper targets |
+| `target list.d` |  |
+| `target remove` | Remove a Beeper target |
+| `target remove.d` |  |
+| `target use` | Set the default Beeper target |
+| `target use.d` |  |
 | `title` | Set a custom chat title |
 | `title.d` |  |
 | `unarchive` | Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox |
@@ -291,6 +305,8 @@ future commands.
 | `unread.d` |  |
 | `unremind` | Clear an existing reminder from a chat |
 | `unremind.d` |  |
+| `verify` | Verify this Beeper target for encrypted messages |
+| `verify.d` |  |
 | `watch` | Stream Desktop API WebSocket events |
 | `watch.d` |  |
 
@@ -302,6 +318,12 @@ List Chat Accounts connected to this Beeper Desktop instance, including bridge m
 ```sh
 beeper accounts
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -328,6 +350,7 @@ Flags:
 | `--guided` | boolean | Prompt through login steps until completion |
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -337,6 +360,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper accounts add.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper accounts.d`
@@ -344,6 +373,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper accounts.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -360,6 +395,12 @@ Arguments:
 | --- | --- | --- |
 | `path` | yes | API path, for example /v1/info |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper api get.d`
@@ -367,6 +408,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper api get.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -388,6 +435,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--body=<value>` | option | JSON request body Default: {} |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -396,6 +444,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper api post.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -406,6 +460,12 @@ Mark the recovery key as saved
 beeper app e2ee recovery-code mark-backed-up
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee recovery-code mark-backed-up.d`
@@ -413,6 +473,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee recovery-code mark-backed-up.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -428,6 +494,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--recovery-code=<value>` | option | Existing recovery key, if available |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -436,6 +503,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee recovery-code reset begin.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -452,6 +525,12 @@ Arguments:
 | --- | --- | --- |
 | `recoveryCode` | yes | New recovery key returned by reset begin |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee recovery-code reset confirm.d`
@@ -459,6 +538,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee recovery-code reset confirm.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -475,6 +560,12 @@ Arguments:
 | --- | --- | --- |
 | `recoveryCode` | yes | Beeper recovery key |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee recovery-code verify.d`
@@ -482,6 +573,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee recovery-code verify.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -498,6 +595,12 @@ Arguments:
 | --- | --- | --- |
 | `txnID` | yes | Verification transaction ID |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee verification accept.d`
@@ -505,6 +608,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification accept.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -527,6 +636,7 @@ Flags:
 | --- | --- | --- |
 | `--code=<value>` | option | Optional cancellation code |
 | `--reason=<value>` | option | Optional cancellation reason |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -535,6 +645,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification cancel.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -551,6 +667,12 @@ Arguments:
 | --- | --- | --- |
 | `txnID` | yes | Verification transaction ID |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee verification qr confirm-scanned.d`
@@ -558,6 +680,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification qr confirm-scanned.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -574,6 +702,12 @@ Arguments:
 | --- | --- | --- |
 | `data` | yes | QR code payload |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee verification qr scan.d`
@@ -581,6 +715,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification qr scan.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -597,6 +737,12 @@ Arguments:
 | --- | --- | --- |
 | `txnID` | yes | Verification transaction ID |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee verification sas confirm.d`
@@ -604,6 +750,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification sas confirm.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -620,6 +772,12 @@ Arguments:
 | --- | --- | --- |
 | `txnID` | yes | Verification transaction ID |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app e2ee verification sas start.d`
@@ -627,6 +785,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app e2ee verification sas start.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -641,6 +805,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 | `--user-id=<value>` | option | User ID to verify. Defaults to the signed-in user. |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -651,6 +816,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper app e2ee verification start.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app status`
@@ -660,6 +831,12 @@ Show Beeper app login and encrypted messaging state
 beeper app status
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper app status.d`
@@ -667,6 +844,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper app status.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -688,6 +871,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -696,6 +880,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper archive.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -712,6 +902,12 @@ Arguments:
 | --- | --- | --- |
 | `url` | yes | Asset URL |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper assets download.d`
@@ -719,6 +915,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper assets download.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -741,6 +943,7 @@ Flags:
 | --- | --- | --- |
 | `--file-name=<value>` | option | Original filename. Defaults to the uploaded file name if omitted |
 | `--mime-type=<value>` | option | MIME type. Auto-detected from magic bytes if omitted |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -749,6 +952,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper assets upload.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -759,6 +968,12 @@ Show local auth status and token metadata
 beeper auth status
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper auth status.d`
@@ -766,6 +981,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper auth status.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -808,6 +1029,7 @@ Flags:
 | --- | --- | --- |
 | `--clear` | boolean | Clear the current avatar |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -816,6 +1038,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper avatar.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -838,6 +1066,7 @@ Flags:
 | --- | --- | --- |
 | `--max-participants=<value>` | option | Maximum participants to return |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -846,6 +1075,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper chat.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -863,6 +1098,7 @@ Flags:
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--ids` | boolean | Print only chat IDs |
 | `--limit=<value>` | option | Maximum chats to print Default: 20 |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -871,6 +1107,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper chats index.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -893,13 +1135,14 @@ Flags:
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--ids` | boolean | Print only chat IDs |
-| `--inbox=<primary\|low-priority\|archive>` | option |  |
+| `--inbox=<primary|low-priority|archive>` | option |  |
 | `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
 | `--last-activity-after=<value>` | option | Only chats with last activity after this ISO timestamp |
 | `--last-activity-before=<value>` | option | Only chats with last activity before this ISO timestamp |
 | `--limit=<value>` | option | Maximum chats to print Default: 20 |
-| `--scope=<titles\|participants>` | option |  |
-| `--type=<single\|group\|any>` | option |  |
+| `--scope=<titles|participants>` | option |  |
+| `-t, --target=<value>` | option | Beeper target |
+| `--type=<single|group|any>` | option |  |
 | `--unread` | boolean | Only unread chats |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -909,6 +1152,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper chats search.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -930,6 +1179,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -938,6 +1188,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper clear-draft.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -948,6 +1204,12 @@ Print the Beeper CLI command manifest
 beeper commands
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper commands.d`
@@ -955,6 +1217,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper commands.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -971,6 +1239,12 @@ Arguments:
 | --- | --- | --- |
 | `key` | no | Optional config key to print |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper config get.d`
@@ -978,6 +1252,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper config get.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -988,6 +1268,12 @@ Print the CLI config path
 beeper config path
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper config path.d`
@@ -995,6 +1281,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper config path.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1005,6 +1297,12 @@ Reset CLI configuration
 beeper config reset
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper config reset.d`
@@ -1012,6 +1310,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper config reset.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1029,6 +1333,12 @@ Arguments:
 | `key` | yes | Config key to set |
 | `value` | yes | Config value |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper config set.d`
@@ -1036,6 +1346,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper config set.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1059,6 +1375,7 @@ Flags:
 | `--ids` | boolean | Print only contact user IDs |
 | `--limit=<value>` | option | Maximum contacts to print Default: 50 |
 | `--query=<value>` | option | Optional blended contact lookup query |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1067,6 +1384,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper contacts list.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1088,6 +1411,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>...` | option | Account ID, network, bridge, or account user. Omit to search every account. |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1096,6 +1420,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper contacts search.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1113,8 +1443,9 @@ Flags:
 | `--account=<value>` | option | Account ID, network, bridge, or account user Required. |
 | `--message=<value>` | option | Optional first message |
 | `--participant=<value>...` | option | Participant user ID Required. |
+| `-t, --target=<value>` | option | Beeper target |
 | `--title=<value>` | option | Group title |
-| `--type=<single\|group>` | option | Chat type Default: single |
+| `--type=<single|group>` | option | Chat type Default: single |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1123,6 +1454,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper create-chat.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1133,6 +1470,12 @@ Show the authenticated Desktop API user
 beeper current-user
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper current-user.d`
@@ -1140,6 +1483,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper current-user.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1163,6 +1512,7 @@ Flags:
 | --- | --- | --- |
 | `--for-everyone` | boolean | True to request deletion for everyone when the network supports it; false to delete only for the authenticated user when supported. |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1171,6 +1521,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper delete-message.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1194,6 +1550,7 @@ Flags:
 | --- | --- | --- |
 | `--clear` | boolean | Clear the current description |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1202,6 +1559,150 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper description.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles`
+List Beeper Desktop profiles
+
+```sh
+beeper desktop profiles
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles delete`
+Delete a Beeper Desktop profile
+
+```sh
+beeper desktop profiles delete <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--force` | boolean | Delete local profile data. Requires the profile name. |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles delete.d`
+
+```sh
+beeper desktop profiles delete.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles index.d`
+
+```sh
+beeper desktop profiles index.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles launch`
+Launch a Beeper Desktop profile
+
+```sh
+beeper desktop profiles launch <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles launch.d`
+
+```sh
+beeper desktop profiles launch.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles new`
+Create a Beeper Desktop profile
+
+```sh
+beeper desktop profiles new <name>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Make this the default target |
+| `--port=<value>` | option |  |
+| `--server-env=<value>` | option | Default: production |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper desktop profiles new.d`
+
+```sh
+beeper desktop profiles new.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1212,6 +1713,12 @@ Verify Desktop API reachability and authentication
 beeper doctor
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper doctor.d`
@@ -1219,6 +1726,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper doctor.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1244,6 +1757,7 @@ Flags:
 | `--file-name=<value>` | option | Attachment display filename |
 | `--mime-type=<value>` | option | Attachment MIME type |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1252,6 +1766,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper draft.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1275,6 +1795,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1283,6 +1804,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper edit.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1307,6 +1834,7 @@ Flags:
 | `-o, --out=<value>` | option | Export directory. Default: beeper-export |
 | `--pick=<value>` | option | Pick the Nth chat when a --chat selector is ambiguous. |
 | `--quiet` | boolean | Suppress progress output. |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1315,6 +1843,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper export.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1339,6 +1873,7 @@ Flags:
 | `--attachment=<value>` | option | Draft attachment path |
 | `--draft=<value>` | option | Draft text |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1347,6 +1882,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper focus.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1387,6 +1928,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1395,6 +1937,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper inbox.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1405,6 +1953,12 @@ Print compact CLI help for agents
 beeper llm
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper llm.d`
@@ -1412,6 +1966,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper llm.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1436,6 +1996,7 @@ Flags:
 | `--oauth` | boolean | Use the OAuth2 PKCE Desktop API authorization flow |
 | `--scope=<value>` | option | Space-separated OAuth scopes Default: read write |
 | `--server-url=<value>` | option | Beeper Desktop API server URL |
+| `-t, --target=<value>` | option | Beeper target |
 | `--username=<value>` | option | Username to create if registration is required |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -1446,6 +2007,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper login.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper logout`
@@ -1455,6 +2022,12 @@ Remove the locally stored Beeper Desktop token
 beeper logout
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper logout.d`
@@ -1462,6 +2035,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper logout.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1483,6 +2062,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1491,6 +2071,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper low-priority.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1513,6 +2099,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1535,6 +2122,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1544,6 +2132,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper message-expiry.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper message.d`
@@ -1551,6 +2145,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper message.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1576,6 +2176,7 @@ Flags:
 | `--ids` | boolean | Print only message IDs |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1584,6 +2185,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper messages index.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1606,15 +2213,16 @@ Flags:
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--chat=<value>...` | option | Limit to Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available. Also accepts exact chat titles or search text. |
-| `--chat-type=<group\|single>` | option | Limit to group chats or direct messages |
+| `--chat-type=<group|single>` | option | Limit to group chats or direct messages |
 | `--date-after=<value>` | option | Only messages after this ISO timestamp |
 | `--date-before=<value>` | option | Only messages before this ISO timestamp |
 | `--exclude-low-priority` | boolean | Exclude low-priority chats. Use --no-exclude-low-priority to include all. |
 | `--ids` | boolean | Print only message IDs |
 | `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
-| `--media=<any\|video\|image\|link\|file>...` | option | Filter by media type. Repeat for more types. |
+| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for more types. |
 | `--sender=<value>` | option | me, others, or a user ID |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1623,6 +2231,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper messages search.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1644,6 +2258,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1652,6 +2267,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper mute.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1673,6 +2294,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1681,6 +2303,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper notify-anyway.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1702,6 +2330,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1711,7 +2340,209 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper pin.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper plugins`
+List installed plugins.
+
+```sh
+beeper plugins
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--core` | boolean | Show core plugins. |
+
+Global flags: `--json`.
+
+### `beeper plugins add`
+Installs a plugin into beeper.
+
+```sh
+beeper plugins add <plugin>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | yes | Plugin to install. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-f, --force` | boolean | Force npm to fetch remote resources even if a local copy exists on disk. |
+| `-h, --help` | boolean | Show CLI help. |
+| `--jit` | boolean |  |
+| `-s, --silent` | boolean | Silences npm output. |
+| `-v, --verbose` | boolean | Show verbose npm output. |
+
+Global flags: `--json`.
+
+### `beeper plugins inspect`
+Displays installation properties of a plugin.
+
+```sh
+beeper plugins inspect <plugin>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | yes | Plugin to inspect. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `-v, --verbose` | boolean |  |
+
+Global flags: `--json`.
+
+### `beeper plugins install`
+Installs a plugin into beeper.
+
+```sh
+beeper plugins install <plugin>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | yes | Plugin to install. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-f, --force` | boolean | Force npm to fetch remote resources even if a local copy exists on disk. |
+| `-h, --help` | boolean | Show CLI help. |
+| `--jit` | boolean |  |
+| `-s, --silent` | boolean | Silences npm output. |
+| `-v, --verbose` | boolean | Show verbose npm output. |
+
+Global flags: `--json`.
+
+### `beeper plugins link`
+Links a plugin into the CLI for development.
+
+```sh
+beeper plugins link <path>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `path` | yes | path to plugin |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `--install` | boolean | Install dependencies after linking the plugin. |
+| `-v, --verbose` | boolean |  |
+
+### `beeper plugins remove`
+Removes a plugin from the CLI.
+
+```sh
+beeper plugins remove [plugin]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | no | plugin to uninstall |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `-v, --verbose` | boolean |  |
+
+### `beeper plugins reset`
+Remove all user-installed and linked plugins.
+
+```sh
+beeper plugins reset
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--hard` | boolean |  |
+| `--reinstall` | boolean |  |
+
+### `beeper plugins uninstall`
+Removes a plugin from the CLI.
+
+```sh
+beeper plugins uninstall [plugin]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | no | plugin to uninstall |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `-v, --verbose` | boolean |  |
+
+### `beeper plugins unlink`
+Removes a plugin from the CLI.
+
+```sh
+beeper plugins unlink [plugin]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `plugin` | no | plugin to uninstall |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `-v, --verbose` | boolean |  |
+
+### `beeper plugins update`
+Update installed plugins.
+
+```sh
+beeper plugins update
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-h, --help` | boolean | Show CLI help. |
+| `-v, --verbose` | boolean |  |
 
 ### `beeper react`
 Add a reaction to an existing message.
@@ -1733,6 +2564,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 | `--transaction=<value>` | option | Optional transaction ID |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -1742,6 +2574,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper react.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1764,6 +2602,7 @@ Flags:
 | --- | --- | --- |
 | `--message=<value>` | option | Message ID. |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1772,6 +2611,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper read.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1795,6 +2640,7 @@ Flags:
 | --- | --- | --- |
 | `--dismiss-on-message` | boolean | Cancel if someone messages in the chat |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1803,6 +2649,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper remind.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1813,6 +2665,12 @@ Run newline-delimited JSON command RPC
 beeper rpc
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper rpc.d`
@@ -1820,6 +2678,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper rpc.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1836,6 +2700,12 @@ Arguments:
 | --- | --- | --- |
 | `query` | yes | Literal search query |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper search.d`
@@ -1843,6 +2713,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper search.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1869,6 +2745,7 @@ Flags:
 | `--mime-type=<value>` | option | MIME type. Auto-detected from magic bytes if omitted |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 | `--reply-to=<value>` | option | Provide a message ID to send this as a reply to an existing message |
+| `-t, --target=<value>` | option | Beeper target |
 | `--wait` | boolean | Wait for the pending message to resolve |
 | `--wait-interval=<value>` | option | Milliseconds between message status checks Default: 750 |
 | `--wait-timeout=<value>` | option | Milliseconds to wait for message resolution Default: 30000 |
@@ -1880,6 +2757,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper send file.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1906,6 +2789,7 @@ Flags:
 | `--mime-type=<value>` | option | MIME type. Auto-detected from magic bytes if omitted |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
 | `--reply-to=<value>` | option | Provide a message ID to send this as a reply to an existing message |
+| `-t, --target=<value>` | option | Beeper target |
 | `--wait` | boolean | Wait for the pending message to resolve |
 | `--wait-interval=<value>` | option | Milliseconds between message status checks Default: 750 |
 | `--wait-timeout=<value>` | option | Milliseconds to wait for message resolution Default: 30000 |
@@ -1918,6 +2802,124 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper send text.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper server launch`
+Launch a local Beeper Server target
+
+```sh
+beeper server launch [target]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `target` | no |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper server launch.d`
+
+```sh
+beeper server launch.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper server new`
+Create a local Beeper Server target
+
+```sh
+beeper server new [name]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Make this the default target |
+| `--launch` | boolean | Launch the server after creating it |
+| `--port=<value>` | option |  |
+| `--server-env=<value>` | option | Default: production |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper server new.d`
+
+```sh
+beeper server new.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper setup`
+Set up a Beeper target
+
+```sh
+beeper setup
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--connect=<value>` | option | Connect to an existing Beeper client URL |
+| `--desktop-profile=<value>` | option | Create a local Beeper Desktop profile |
+| `--launch` | boolean | Launch local profiles/servers |
+| `--login` | boolean | Print the login command after setup |
+| `--name=<value>` | option | Target name for --connect |
+| `--port=<value>` | option |  |
+| `--server=<value>` | option | Create a local Beeper Server target |
+| `--server-env=<value>` | option | Default: production |
+| `-t, --target=<value>` | option | Beeper target |
+| `--type=<desktop|server>` | option | Type for --connect Default: desktop |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper setup.d`
+
+```sh
+beeper setup.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper shell`
@@ -1927,6 +2929,12 @@ Run an interactive Beeper CLI shell
 beeper shell
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper shell.d`
@@ -1934,6 +2942,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper shell.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -1961,6 +2975,7 @@ Flags:
 | `--message=<value>` | option | Optional first message |
 | `--name=<value>` | option | Display name hint |
 | `--phone=<value>` | option | Phone number |
+| `-t, --target=<value>` | option | Beeper target |
 | `--username=<value>` | option | Username |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -1971,6 +2986,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 beeper start-chat.d
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper status`
@@ -1980,6 +3001,12 @@ Check Beeper Desktop API status
 beeper status
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper status.d`
@@ -1987,6 +3014,184 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper status.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target add`
+Connect to an existing Beeper client
+
+```sh
+beeper target add <name> <url>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | yes |  |
+| `url` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Make this the default target |
+| `-t, --target=<value>` | option | Beeper target |
+| `--type=<desktop|server>` | option | Default: desktop |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target add.d`
+
+```sh
+beeper target add.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target info`
+Show Beeper target details
+
+```sh
+beeper target info [target]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `target` | no |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target info.d`
+
+```sh
+beeper target info.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target list`
+List Beeper targets
+
+```sh
+beeper target list
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target list.d`
+
+```sh
+beeper target list.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target remove`
+Remove a Beeper target
+
+```sh
+beeper target remove <target>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `target` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target remove.d`
+
+```sh
+beeper target remove.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target use`
+Set the default Beeper target
+
+```sh
+beeper target use <target>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `target` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper target use.d`
+
+```sh
+beeper target use.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2009,6 +3214,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2017,6 +3223,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper title.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2038,6 +3250,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2046,6 +3259,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unarchive.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2067,6 +3286,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2075,6 +3295,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unmute.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2096,6 +3322,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2104,6 +3331,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unpin.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2127,6 +3360,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2135,6 +3369,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unreact.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2157,6 +3397,7 @@ Flags:
 | --- | --- | --- |
 | `--message=<value>` | option | Message ID. |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2165,6 +3406,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unread.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2186,6 +3433,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2194,6 +3442,43 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper unremind.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper verify`
+Verify this Beeper target for encrypted messages
+
+```sh
+beeper verify
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+| `--user-id=<value>` | option | User ID to verify. Defaults to the signed-in user. |
+| `-y, --yes` | boolean | Confirm SAS prompts without asking |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper verify.d`
+
+```sh
+beeper verify.d
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2209,6 +3494,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -2217,6 +3503,12 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 ```sh
 beeper watch.d
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
