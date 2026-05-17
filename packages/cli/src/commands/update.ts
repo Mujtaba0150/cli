@@ -6,6 +6,8 @@ import {
   updateServerInstallation,
   type Installation,
 } from '../lib/installations.js'
+import { profileStatus, startProfile, stopProfile } from '../lib/profiles.js'
+import { listTargets } from '../lib/targets.js'
 import { pathSetupHint } from '../lib/env.js'
 import { printData } from '../lib/output.js'
 import pkg from '../../package.json' with { type: 'json' }
@@ -39,8 +41,15 @@ export default class Update extends BeeperCommand {
     if ((!selected || flags.server) && installations.server) {
       const check = await checkInstallationUpdate(installations.server)
       if (check.available && !flags.check) {
+        const runningProfiles = await runningServerProfiles()
         const updated = await updateServerInstallation(installations.server)
-        results.push({ kind: 'server', updated: true, previousVersion: installations.server.version, currentVersion: updated.version, path: updated.path, hint: pathSetupHint() })
+        const restartedProfiles = []
+        for (const profile of runningProfiles) {
+          await stopProfile(profile).catch(() => undefined)
+          await startProfile(profile)
+          restartedProfiles.push(profile.id)
+        }
+        results.push({ kind: 'server', updated: true, previousVersion: installations.server.version, currentVersion: updated.version, path: updated.path, restartedProfiles, hint: pathSetupHint() })
       } else {
         results.push({ kind: 'server', ...check })
       }
@@ -50,6 +59,16 @@ export default class Update extends BeeperCommand {
 
     await printData(results, flags.json ? 'json' : 'human')
   }
+}
+
+async function runningServerProfiles(): Promise<Awaited<ReturnType<typeof listTargets>>> {
+  const profiles = (await listTargets()).filter(target => target.managed && target.type === 'server')
+  const running = []
+  for (const profile of profiles) {
+    const status = await profileStatus(profile)
+    if (status.running) running.push(profile)
+  }
+  return running
 }
 
 async function checkDesktop(installation: Installation): Promise<Record<string, unknown>> {

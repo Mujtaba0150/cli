@@ -49,6 +49,7 @@ for (const command of [
   ['watch', '--help'],
   ['current-user', '--help'],
   ['env', '--help'],
+  ['env', 'install', '--help'],
   ['export', '--help'],
   ['install', '--help'],
   ['install', 'desktop', '--help'],
@@ -92,6 +93,14 @@ assert.match(ok('export', '--help'), /--no-attachments/, 'export should expose a
 assert.match(ok('login', '--help'), /--server-url/, 'login should expose --server-url')
 assert.match(ok('env'), /export PATH='\/tmp\/beeper-cli-test\/bin':\$PATH/, 'env should print PATH setup')
 assert.match(ok('env', '--shell', 'fish'), /fish_add_path '\/tmp\/beeper-cli-test\/bin'/, 'env should print fish setup')
+const envHome = mkdtempSync(join(tmpdir(), 'beeper-cli-env-'))
+const envInstall = spawnSync(process.execPath, ['./bin/run.js', 'env', 'install', '--shell', 'sh', '--json'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: { ...process.env, HOME: envHome, SHELL: '/bin/zsh', BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-test' },
+})
+assert.equal(envInstall.status, 0, envInstall.stderr)
+assert.match(readFileSync(join(envHome, '.zshrc'), 'utf8'), /export PATH='\/tmp\/beeper-cli-test\/bin':\$PATH/, 'env install should persist PATH setup')
 assert.match(ok('install', 'server', '--help'), /--server-env/, 'install server should expose --server-env')
 assert.match(ok('setup', '--help'), /--target/, 'setup should expose target selection')
 

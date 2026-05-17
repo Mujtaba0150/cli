@@ -169,6 +169,7 @@ future commands.
 | `draft` | Set a chat draft |
 | `edit` | Edit the text content of an existing message. Messages with attachments cannot be edited. |
 | `env` | Print shell setup for Beeper CLI-managed tools |
+| `env install` | Add Beeper CLI-managed tools to your shell PATH |
 | `export` | Export accounts, chats, messages, Markdown transcripts, and attachments. |
 | `focus` | Focus Beeper Desktop, optionally opening a chat or message |
 | `help` | Display help for beeper. |
@@ -203,10 +204,10 @@ future commands.
 | `profile logs` | Print local Beeper profile logs |
 | `profile new` | Create a local Beeper profile |
 | `profile remove` | Remove a local Beeper profile |
-| `profile restart` | Restart a local Beeper profile |
+| `profile restart` | Restart a local Beeper server profile |
 | `profile start` | Start a local Beeper profile |
 | `profile status` | Show local Beeper profile status |
-| `profile stop` | Stop a local Beeper profile |
+| `profile stop` | Stop a local Beeper server profile |
 | `react` | Add a reaction to an existing message. |
 | `read` | Mark a chat as read, optionally through a specific message ID. |
 | `remind` | Set a reminder for a chat at a specific time. |
@@ -1054,6 +1055,22 @@ Flags:
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
+### `beeper env install`
+Add Beeper CLI-managed tools to your shell PATH
+
+```sh
+beeper env install
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--shell=<sh|fish>` | option | Shell config to update |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
 ### `beeper export`
 Export accounts, chats, messages, Markdown transcripts, and attachments.
 
@@ -1764,7 +1781,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper profile restart`
-Restart a local Beeper profile
+Restart a local Beeper server profile
 
 ```sh
 beeper profile restart <profile>
@@ -1827,7 +1844,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper profile stop`
-Stop a local Beeper profile
+Stop a local Beeper server profile
 
 ```sh
 beeper profile stop <profile>

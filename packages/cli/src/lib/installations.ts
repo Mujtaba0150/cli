@@ -149,8 +149,9 @@ export async function installDesktop(options: { channel?: InstallChannel; server
   const request = normalizeInstallRequest({ kind: 'desktop', channel: options.channel, serverEnv: options.serverEnv })
   if (request.serverEnv === 'staging') throw new Error('Desktop staging installs are not supported by the CLI.')
   const feedURL = feedURLFor(request)
-  const downloadURL = downloadURLFor(request)
-  const feed = await fetchFeed(feedURL).catch(() => ({ raw: undefined, version: undefined }))
+  const feed = await fetchFeed(feedURL)
+  const downloadURL = feed.url
+  if (!downloadURL) throw new Error('Desktop update feed did not include a download URL.')
   const stageDir = join(appsDir(), `desktop-${request.channel}-${Date.now()}`)
   await mkdir(stageDir, { recursive: true })
   const artifactPath = await downloadArtifact(downloadURL, stageDir)

@@ -5,7 +5,7 @@ import { resolveTarget } from '../../lib/targets.js'
 import { printSuccess } from '../../lib/output.js'
 
 export default class ProfileStop extends BeeperCommand {
-  static override summary = 'Stop a local Beeper profile'
+  static override summary = 'Stop a local Beeper server profile'
   static override args = {
     profile: Args.string({ required: true }),
   }
@@ -18,4 +18,3 @@ export default class ProfileStop extends BeeperCommand {
     await printSuccess({ message: `Stopped profile: ${target.id}` }, flags.json ? 'json' : 'human')
   }
 }
-

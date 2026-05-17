@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand } from '../lib/command.js'
-import { binDir } from '../lib/installations.js'
-import { isBeeperBinOnPath, pathSetup, type ShellName } from '../lib/env.js'
+import { BeeperCommand } from '../../lib/command.js'
+import { binDir } from '../../lib/installations.js'
+import { isBeeperBinOnPath, pathSetup, type ShellName } from '../../lib/env.js'
 
 export default class Env extends BeeperCommand {
   static override summary = 'Print shell setup for Beeper CLI-managed tools'
@@ -25,4 +25,3 @@ export default class Env extends BeeperCommand {
     process.stdout.write(`${command}\n`)
   }
 }
-
