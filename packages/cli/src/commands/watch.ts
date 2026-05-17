@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import { Flags } from '@oclif/core'
 import WebSocket from 'ws'
 import { BeeperCommand, writeEvent } from '../lib/command.js'
@@ -5,15 +6,21 @@ import { requireToken } from '../lib/client.js'
 import { getBaseURL } from '../lib/targets.js'
 import { startStream } from '../lib/output.js'
 
+type WebhookConfig = { url: string; secret?: string; queue: Array<{ body: string; signature?: string }>; inflight: number; max: number }
+
 export default class Watch extends BeeperCommand {
   static override summary = 'Stream Desktop API WebSocket events'
   static override flags = {
     chat: Flags.string({ char: 'c', multiple: true, description: 'Chat ID to subscribe to. Defaults to all chats.' }),
     json: Flags.boolean({ default: false, description: 'Print raw JSON, one event per line' }),
+    webhook: Flags.string({ description: 'Forward each event to this URL as a POST request (best-effort, fire-and-forget)' }),
+    'webhook-secret': Flags.string({ description: 'HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex>' }),
+    'webhook-queue': Flags.integer({ default: 64, description: 'Maximum pending webhook deliveries before dropping events' }),
   }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Watch)
+    if (flags['webhook-secret'] && !flags.webhook) throw new Error('--webhook-secret requires --webhook URL')
     const token = await requireToken()
     const baseURL = await getBaseURL(flags['base-url'])
     const info = await fetch(new URL('/v1/info', baseURL))
@@ -25,15 +32,18 @@ export default class Watch extends BeeperCommand {
 
     const subscribed = flags.chat?.length ? flags.chat : ['*']
     const ws = new WebSocket(url, { headers: { Authorization: `Bearer ${token}` } })
+    const webhook: WebhookConfig | undefined = flags.webhook
+      ? { url: flags.webhook, secret: flags['webhook-secret'], queue: [], inflight: 0, max: flags['webhook-queue'] }
+      : undefined
 
     if (flags.json) {
-      await this.runJSON(ws, subscribed, flags.events)
+      await this.runJSON(ws, subscribed, flags.events, webhook)
       return
     }
-    await this.runHuman(ws, subscribed, baseURL, flags.events)
+    await this.runHuman(ws, subscribed, baseURL, flags.events, webhook)
   }
 
-  private async runJSON(ws: WebSocket, subscribed: string[], events: boolean): Promise<void> {
+  private async runJSON(ws: WebSocket, subscribed: string[], events: boolean, webhook?: WebhookConfig): Promise<void> {
     ws.addEventListener('open', () => {
       if (events) writeEvent('watch.open', { subscribed })
       ws.send(JSON.stringify({ type: 'subscriptions.set', chatIDs: subscribed }))
@@ -42,6 +52,7 @@ export default class Watch extends BeeperCommand {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
       if (events) writeEvent('watch.message')
       process.stdout.write(`${data}\n`)
+      if (webhook) forwardWebhook(webhook, data, events)
     })
     ws.addEventListener('error', () => {
       if (events) writeEvent('watch.error', { message: 'WebSocket connection failed' })
@@ -57,7 +68,7 @@ export default class Watch extends BeeperCommand {
     })
   }
 
-  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string, events: boolean): Promise<void> {
+  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string, events: boolean, webhook?: WebhookConfig): Promise<void> {
     const stream = await startStream({ baseURL, subscribed })
     let closed = false
 
@@ -76,6 +87,7 @@ export default class Watch extends BeeperCommand {
     ws.addEventListener('message', event => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
       if (events) writeEvent('watch.message')
+      if (webhook) forwardWebhook(webhook, data, events)
       try {
         const parsed = JSON.parse(data) as Record<string, unknown>
         stream.push({
@@ -102,5 +114,39 @@ export default class Watch extends BeeperCommand {
     process.once('SIGINT', () => { void finish() })
 
     await stream.done
+  }
+}
+
+function forwardWebhook(webhook: WebhookConfig, body: string, events: boolean): void {
+  if (webhook.inflight + webhook.queue.length >= webhook.max) {
+    if (events) writeEvent('watch.webhook_drop', { reason: 'queue_full', size: webhook.queue.length })
+    process.stderr.write(`warning: webhook queue full (${webhook.max}); dropped event\n`)
+    return
+  }
+  const signature = webhook.secret
+    ? `sha256=${createHmac('sha256', webhook.secret).update(body).digest('hex')}`
+    : undefined
+  webhook.queue.push({ body, signature })
+  void drainWebhook(webhook, events)
+}
+
+async function drainWebhook(webhook: WebhookConfig, events: boolean): Promise<void> {
+  while (webhook.queue.length > 0) {
+    const item = webhook.queue.shift()!
+    webhook.inflight++
+    try {
+      const headers: Record<string, string> = { 'content-type': 'application/json' }
+      if (item.signature) headers['x-beeper-signature'] = item.signature
+      const response = await fetch(webhook.url, { method: 'POST', headers, body: item.body, signal: AbortSignal.timeout(10_000) })
+      if (!response.ok) {
+        if (events) writeEvent('watch.webhook_error', { status: response.status })
+        process.stderr.write(`warning: webhook POST ${webhook.url} returned ${response.status}\n`)
+      }
+    } catch (error) {
+      if (events) writeEvent('watch.webhook_error', { message: (error as Error).message })
+      process.stderr.write(`warning: webhook POST failed: ${(error as Error).message}\n`)
+    } finally {
+      webhook.inflight--
+    }
   }
 }

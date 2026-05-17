@@ -53,34 +53,40 @@
     "topicSeparator": " ",
     "topics": {
       "api": {
-        "description": "Call raw Desktop API endpoints."
+        "description": "Call raw Desktop API endpoints"
       },
       "accounts": {
-        "description": "Manage Beeper accounts."
+        "description": "Manage connected chat-network accounts"
       },
       "auth": {
-        "description": "Inspect and clear stored authentication."
+        "description": "Inspect, clear, and verify stored authentication"
       },
       "chats": {
-        "description": "List and search chats."
+        "description": "List, search, manage, and modify chats"
       },
       "config": {
-        "description": "Manage local CLI configuration."
+        "description": "Manage local CLI configuration"
       },
       "contacts": {
-        "description": "Search contacts across accounts."
+        "description": "List, search, and inspect contacts"
+      },
+      "labels": {
+        "description": "List, create, and manage Beeper chat labels"
       },
       "media": {
-        "description": "Download message media."
+        "description": "Download message media"
       },
       "messages": {
-        "description": "List and search chat messages."
+        "description": "List, search, show, react to, edit, delete, and export messages"
       },
       "send": {
-        "description": "Send messages."
+        "description": "Send text, files, and reactions"
+      },
+      "setup": {
+        "description": "Make a Beeper target ready (and install Desktop/Server)"
       },
       "targets": {
-        "description": "Manage Beeper targets."
+        "description": "Manage local Desktop, managed Server, and remote Beeper targets"
       }
     }
   },

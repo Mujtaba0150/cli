@@ -7,7 +7,8 @@ import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class MessagesSearch extends BeeperCommand {
-  static override summary = apiCopy.messages.search
+  static override summary = 'Search messages across chats'
+  static override description = apiCopy.messages.search
   static override args = {
     query: Args.string({ description: sdkParamCopy.searchQuery, required: false }),
   }
@@ -27,6 +28,14 @@ export default class MessagesSearch extends BeeperCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSearch)
+    const hasFilter = Boolean(
+      flags.account?.length || flags.chat?.length || flags['chat-type']
+      || flags['date-after'] || flags['date-before'] || flags.media?.length
+      || flags.sender,
+    )
+    if (!args.query && !hasFilter) {
+      throw new Error('Provide a search query or at least one filter flag (e.g. --chat, --sender, --media, --date-after).')
+    }
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })
     const chatIDs = flags.chat?.length

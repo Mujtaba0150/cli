@@ -1,366 +1,528 @@
-export const commandManifest = [
+export type ManifestCommand = {
+  command: string
+  description: string
+  examples?: string[]
+}
+
+export const commandManifest: ManifestCommand[] = [
   {
-    "command": "setup",
-    "description": "Make the selected target ready"
+    command: 'setup',
+    description: 'Make the selected target ready',
+    examples: [
+      'beeper setup',
+      'beeper setup --local',
+      'beeper setup --oauth',
+      'beeper setup --remote https://desktop.example.com',
+      'beeper setup --desktop --install',
+    ],
   },
   {
-    "command": "targets list",
-    "description": "List Beeper targets"
+    command: 'setup install desktop',
+    description: 'Install Beeper Desktop locally',
+    examples: ['beeper setup install desktop', 'beeper setup install desktop --channel nightly'],
   },
   {
-    "command": "targets create desktop",
-    "description": "Create a managed Desktop target"
+    command: 'setup install server',
+    description: 'Install Beeper Server locally',
+    examples: ['beeper setup install server', 'beeper setup install server --server-env staging'],
   },
   {
-    "command": "targets create server",
-    "description": "Create a managed Server target"
+    command: 'targets list',
+    description: 'List Beeper targets',
+    examples: ['beeper targets list', 'beeper targets list --json'],
   },
   {
-    "command": "targets add remote",
-    "description": "Add a remote Beeper target"
+    command: 'targets add desktop',
+    description: 'Add a managed Beeper Desktop target',
+    examples: ['beeper targets add desktop work --default'],
   },
   {
-    "command": "targets use",
-    "description": "Set the default target"
+    command: 'targets add server',
+    description: 'Add a managed Beeper Server target',
+    examples: ['beeper targets add server prod --server-env production --default'],
   },
   {
-    "command": "targets show",
-    "description": "Show target details"
+    command: 'targets add remote',
+    description: 'Add a remote Beeper Desktop or Server target',
+    examples: ['beeper targets add remote work https://desktop.example.com --default'],
   },
   {
-    "command": "targets status",
-    "description": "Check target reachability"
+    command: 'targets use',
+    description: 'Set the default target',
+    examples: ['beeper targets use work'],
   },
   {
-    "command": "targets start",
-    "description": "Start a managed target"
+    command: 'targets show',
+    description: 'Show target details',
+    examples: ['beeper targets show', 'beeper targets show work'],
   },
   {
-    "command": "targets stop",
-    "description": "Stop a managed target"
+    command: 'targets status',
+    description: 'Check target reachability',
+    examples: ['beeper targets status', 'beeper targets status work --json'],
   },
   {
-    "command": "targets restart",
-    "description": "Restart a managed target"
+    command: 'targets start',
+    description: 'Start a managed target',
+    examples: ['beeper targets start work'],
   },
   {
-    "command": "targets logs",
-    "description": "Print managed target logs"
+    command: 'targets stop',
+    description: 'Stop a managed target',
+    examples: ['beeper targets stop work'],
   },
   {
-    "command": "targets enable",
-    "description": "Start a managed target at login"
+    command: 'targets restart',
+    description: 'Restart a managed target',
+    examples: ['beeper targets restart work'],
   },
   {
-    "command": "targets disable",
-    "description": "Stop starting a managed target at login"
+    command: 'targets logs',
+    description: 'Print managed target logs',
+    examples: ['beeper targets logs work'],
   },
   {
-    "command": "targets remove",
-    "description": "Remove a target"
+    command: 'targets enable',
+    description: 'Start a managed target at login',
+    examples: ['beeper targets enable work'],
   },
   {
-    "command": "auth status",
-    "description": "Show authentication state"
+    command: 'targets disable',
+    description: 'Stop starting a managed target at login',
+    examples: ['beeper targets disable work'],
   },
   {
-    "command": "auth logout",
-    "description": "Clear stored authentication"
+    command: 'targets remove',
+    description: 'Remove a target',
+    examples: ['beeper targets remove work'],
   },
   {
-    "command": "verify",
-    "description": "Continue device verification"
+    command: 'auth status',
+    description: 'Show local auth status and token metadata',
+    examples: ['beeper auth status', 'beeper auth status --json'],
   },
   {
-    "command": "verify status",
-    "description": "Show encryption readiness"
+    command: 'auth logout',
+    description: 'Clear stored authentication',
+    examples: ['beeper auth logout'],
   },
   {
-    "command": "verify approve",
-    "description": "Approve a verification request"
+    command: 'auth verify',
+    description: 'Continue (or start) a device verification flow interactively',
+    examples: ['beeper auth verify', 'beeper auth verify --user @alice:beeper.com'],
   },
   {
-    "command": "verify recovery-key",
-    "description": "Unlock encrypted messages with a recovery key"
+    command: 'auth verify status',
+    description: 'Show encryption readiness',
+    examples: ['beeper auth verify status --json'],
   },
   {
-    "command": "verify reset-recovery-key",
-    "description": "Create a new recovery key"
+    command: 'auth verify approve',
+    description: 'Approve a pending device verification request',
+    examples: ['beeper auth verify approve --id active'],
   },
   {
-    "command": "verify cancel",
-    "description": "Cancel device verification"
+    command: 'auth verify recovery-key',
+    description: 'Unlock encrypted messages with a recovery key',
+    examples: ['beeper auth verify recovery-key --code ABCD-EFGH-IJKL'],
   },
   {
-    "command": "verify list",
-    "description": "List active verification work"
+    command: 'auth verify reset-recovery-key',
+    description: 'Create a new encrypted-messages recovery key',
+    examples: ['beeper auth verify reset-recovery-key'],
   },
   {
-    "command": "verify start",
-    "description": "Start device verification"
+    command: 'auth verify cancel',
+    description: 'Cancel an in-progress device verification',
+    examples: ['beeper auth verify cancel'],
   },
   {
-    "command": "verify show",
-    "description": "Show active verification details"
+    command: 'auth verify list',
+    description: 'List active verification work',
+    examples: ['beeper auth verify list'],
   },
   {
-    "command": "verify sas",
-    "description": "Start emoji verification"
+    command: 'auth verify start',
+    description: 'Start a device verification request',
+    examples: ['beeper auth verify start --user @alice:beeper.com'],
   },
   {
-    "command": "verify sas confirm",
-    "description": "Confirm emoji verification"
+    command: 'auth verify show',
+    description: 'Show active verification details',
+    examples: ['beeper auth verify show --json'],
   },
   {
-    "command": "verify qr scan",
-    "description": "Submit a scanned QR payload"
+    command: 'auth verify sas',
+    description: 'Start short-authentication-string (emoji) verification',
+    examples: ['beeper auth verify sas'],
   },
   {
-    "command": "verify qr confirm-scanned",
-    "description": "Confirm a QR scan"
+    command: 'auth verify sas confirm',
+    description: 'Confirm short-authentication-string (emoji) verification',
+    examples: ['beeper auth verify sas confirm'],
   },
   {
-    "command": "accounts list",
-    "description": "List connected accounts"
+    command: 'auth verify qr scan',
+    description: 'Submit a scanned QR-code verification payload',
+    examples: ['beeper auth verify qr scan --payload "..."'],
   },
   {
-    "command": "accounts add",
-    "description": "Add a Beeper account"
+    command: 'auth verify qr confirm-scanned',
+    description: 'Confirm that the other device scanned your QR code',
+    examples: ['beeper auth verify qr confirm-scanned'],
   },
   {
-    "command": "accounts show",
-    "description": "Show account details"
+    command: 'accounts list',
+    description: 'List connected accounts',
+    examples: ['beeper accounts list', 'beeper accounts list --account whatsapp --json'],
   },
   {
-    "command": "accounts remove",
-    "description": "Remove an account"
+    command: 'accounts add',
+    description: 'Add a Beeper account by network type',
+    examples: [
+      'beeper accounts add',
+      'beeper accounts add whatsapp',
+      'beeper accounts add discord --non-interactive --cookie sessiontoken=...',
+    ],
   },
   {
-    "command": "accounts use",
-    "description": "Select an account"
+    command: 'accounts show',
+    description: 'Show account details',
+    examples: ['beeper accounts show whatsapp-main'],
   },
   {
-    "command": "chats list",
-    "description": "List chats"
+    command: 'accounts remove',
+    description: 'Remove an account',
+    examples: ['beeper accounts remove whatsapp-main'],
   },
   {
-    "command": "chats search",
-    "description": "Search chats"
+    command: 'accounts use',
+    description: 'Select a default account for account-scoped commands',
+    examples: ['beeper accounts use whatsapp-main'],
   },
   {
-    "command": "chats show",
-    "description": "Show chat details"
+    command: 'chats list',
+    description: 'List chats',
+    examples: [
+      'beeper chats list',
+      'beeper chats list --pinned --limit 50',
+      'beeper chats list --unread --no-muted --json',
+    ],
   },
   {
-    "command": "chats start",
-    "description": "Start a chat"
+    command: 'chats search',
+    description: 'Search chats',
+    examples: ['beeper chats search Family'],
   },
   {
-    "command": "chats archive",
-    "description": "Archive a chat"
+    command: 'chats show',
+    description: 'Show chat details',
+    examples: ['beeper chats show --chat "Family"', 'beeper chats show --chat \'!abc:beeper.com\''],
   },
   {
-    "command": "chats unarchive",
-    "description": "Unarchive a chat"
+    command: 'chats start',
+    description: 'Start a chat',
+    examples: ['beeper chats start +15551234567', 'beeper chats start @alice:beeper.com --title "Alice"'],
   },
   {
-    "command": "chats pin",
-    "description": "Pin a chat"
+    command: 'chats archive',
+    description: 'Archive a chat',
+    examples: ['beeper chats archive --chat "Family"'],
   },
   {
-    "command": "chats unpin",
-    "description": "Unpin a chat"
+    command: 'chats unarchive',
+    description: 'Unarchive a chat',
+    examples: ['beeper chats unarchive --chat "Family"'],
   },
   {
-    "command": "chats mute",
-    "description": "Mute a chat"
+    command: 'chats pin',
+    description: 'Pin a chat',
+    examples: ['beeper chats pin --chat "Family"'],
   },
   {
-    "command": "chats unmute",
-    "description": "Unmute a chat"
+    command: 'chats unpin',
+    description: 'Unpin a chat',
+    examples: ['beeper chats unpin --chat "Family"'],
   },
   {
-    "command": "chats mark-read",
-    "description": "Mark a chat read"
+    command: 'chats mute',
+    description: 'Mute a chat',
+    examples: ['beeper chats mute --chat "Family" --duration 8h'],
   },
   {
-    "command": "chats mark-unread",
-    "description": "Mark a chat unread"
+    command: 'chats unmute',
+    description: 'Unmute a chat',
+    examples: ['beeper chats unmute --chat "Family"'],
   },
   {
-    "command": "chats low-priority",
-    "description": "Move a chat to Low Priority"
+    command: 'chats mark-read',
+    description: 'Mark a chat as read',
+    examples: ['beeper chats mark-read --chat "Family"'],
   },
   {
-    "command": "chats inbox",
-    "description": "Move a chat to the inbox"
+    command: 'chats mark-unread',
+    description: 'Mark a chat as unread',
+    examples: ['beeper chats mark-unread --chat "Family"'],
   },
   {
-    "command": "chats notify-anyway",
-    "description": "Notify a muted chat"
+    command: 'chats priority',
+    description: 'Move a chat to the Inbox or Low Priority',
+    examples: [
+      'beeper chats priority --chat "Family" --level inbox',
+      'beeper chats priority --chat "Marketing" --level low',
+    ],
   },
   {
-    "command": "chats title",
-    "description": "Set a chat title"
+    command: 'chats notify-anyway',
+    description: 'Notify a muted chat',
+    examples: ['beeper chats notify-anyway --chat "Family"'],
   },
   {
-    "command": "chats description",
-    "description": "Set a chat description"
+    command: 'chats rename',
+    description: 'Rename a chat',
+    examples: ['beeper chats rename --chat "Family" --title "Family ❤"'],
   },
   {
-    "command": "chats avatar",
-    "description": "Set a chat avatar"
+    command: 'chats description',
+    description: 'Set a chat description',
+    examples: [
+      'beeper chats description --chat "Team" --description "Engineering chat"',
+      'beeper chats description --chat "Team" --clear',
+    ],
   },
   {
-    "command": "chats draft",
-    "description": "Set a chat draft"
+    command: 'chats avatar',
+    description: 'Set a chat avatar',
+    examples: ['beeper chats avatar --chat "Team" --file ./team.png'],
   },
   {
-    "command": "chats clear-draft",
-    "description": "Clear a chat draft"
+    command: 'chats draft',
+    description: 'Set or clear a chat draft',
+    examples: [
+      'beeper chats draft --chat "Family" --text "on my way"',
+      'beeper chats draft --chat "Family" --clear',
+    ],
   },
   {
-    "command": "chats expiry",
-    "description": "Set disappearing-message expiry"
+    command: 'chats expiry',
+    description: 'Set disappearing-message expiry',
+    examples: ['beeper chats expiry --chat "Friends" --seconds 86400'],
   },
   {
-    "command": "chats remind",
-    "description": "Set a chat reminder"
+    command: 'chats remind',
+    description: 'Set a chat reminder',
+    examples: [
+      'beeper chats remind --chat "Family" --when 2026-06-01T09:00:00Z',
+      'beeper chats remind --chat "Family" --when 2026-06-01T09:00:00Z --dismiss-on-message',
+    ],
   },
   {
-    "command": "chats unremind",
-    "description": "Clear a chat reminder"
+    command: 'chats unremind',
+    description: 'Clear a chat reminder',
+    examples: ['beeper chats unremind --chat "Family"'],
   },
   {
-    "command": "chats focus",
-    "description": "Focus Beeper Desktop"
+    command: 'chats focus',
+    description: 'Focus Beeper Desktop on a chat',
+    examples: ['beeper chats focus --chat "Family"'],
   },
   {
-    "command": "messages list",
-    "description": "List chat messages"
+    command: 'chats label',
+    description: 'Add or remove a label on a chat',
+    examples: [
+      'beeper chats label --chat "Family" --label personal',
+      'beeper chats label --chat "Family" --label personal --remove',
+    ],
   },
   {
-    "command": "messages search",
-    "description": "Search messages"
+    command: 'messages list',
+    description: 'List chat messages',
+    examples: ['beeper messages list --chat "Family" --limit 50'],
   },
   {
-    "command": "messages show",
-    "description": "Show one message"
+    command: 'messages search',
+    description: 'Search messages across chats',
+    examples: [
+      'beeper messages search invoice',
+      'beeper messages search --chat "Family" --sender me --media image',
+    ],
   },
   {
-    "command": "messages context",
-    "description": "Show message context"
+    command: 'messages show',
+    description: 'Show one message',
+    examples: ['beeper messages show --chat "Family" --id <messageID>'],
   },
   {
-    "command": "messages edit",
-    "description": "Edit a message"
+    command: 'messages context',
+    description: 'Show message context',
+    examples: ['beeper messages context --chat "Family" --id <messageID> --before 5 --after 5'],
   },
   {
-    "command": "messages delete",
-    "description": "Delete a message"
+    command: 'messages edit',
+    description: 'Edit a message',
+    examples: ['beeper messages edit --chat "Family" --id <messageID> --message "fixed"'],
   },
   {
-    "command": "messages react",
-    "description": "React to a message"
+    command: 'messages delete',
+    description: 'Delete a message',
+    examples: ['beeper messages delete --chat "Family" --id <messageID> --for-everyone'],
   },
   {
-    "command": "messages unreact",
-    "description": "Remove a reaction"
+    command: 'messages react',
+    description: 'React to a message',
+    examples: ['beeper messages react --chat "Family" --id <messageID> --reaction "🎉"'],
   },
   {
-    "command": "send text",
-    "description": "Send text"
+    command: 'messages unreact',
+    description: 'Remove a reaction',
+    examples: ['beeper messages unreact --chat "Family" --id <messageID> --reaction "🎉"'],
   },
   {
-    "command": "send file",
-    "description": "Send a file"
+    command: 'messages export',
+    description: 'Export one chat\'s messages to JSON',
+    examples: [
+      'beeper messages export --chat "Family" --output family.json',
+      'beeper messages export --chat "Family" --after 2026-01-01 --output -',
+    ],
   },
   {
-    "command": "contacts list",
-    "description": "List contacts"
+    command: 'send text',
+    description: 'Send text',
+    examples: [
+      'beeper send text --to "Family" --message "on my way"',
+      'beeper send text --to +15551234567 --message "hi" --reply-to <messageID>',
+    ],
   },
   {
-    "command": "contacts search",
-    "description": "Search contacts"
+    command: 'send file',
+    description: 'Send a file',
+    examples: ['beeper send file --to "Family" --file ./photo.jpg --caption "from today"'],
   },
   {
-    "command": "contacts show",
-    "description": "Show contact details"
+    command: 'send react',
+    description: 'Send a reaction to a message (alias of messages react)',
+    examples: ['beeper send react --to "Family" --id <messageID> --reaction "🎉"'],
   },
   {
-    "command": "media download",
-    "description": "Download message media"
+    command: 'presence',
+    description: 'Send a typing (or paused) indicator to a chat',
+    examples: ['beeper presence --chat "Family"', 'beeper presence --chat "Family" --state paused'],
   },
   {
-    "command": "export",
-    "description": "Export Beeper data"
+    command: 'contacts list',
+    description: 'List contacts',
+    examples: ['beeper contacts list --account whatsapp --query alice'],
   },
   {
-    "command": "watch",
-    "description": "Stream Desktop API events"
+    command: 'contacts search',
+    description: 'Search contacts',
+    examples: ['beeper contacts search alice'],
   },
   {
-    "command": "rpc",
-    "description": "Run JSONL command RPC"
+    command: 'contacts show',
+    description: 'Show contact details',
+    examples: ['beeper contacts show "Alice" --account whatsapp'],
   },
   {
-    "command": "man",
-    "description": "Print the command manual"
+    command: 'labels list',
+    description: 'List Beeper chat labels',
+    examples: ['beeper labels list', 'beeper labels list --json'],
   },
   {
-    "command": "doctor",
-    "description": "Check target readiness"
+    command: 'labels show',
+    description: 'Show details for one label',
+    examples: ['beeper labels show personal'],
   },
   {
-    "command": "status",
-    "description": "Show target status"
+    command: 'media download',
+    description: 'Download message media',
+    examples: [
+      'beeper media download mxc://beeper.com/abc --out ./downloads',
+      'beeper media download mxc://beeper.com/abc -o - > photo.jpg',
+    ],
   },
   {
-    "command": "docs",
-    "description": "Open Beeper CLI docs"
+    command: 'export',
+    description: 'Export accounts, chats, messages, Markdown transcripts, and attachments',
+    examples: ['beeper export --out ./beeper-export', 'beeper export --chat "Family" --out ./family'],
   },
   {
-    "command": "version",
-    "description": "Print CLI version"
+    command: 'watch',
+    description: 'Stream Desktop API WebSocket events',
+    examples: [
+      'beeper watch',
+      'beeper watch --chat \'!abc:beeper.com\' --json',
+      'beeper watch --webhook https://example.com/hook --webhook-secret "$BEEPER_WEBHOOK_SECRET"',
+    ],
   },
   {
-    "command": "completion",
-    "description": "Print shell completion help"
+    command: 'rpc',
+    description: 'Run newline-delimited JSON command RPC over stdin/stdout',
+    examples: ['printf \'{"id":1,"command":"chats list --json"}\\n\' | beeper rpc'],
   },
   {
-    "command": "install desktop",
-    "description": "Install Beeper Desktop"
+    command: 'man',
+    description: 'Print the command manual',
+    examples: ['beeper man', 'beeper man --json'],
   },
   {
-    "command": "install server",
-    "description": "Install Beeper Server"
+    command: 'doctor',
+    description: 'Probe the target live and report diagnostics',
+    examples: ['beeper doctor', 'beeper doctor --json'],
   },
   {
-    "command": "update",
-    "description": "Check for updates"
+    command: 'status',
+    description: 'Print a snapshot of the selected target and readiness',
+    examples: ['beeper status', 'beeper status --json'],
   },
   {
-    "command": "config get",
-    "description": "Print CLI configuration"
+    command: 'docs',
+    description: 'Open Beeper CLI docs',
+    examples: ['beeper docs'],
   },
   {
-    "command": "config set",
-    "description": "Set CLI configuration"
+    command: 'version',
+    description: 'Print CLI version',
+    examples: ['beeper version'],
   },
   {
-    "command": "config path",
-    "description": "Print the config path"
+    command: 'completion',
+    description: 'Print shell completion help',
+    examples: ['beeper completion'],
   },
   {
-    "command": "config reset",
-    "description": "Reset CLI configuration"
+    command: 'update',
+    description: 'Check and install Beeper updates',
+    examples: ['beeper update --check', 'beeper update --cli', 'beeper update --server'],
   },
   {
-    "command": "api get",
-    "description": "Call a raw GET endpoint"
+    command: 'config get',
+    description: 'Print CLI configuration',
+    examples: ['beeper config get', 'beeper config get defaultTarget'],
   },
   {
-    "command": "api post",
-    "description": "Call a raw POST endpoint"
-  }
+    command: 'config set',
+    description: 'Set a CLI configuration value',
+    examples: ['beeper config set defaultTarget work'],
+  },
+  {
+    command: 'config path',
+    description: 'Print the CLI config path',
+    examples: ['beeper config path'],
+  },
+  {
+    command: 'config reset',
+    description: 'Reset CLI configuration',
+    examples: ['beeper config reset'],
+  },
+  {
+    command: 'api get',
+    description: 'Call a raw Desktop API GET path',
+    examples: ['beeper api get /v1/info', 'beeper api get /v1/chats --json'],
+  },
+  {
+    command: 'api post',
+    description: 'Call a raw Desktop API POST path with a JSON body',
+    examples: ['beeper api post /v1/chats/abc/read --body \'{"messageID":"x"}\''],
+  },
 ]

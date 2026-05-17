@@ -2,15 +2,15 @@ import { Command, Flags } from '@oclif/core'
 
 export abstract class BeeperCommand extends Command {
   static override baseFlags = {
-    'base-url': Flags.string({ description: 'Beeper API base URL (overrides target)' }),
-    target: Flags.string({ char: 't', description: 'Beeper target' }),
-    debug: Flags.boolean({ default: false, description: 'Print SDK debug logging' }),
-    events: Flags.boolean({ default: false, description: 'Emit NDJSON lifecycle events on stderr' }),
-    full: Flags.boolean({ default: false, description: 'Disable output truncation' }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-    'read-only': Flags.boolean({ default: false, description: 'Reject commands that modify Beeper or local CLI state' }),
+    'base-url': Flags.string({ description: 'Beeper Desktop API base URL (overrides --target)' }),
+    target: Flags.string({ char: 't', description: 'Named Beeper target to use for this command' }),
+    debug: Flags.boolean({ default: false, description: 'Print SDK debug logging on stderr' }),
+    events: Flags.boolean({ default: false, description: 'Emit NDJSON lifecycle events on stderr (long-running commands)' }),
+    full: Flags.boolean({ default: false, description: 'Disable text-output truncation; print full IDs and bodies' }),
+    json: Flags.boolean({ default: false, description: 'Print machine-readable JSON envelope on stdout' }),
+    'read-only': Flags.boolean({ default: false, description: 'Reject commands that would modify Beeper or local CLI state (or set BEEPER_READONLY=1)' }),
     timeout: Flags.string({ description: 'Maximum time to wait, such as 30s, 2m, or 1h' }),
-    yes: Flags.boolean({ char: 'y', default: false, description: 'Skip confirmation prompts' }),
+    yes: Flags.boolean({ char: 'y', default: false, description: 'Skip interactive confirmation prompts' }),
   }
 
   protected override async catch(error: Error & { exitCode?: number }): Promise<void> {
@@ -32,7 +32,7 @@ export abstract class BeeperCommand extends Command {
 }
 
 export function ensureWritable(flags: { 'read-only'?: boolean }): void {
-  const env = process.env.BEEPER_CLI_READONLY ?? process.env.BEEPER_READONLY
+  const env = process.env.BEEPER_READONLY
   const readOnly = flags['read-only'] || ['1', 'true', 'yes', 'on'].includes(String(env ?? '').toLowerCase())
   if (readOnly) throw new Error('read-only mode: command would modify Beeper or local CLI state')
 }

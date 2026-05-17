@@ -18,6 +18,7 @@ const commandList = commands.map(command => {
   return `| \`${id}\` | ${escapeTable(text(command.summary || command.description || ''))} |`;
 });
 
+const examplesByID = new Map(commandManifest.map(item => [item.command, item.examples ?? []]));
 const commandSections = commands.map(command => commandSection(command)).join('\n\n');
 
 const readme = `# Beeper CLI - Beeper from your terminal
@@ -33,14 +34,14 @@ Command manual: \`beeper man\`
 
 ## Features
 
-- **Setup + readiness** - \`setup\`, \`status\`, \`doctor\`, and verification commands guide a target from login through encrypted-message readiness.
+- **Setup + readiness** - \`setup\`, \`status\`, \`doctor\`, and \`auth verify\` guide a target from login through encrypted-message readiness.
 - **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper targets with one selected default.
 - **Accounts** - list connected networks, add accounts, switch defaults, inspect details, and remove accounts.
-- **Chats + contacts** - list, search, start, archive, pin, mute, mark, rename, and inspect chats across accounts.
-- **Messages + media** - list, search, show, edit, delete, react, send text/files, and download message media.
-- **Exports** - write accounts, chats, messages, Markdown transcripts, HTML transcripts, and attachments to disk.
-- **Automation** - \`--json\` everywhere, NDJSON \`--events\`, \`rpc\` over stdin/stdout, and \`man --json\` for tool manifests.
-- **Safety** - \`--read-only\` rejects mutating commands, while raw API access remains explicit under \`api get\` and \`api post\`.
+- **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
+- **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
+- **Exports** - heavy \`export\` for full chats/transcripts/attachments and light \`messages export\` for single-chat JSON.
+- **Automation** - \`--json\` everywhere, NDJSON \`--events\`, \`watch\` (WS + outbound webhooks with HMAC), \`rpc\` over stdin/stdout, \`man --json\` for tool manifests.
+- **Safety** - \`--read-only\` rejects mutating commands; raw API access stays explicit under \`api get\` and \`api post\`.
 
 ## Install
 
@@ -104,7 +105,8 @@ Desktop on this device and offers to use the existing Desktop session. Use
 \`setup --local\` for the direct Desktop-session path, \`setup --oauth\` for the
 browser-authorized path, \`setup --remote URL\` for a remote Desktop or Server,
 and \`setup --server --install\` or \`setup --desktop --install\` to orchestrate
-installation and target setup.
+installation and target setup. To install runtimes directly: \`setup install desktop\`
+and \`setup install server\`.
 
 For non-interactive use, pass a token through the environment:
 
@@ -116,13 +118,14 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 
 | Area | Commands |
 | --- | --- |
-| **Setup** | \`setup\` · \`doctor\` · \`status\` · \`auth status\` · \`verify\` |
-| **Targets** | \`targets list\` · \`targets use\` · \`targets status\` · \`targets logs\` |
-| **Accounts** | \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts remove\` |
-| **Messaging** | \`chats list\` · \`messages list\` · \`send text\` · \`send file\` · \`media download\` |
-| **Contacts** | \`contacts list\` · \`contacts search\` · \`contacts show\` |
-| **Automation** | \`watch\` · \`rpc\` · \`man\` · \`api get\` · \`api post\` |
-| **Maintenance** | \`install desktop\` · \`install server\` · \`update\` · \`config\` · \`completion\` |
+| **Setup** | \`setup\` · \`setup install desktop\` · \`setup install server\` · \`status\` · \`doctor\` · \`auth status\` · \`auth verify\` |
+| **Targets** | \`targets list\` · \`targets add desktop\` · \`targets add server\` · \`targets add remote\` · \`targets use\` · \`targets status\` · \`targets logs\` |
+| **Accounts** | \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
+| **Messaging** | \`chats list\` · \`messages list\` · \`messages search\` · \`messages export\` · \`send text\` · \`send file\` · \`send react\` · \`presence\` · \`media download\` |
+| **Chat state** | \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats label\` · \`chats focus\` |
+| **Contacts + labels** | \`contacts list\` · \`contacts search\` · \`contacts show\` · \`labels list\` · \`labels show\` |
+| **Automation** | \`watch\` · \`watch --webhook\` · \`rpc\` · \`man\` · \`api get\` · \`api post\` |
+| **Maintenance** | \`update\` · \`config\` · \`completion\` · \`docs\` · \`version\` |
 
 Use \`beeper docs\` to open the CLI docs and \`beeper man\` to print the local
 command manual.
@@ -140,8 +143,19 @@ Default Desktop API target: \`http://127.0.0.1:23373\`.
 | --- | --- |
 | \`BEEPER_ACCESS_TOKEN\` | Bearer token. Overrides stored OAuth login. |
 | \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://127.0.0.1:23373\`. |
-| \`BEEPER_BASE_URL\` | SDK-compatible base URL fallback. |
+| \`BEEPER_READONLY\` | \`1\`/\`true\`/\`yes\`/\`on\` enables read-only mode. |
 | \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| \`0\` | Success. |
+| \`1\` | Generic runtime error. |
+| \`2\` | Usage error (parsing, validation, missing required flag/arg). |
+| Non-zero | Most failures use \`1\`; \`doctor\` reports \`1\` when readiness is not \`ready\`. |
+
+JSON output preserves the same envelope on failure: \`{"success":false,"data":null,"error":"..."}\` written to stderr.
 
 ## Addressing
 
@@ -233,6 +247,10 @@ function commandSection(command) {
     '```',
   ];
 
+  if (command.description && command.description !== command.summary) {
+    parts.push('', text(command.description));
+  }
+
   const args = Object.values(command.args || {});
   if (args.length > 0) {
     parts.push('', 'Arguments:', '', '| Name | Required | Description |', '| --- | --- | --- |');
@@ -247,6 +265,11 @@ function commandSection(command) {
     for (const flag of flags.sort((a, b) => a.name.localeCompare(b.name))) {
       parts.push(`| \`${flagLabel(flag)}\` | ${flag.type || 'boolean'} | ${escapeTable(flagDescription(flag))} |`);
     }
+  }
+
+  const examples = examplesByID.get(id) ?? [];
+  if (examples.length > 0) {
+    parts.push('', 'Examples:', '', '```sh', ...examples, '```');
   }
 
   const inherited = Object.values(command.flags || {}).filter(flag => globalFlags.has(flag.name));

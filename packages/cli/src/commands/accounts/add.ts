@@ -12,7 +12,7 @@ type AccountType = Bridge
 export default class AccountsAdd extends BeeperCommand {
   static override summary = 'Add a Beeper account'
   static override args = {
-    account: Args.string({ description: 'Account type to add, for example WhatsApp, Discord, or local-whatsapp' }),
+    type: Args.string({ description: 'Network type to add (e.g. whatsapp, discord, local-whatsapp). Omit to list available networks.' }),
   }
   static override flags = {
     cookie: Flags.string({ description: 'Cookie value for non-interactive login, in name=value form. Repeat for multiple cookies.', multiple: true }),
@@ -28,7 +28,7 @@ export default class AccountsAdd extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
 
-    if (!args.account) {
+    if (!args.type) {
       const bridges = await client.bridges.list()
       if (flags.json) {
         await printData(bridges, 'json')
@@ -40,7 +40,7 @@ export default class AccountsAdd extends BeeperCommand {
     }
 
     const bridges = await client.bridges.list()
-    const accountType = resolveAccountType(bridges.items, args.account)
+    const accountType = resolveAccountType(bridges.items, args.type)
     if (accountType.status !== 'available') {
       const suffix = accountType.statusText ? `: ${accountType.statusText}` : ''
       throw new Error(`${accountType.displayName} is not available${suffix}`)

@@ -5,7 +5,7 @@ import { exportBeeperData } from '../lib/export/index.js'
 import { resolveAccountIDs, resolveChatID } from '../lib/resolve.js'
 
 export default class Export extends BeeperCommand {
-  static override summary = 'Export accounts, chats, messages, Markdown transcripts, and attachments.'
+  static override summary = 'Export accounts, chats, messages, Markdown transcripts, and attachments'
   static override description = [
     'Creates a resumable Beeper Desktop export using the official Desktop API SDK.',
     'The export directory contains accounts.json, chats.json, manifest.json, and one directory per chat with chat.json, messages.json, messages.markdown, messages.html, downloaded attachments, and checkpoint state for interrupted runs.',

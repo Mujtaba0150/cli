@@ -2,12 +2,13 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { printData, printList } from '../../lib/output.js'
+import { printList } from '../../lib/output.js'
 import { listAccountIDs, resolveAccountIDs } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class ContactsSearch extends BeeperCommand {
-  static override summary = apiCopy.contacts.search
+  static override summary = 'Search contacts'
+  static override description = apiCopy.contacts.search
   static override args = {
     query: Args.string({ description: 'Contact search query', required: true }),
   }
@@ -37,11 +38,7 @@ export default class ContactsSearch extends BeeperCommand {
         done: value => `${value.length} match${value.length === 1 ? '' : 'es'} across ${accountIDs.length} account${accountIDs.length === 1 ? '' : 's'}`,
       })
       : await load()
-    if (flags.json) {
-      await printData({ items: results }, 'json')
-      return
-    }
-    await printList(results, 'human', {
+    await printList(results, flags.json ? 'json' : 'human', {
       title: 'No contacts matched',
       subtitle: `Nothing across your ${accountIDs.length} account${accountIDs.length === 1 ? '' : 's'} matched "${args.query}".`,
       suggestions: [

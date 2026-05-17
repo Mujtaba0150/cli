@@ -171,7 +171,7 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   if (targets.length === 1 && targets[0]) return withConfigAuth(targets[0], config)
   const desktopTarget = await readTarget(builtInDesktopTargetID)
   if (desktopTarget) return withConfigAuth(desktopTarget, config)
-  return { id: builtInDesktopTargetID, type: 'desktop', name: 'Beeper Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
+  return { id: builtInDesktopTargetID, type: 'desktop', name: 'Beeper Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
 }
 
 function withConfigAuth(target: Target, config: Config): Target {

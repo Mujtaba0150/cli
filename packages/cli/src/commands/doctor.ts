@@ -4,7 +4,8 @@ import { resolveTarget } from '../lib/targets.js'
 import { targetLiveStatus } from '../lib/target-status.js'
 import { printData } from '../lib/output.js'
 export default class Doctor extends BeeperCommand {
-  static override summary = 'Check target readiness'
+  static override summary = 'Probe the target live and report diagnostics'
+  static override description = 'Active reachability check plus readiness diagnostics. Exits non-zero when the target is not ready. For a cheap snapshot use `beeper status`.'
   async run(): Promise<void> {
     const { flags } = await this.parse(Doctor)
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })

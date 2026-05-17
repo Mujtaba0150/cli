@@ -1,13 +1,14 @@
-import { Args, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { collectPage, printData, printList } from '../../lib/output.js'
+import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class ContactsList extends BeeperCommand {
-  static override summary = apiCopy.contacts.list
+  static override summary = 'List contacts'
+  static override description = apiCopy.contacts.list
   static override args = {}
 
   static override flags = {
@@ -39,17 +40,10 @@ export default class ContactsList extends BeeperCommand {
       })
       : await load()
     if (flags.ids) {
-      for (const item of items) {
-        const id = item.userID ?? item.id
-        if (id) process.stdout.write(`${String(id)}\n`)
-      }
+      printIDs(items.map(item => ({ id: item.userID ?? item.id })))
       return
     }
-    if (flags.json) {
-      await printData({ items }, 'json')
-      return
-    }
-    await printList(items, 'human', {
+    await printList(items, flags.json ? 'json' : 'human', {
       title: 'No contacts found',
       subtitle: flags.query ? `Nothing matched "${flags.query}".` : 'This account has no contacts to list.',
       suggestions: [
