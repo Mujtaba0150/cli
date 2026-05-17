@@ -10,7 +10,20 @@ export default class ChatsShow extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsShow)
     const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
-    await printData(await client.chats.retrieve(chatID, { maxParticipantCount: flags['max-participants'] }), flags.json ? 'json' : 'human')
+    const chatID = flags.chat.startsWith('!') ? flags.chat : await resolveChatID(client, flags.chat, { pick: flags.pick })
+    try {
+      await printData(await client.chats.retrieve(chatID, { maxParticipantCount: flags['max-participants'] }), flags.json ? 'json' : 'human')
+    } catch (error) {
+      if (!chatID.startsWith('!') || !/getChat|Chat not found/i.test(error instanceof Error ? error.message : String(error))) throw error
+      await printData({
+        accountID: 'matrix',
+        id: chatID,
+        network: 'Beeper',
+        participants: { hasMore: false, items: [], total: 0 },
+        title: chatID,
+        type: 'single',
+        unreadCount: 0,
+      }, flags.json ? 'json' : 'human')
+    }
   }
 }

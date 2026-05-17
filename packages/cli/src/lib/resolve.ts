@@ -150,6 +150,7 @@ function chatInputID(chat: AnyRecord): string {
 
 export function userQueryFromInput(input: string): AnyRecord {
   const trimmed = input.trim()
+  if (/^@[^:]+:.+/.test(trimmed)) return { id: trimmed, username: trimmed }
   if (trimmed.includes('@')) return { email: trimmed, username: trimmed }
   if (/^\+?[\d\s().-]{5,}$/.test(trimmed)) return { phoneNumber: trimmed }
   return { fullName: trimmed, username: trimmed, id: trimmed }

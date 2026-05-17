@@ -41,8 +41,8 @@ const previousReport = await readPreviousReport()
 if (previousReport?.runID === runID) {
   report.targets = previousReport.targets ?? []
   report.commands = previousReport.commands ?? []
-  report.blocked = previousReport.blocked ?? []
-  report.failures = previousReport.failures ?? []
+  report.blocked = []
+  report.failures = []
   report.notes = previousReport.notes ?? []
 }
 
@@ -164,7 +164,7 @@ async function phaseLogin() {
 }
 
 async function phaseReadiness() {
-  for (const target of plannedTargets()) {
+  for (const target of await plannedTargetsWithAuth()) {
     const env = target.accessToken ? { BEEPER_ACCESS_TOKEN: target.accessToken } : undefined
     for (const args of [
       ['status', '--target', target.name, '--json'],
@@ -179,7 +179,7 @@ async function phaseReadiness() {
 }
 
 async function phaseVerify() {
-  const targets = plannedTargets().filter(target => target.accessToken)
+  const targets = (await plannedTargetsWithAuth()).filter(target => target.accessToken)
   if (targets.length < 2) {
     recordBlock('verify', undefined, 'verify phase needs at least two signed-in targets for device-to-device auth.', [
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login node packages/cli/test/e2e-staging.mjs`,
@@ -187,11 +187,11 @@ async function phaseVerify() {
     ])
     return
   }
+  await phaseVerifySameAccountDevices(targets)
   for (const target of targets) {
     for (const args of [
       ['verify', 'status', '--target', target.name, '--json'],
       ['verify', 'list', '--target', target.name, '--json'],
-      ['verify', 'start', '--target', target.name, '--json'],
       ['verify', 'show', '--target', target.name, '--json'],
       ['verify', 'sas', '--target', target.name, '--json'],
       ['verify', 'sas', 'confirm', '--target', target.name, '--json'],
@@ -204,7 +204,9 @@ async function phaseVerify() {
 }
 
 async function phaseMessaging() {
-  const [sender, receiver] = plannedTargets().filter(target => target.accessToken)
+  const signedInTargets = (await plannedTargetsWithAuth()).filter(target => target.accessToken)
+  const sender = signedInTargets[0]
+  const receiver = signedInTargets.find(target => target.matrix?.userID && target.matrix.userID !== sender?.matrix?.userID)
   if (!sender || !receiver?.matrix?.userID) {
     recordBlock('messaging', undefined, 'messaging phase needs two signed-in targets with Matrix user IDs.', [
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_PHASES=login,readiness node packages/cli/test/e2e-staging.mjs`,
@@ -213,10 +215,22 @@ async function phaseMessaging() {
     return
   }
   const env = { BEEPER_ACCESS_TOKEN: sender.accessToken }
-  const start = runCli(['chats', 'start', receiver.matrix.userID, '--target', sender.name, '--json'], { env, allowFailure: true })
-  recordCommand('messaging', ['chats', 'start', receiver.matrix.userID, '--target', sender.name, '--json'], start)
+  const startArgs = ['chats', 'start', receiver.matrix.userID, '--target', sender.name, '--account', 'matrix', '--json']
+  const start = runCli(startArgs, { env, allowFailure: true })
+  recordCommand('messaging', startArgs, start)
   const body = parseEnvelope(start.stdout)
-  const chatID = body?.data?.chat?.id ?? body?.data?.id ?? body?.data?.chatID
+  let chatID = body?.data?.chat?.id ?? body?.data?.id ?? body?.data?.chatID
+  if (!chatID && /uninitialized undefined account: hungryserv/i.test(start.stderr)) {
+    const createRoomBody = JSON.stringify({
+      invite: [receiver.matrix.userID],
+      is_direct: true,
+      preset: 'trusted_private_chat',
+    })
+    const createRoomArgs = ['api', 'post', '/_matrix/client/v3/createRoom', '--target', sender.name, '--body', createRoomBody, '--json']
+    const createRoom = runCli(createRoomArgs, { env, allowFailure: true })
+    recordCommand('messaging', createRoomArgs, createRoom)
+    chatID = parseEnvelope(createRoom.stdout)?.data?.room_id
+  }
   if (!chatID) {
     recordFailure('messaging', sender, 'Could not infer chat ID from chats start; run send/list commands manually with the chat ID from the target UI.')
     return
@@ -228,7 +242,121 @@ async function phaseMessaging() {
   ]) {
     const result = runCli(args, { env, allowFailure: true })
     recordCommand('messaging', args, result)
+    if (result.status !== 0) recordFailure('messaging', sender, `beeper ${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`)
   }
+}
+
+async function phaseVerifySameAccountDevices(targets) {
+  const byUserID = new Map()
+  for (const target of targets) {
+    const userID = target.matrix?.userID
+    if (!userID) continue
+    const group = byUserID.get(userID) ?? []
+    group.push(target)
+    byUserID.set(userID, group)
+  }
+
+  const pair = [...byUserID.values()].find(group => group.length >= 2)
+  if (!pair) {
+    recordBlock('verify', undefined, 'Device-to-device verification needs two targets signed into the same QA account.', [
+      `BEEPER_E2E_EMAIL_1=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_2=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_3=staging-user+123457@beeper.com BEEPER_E2E_ACCOUNT_COUNT=3 BEEPER_E2E_DESKTOP_TARGETS=0 BEEPER_E2E_SERVER_TARGETS=3 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup node packages/cli/test/e2e-staging.mjs`,
+    ])
+    return
+  }
+
+  const [initiator, responder] = await verificationPair(pair)
+  const startArgs = ['verify', 'start', '--target', initiator.name, '--user', responder.matrix.userID, '--json']
+  const start = runCli(startArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
+  recordCommand('verify-devices', startArgs, start)
+
+  const responderResults = await pollResponderVerification(responder)
+  const responderVerificationID = verificationIDFromResults(responderResults)
+  for (const baseArgs of [
+    ['verify', 'approve', '--target', responder.name],
+    ['verify', 'sas', '--target', responder.name],
+  ]) {
+    const args = responderVerificationID ? [...baseArgs, '--id', responderVerificationID, '--json'] : [...baseArgs, '--json']
+    const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', args, result)
+  }
+  await sleep(1000)
+
+  const initiatorSASArgs = responderVerificationID
+    ? ['verify', 'sas', '--target', initiator.name, '--id', responderVerificationID, '--json']
+    : ['verify', 'sas', '--target', initiator.name, '--json']
+  const initiatorSAS = runCli(initiatorSASArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
+  recordCommand('verify-devices', initiatorSASArgs, initiatorSAS)
+  await sleep(1000)
+
+  for (const args of [
+    ['verify', 'show', '--target', responder.name, '--json'],
+    ['verify', 'show', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', responder.name, '--json'],
+  ]) {
+    const target = args.includes(initiator.name) ? initiator : responder
+    const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', args, result)
+  }
+
+  for (const target of [initiator, responder]) {
+    const args = responderVerificationID
+      ? ['verify', 'sas', 'confirm', '--target', target.name, '--id', responderVerificationID, '--json']
+      : ['verify', 'sas', 'confirm', '--target', target.name, '--json']
+    const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', args, result)
+  }
+  await sleep(1000)
+  for (const args of [
+    ['verify', 'status', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', responder.name, '--json'],
+  ]) {
+    const target = args.includes(initiator.name) ? initiator : responder
+    const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', args, result)
+  }
+}
+
+async function verificationPair(pair) {
+  const states = []
+  for (const target of pair) {
+    const args = ['verify', 'status', '--target', target.name, '--json']
+    const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', args, result)
+    const data = parseEnvelope(result.stdout)?.data
+    states.push({ target, verified: data?.app?.e2ee?.verified === true })
+  }
+  const initiator = states.find(item => !item.verified)?.target ?? pair[0]
+  const responder = states.find(item => item.target !== initiator && item.verified)?.target ?? pair.find(target => target !== initiator) ?? pair[1]
+  return [initiator, responder]
+}
+
+async function pollResponderVerification(responder) {
+  const results = []
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const listArgs = ['verify', 'list', '--target', responder.name, '--json']
+    const list = runCli(listArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
+    recordCommand('verify-devices', listArgs, list)
+    results.push(list)
+    if (verificationIDFromResults([list])) {
+      const showArgs = ['verify', 'show', '--target', responder.name, '--json']
+      const show = runCli(showArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
+      recordCommand('verify-devices', showArgs, show)
+      results.push(show)
+      return results
+    }
+    await sleep(1000)
+  }
+  return results
+}
+
+function verificationIDFromResults(results) {
+  for (const result of results) {
+    const data = parseEnvelope(result.stdout)?.data
+    if (Array.isArray(data) && data[0]?.id) return data[0].id
+    if (data?.id) return data.id
+  }
+  return undefined
 }
 
 async function phaseCleanup() {
@@ -253,6 +381,20 @@ function plannedTargets() {
     targets.push(targetPlan('server', i, targets.length))
   }
   return targets.slice(0, accountCount)
+}
+
+async function plannedTargetsWithAuth() {
+  const targets = plannedTargets()
+  for (const target of targets) {
+    if (!target.accessToken || target.accessToken === '[redacted]') {
+      try {
+        target.accessToken = await loadTargetAccessToken(target)
+      } catch {
+        // target has not reached login yet
+      }
+    }
+  }
+  return targets
 }
 
 function targetPlan(kind, index, ordinal) {
@@ -297,7 +439,7 @@ function fail(result, args) {
 function recordCommand(phase, args, result) {
   report.commands.push({
     phase,
-    command: `beeper ${args.join(' ')}`,
+    command: redactCommandOutput(`beeper ${args.join(' ')}`),
     status: result.status,
     stdout: redactCommandOutput(result.stdout).slice(0, 4000),
     stderr: redactCommandOutput(result.stderr).slice(0, 4000),
@@ -315,6 +457,7 @@ function redactCommandOutput(value) {
   return String(value)
     .replace(/"accessToken"\s*:\s*"[^"]+"/g, '"accessToken":"[redacted]"')
     .replace(/"access_token"\s*:\s*"[^"]+"/g, '"access_token":"[redacted]"')
+    .replace(/"leadToken"\s*:\s*"[^"]+"/g, '"leadToken":"[redacted]"')
 }
 
 function recordBlock(phase, target, message, actions = []) {
@@ -464,7 +607,14 @@ function sleep(ms) {
 
 async function writeReport() {
   await mkdir(path.dirname(reportPath), { recursive: true })
-  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`)
+  await writeFile(reportPath, `${JSON.stringify(redactReport(report), null, 2)}\n`)
+}
+
+function redactReport(value) {
+  return JSON.parse(JSON.stringify(value, (key, innerValue) => {
+    if (key === 'accessToken' || key === 'access_token') return '[redacted]'
+    return innerValue
+  }))
 }
 
 function printPlan(targets, commands) {
