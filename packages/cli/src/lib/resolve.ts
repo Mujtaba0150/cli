@@ -43,7 +43,7 @@ export async function listAccountIDs(client: any): Promise<string[]> {
 
 export async function resolveChatID(client: any, input: string, options: ChatResolutionOptions = {}): Promise<string> {
   const exact = await retrieveChat(client, input)
-  if (exact) return exact.id
+  if (exact) return chatInputID(exact)
 
   const candidates = await collect<AnyRecord>(client.chats.search({
     accountIDs: options.accountIDs,
@@ -59,12 +59,12 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   )
   const matches = exactMatches.length ? exactMatches : candidates
   if (matches.length === 0) return input
-  if (matches.length === 1) return String(matches[0]!.id)
+  if (matches.length === 1) return chatInputID(matches[0]!)
 
   if (options.pick) {
     const selected = matches[options.pick - 1]
     if (!selected) throw new Error(`--pick ${options.pick} is outside the ${matches.length} matching chats`)
-    return String(selected.id)
+    return chatInputID(selected)
   }
 
   throw new Error(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
@@ -140,7 +140,12 @@ function formatAccount(account: AnyRecord): string {
 
 function formatChat(chat: AnyRecord): string {
   const network = chat.network ? ` ${chat.network}` : ''
-  return `${chat.id}${network} ${chat.title ?? ''}`.trim()
+  const local = chat.localChatID ? ` local:${chat.localChatID}` : ''
+  return `${chat.id}${local}${network} ${chat.title ?? ''}`.trim()
+}
+
+function chatInputID(chat: AnyRecord): string {
+  return String(chat.localChatID || chat.id)
 }
 
 export function userQueryFromInput(input: string): AnyRecord {

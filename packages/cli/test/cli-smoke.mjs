@@ -145,6 +145,13 @@ assert.match(ok('messages', 'list', '--help'), /--chat/, 'messages list should u
 assert.match(ok('chats', 'mute', '--help'), /--duration/, 'chats mute should expose duration')
 assert.match(ok('chats', 'list', '--help'), /--account=<value>\.\.\./, 'account filters must stay local')
 assert.doesNotMatch(ok('status', '--help'), /--account/, '--account must not be global')
+const setupHelp = ok('setup', '--help')
+assert.match(setupHelp, /--local/, 'setup should expose local Desktop direct setup')
+assert.match(setupHelp, /--oauth/, 'setup should expose OAuth setup')
+assert.match(setupHelp, /--remote/, 'setup should expose remote setup shortcut')
+assert.match(setupHelp, /--server/, 'setup should expose Server setup shortcut')
+assert.match(setupHelp, /--desktop/, 'setup should expose Desktop setup shortcut')
+assert.doesNotMatch(setupHelp, /--email|--code|--accept-terms/, 'setup must not expose email-code login flags')
 
 const man = JSON.parse(ok('man', '--json'))
 assert.equal(man.success, true)
@@ -227,9 +234,10 @@ const fakeClient = {
 assert.equal(await resolveAccountID(fakeClient, 'imessage'), 'imessage-main')
 assert.deepEqual(await resolveAccountIDs(fakeClient, ['main'], { allowMultiplePerInput: true }), ['imessage-main', 'telegram-main'])
 await assert.rejects(() => resolveAccountID(fakeClient, 'main'), /Ambiguous account/)
-assert.equal(await resolveChatID(fakeClient, 'local-family'), '!family:beeper.com')
-assert.equal(await resolveChatID(fakeClient, 'Family Work'), '!family-work:beeper.com')
-assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '!family-work:beeper.com')
+assert.equal(await resolveChatID(fakeClient, '!exact:beeper.com'), 'local-family')
+assert.equal(await resolveChatID(fakeClient, 'local-family'), 'local-family')
+assert.equal(await resolveChatID(fakeClient, 'Family Work'), 'local-family-work')
+assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), 'local-family-work')
 await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
 
 function listCommandFiles(dir) {

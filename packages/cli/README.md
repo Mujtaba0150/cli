@@ -77,9 +77,12 @@ beeper send file --to "Family" --file ./photo.jpg --caption "from today"
 beeper export --out ./beeper-export
 ```
 
-`beeper setup` makes the selected target ready. It is safe to run again: the
-command inspects the current target state and continues from login, device
-verification, recovery-key, first-sync, or ready states.
+`beeper setup` makes the selected target ready. By default it looks for Beeper
+Desktop on this device and offers to use the existing Desktop session. Use
+`setup --local` for the direct Desktop-session path, `setup --oauth` for the
+browser-authorized path, `setup --remote URL` for a remote Desktop or Server,
+and `setup --server --install` or `setup --desktop --install` to orchestrate
+installation and target setup.
 
 For non-interactive use, pass a token through the environment:
 
@@ -268,11 +271,14 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--accept-terms` | boolean | Accept Terms of Use when creating a new account |
-| `--code=<value>` | option | Email sign-in code for a pending setup login |
-| `--email=<value>` | option | Email address for first-run sign-in |
+| `--channel=<stable|nightly>` | option | Install release channel Default: stable |
+| `--desktop` | boolean | Set up a local Beeper Desktop target |
 | `--install` | boolean | Allow installing missing managed runtime |
-| `--username=<value>` | option | Username to create when the account is new |
+| `--local` | boolean | Use the local Beeper Desktop session on this device |
+| `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
+| `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
+| `--server` | boolean | Set up a local Beeper Server target |
+| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 

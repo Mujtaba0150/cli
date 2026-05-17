@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { AddressInfo } from 'node:net'
 import { spawn } from 'node:child_process'
 import { createPKCEPair, createState } from './pkce.js'
-import { updateConfig } from './targets.js'
+import { updateConfig, type AuthSource } from './targets.js'
 
 export type OAuthLoginOptions = {
   baseURL: string
@@ -10,6 +10,7 @@ export type OAuthLoginOptions = {
   openBrowser: boolean
   save?: boolean
   scope: string
+  source?: AuthSource
   timeoutMs?: number
 }
 
@@ -67,6 +68,7 @@ export async function loginWithPKCE(options: OAuthLoginOptions): Promise<TokenRe
           clientID: registered.client_id,
           expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
           scope: token.scope,
+          source: options.source,
           tokenType: token.token_type,
         },
       }))

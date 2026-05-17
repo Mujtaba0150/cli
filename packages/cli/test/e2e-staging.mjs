@@ -12,7 +12,6 @@ const runID = process.env.BEEPER_E2E_RUN_ID || String(Date.now())
 const workDir = process.env.BEEPER_E2E_WORKDIR || path.join(tmpdir(), `beeper-cli-e2e-${runID}`)
 const configDir = process.env.BEEPER_E2E_CONFIG_DIR || path.join(workDir, 'cli-config')
 const reportPath = process.env.BEEPER_E2E_REPORT || path.join(workDir, 'report.json')
-const otp = process.env.BEEPER_E2E_OTP || '[REDACTED_OTP]'
 const emailBase = Number(process.env.BEEPER_E2E_EMAIL_BASE || (900000 + Math.floor(Math.random() * 50000)))
 const accountCount = Number(process.env.BEEPER_E2E_ACCOUNT_COUNT || 3)
 const portStart = Number(process.env.BEEPER_E2E_PORT_START || 24_573)
@@ -135,21 +134,17 @@ async function phaseLogin() {
   for (const target of plannedTargets()) {
     try {
       await waitForInfo(target)
-      const email = target.email
-      const username = usernameForEmail(email)
-      const startArgs = ['setup', '--target', target.name, '--email', email, '--username', username, '--json']
-      const startResult = runCli(startArgs, { allowFailure: true })
-      recordCommand('login', startArgs, startResult)
-      if (startResult.status !== 0) fail(startResult, startArgs)
-      const codeArgs = ['setup', '--target', target.name, '--code', otp, '--accept-terms', '--json']
-      const codeResult = runCli(codeArgs, { allowFailure: true })
-      recordCommand('login', codeArgs, codeResult)
-      if (codeResult.status !== 0) fail(codeResult, codeArgs)
-      const body = parseEnvelope(codeResult.stdout)
-      target.matrix = body?.data?.login?.matrix ?? body?.data?.login?.session?.matrix
+      const args = target.kind === 'desktop'
+        ? ['setup', '--target', target.name, '--local', '--json']
+        : ['setup', '--target', target.name, '--oauth', '--yes', '--json']
+      const result = runCli(args, { allowFailure: true })
+      recordCommand('login', args, result)
+      if (result.status !== 0) fail(result, args)
+      const body = parseEnvelope(result.stdout)
+      target.matrix = body?.data?.readiness?.app?.matrix
       target.accessToken = await loadTargetAccessToken(target)
       assert(target.accessToken, `setup did not persist an access token for ${target.name}`)
-      report.notes.push(`signed in ${target.name} as ${email}`)
+      report.notes.push(`authenticated ${target.name} with ${target.kind === 'desktop' ? 'local Desktop session' : 'OAuth'}`)
     } catch (error) {
       recordFailure('login', target, error)
     }
@@ -331,11 +326,6 @@ function serverEnv() {
   const env = {}
   if (process.env.BEEPER_SERVER_BIN) env.BEEPER_SERVER_BIN = process.env.BEEPER_SERVER_BIN
   return env
-}
-
-function usernameForEmail(email) {
-  const digits = email.match(/\+(\d+)@/)?.[1] ?? runID.replace(/\D/g, '').slice(-8)
-  return `staging-user${digits}`
 }
 
 function hasPhase(name) {

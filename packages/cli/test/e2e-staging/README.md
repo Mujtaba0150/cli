@@ -12,7 +12,8 @@ not launch apps, download artifacts, or touch the default Desktop instance.
   `<workdir>/cli-config`.
 - Use non-default PAS ports. The default starts at `24573`, not `23373`.
 - Every test target uses `--server-env staging`.
-- QA users should be `staging-user@example.invalid`; the fixed OTP is `[REDACTED_OTP]`.
+- QA users should be `staging-user@example.invalid`; the fixed OTP is `[REDACTED_OTP]`
+  only for scripts that explicitly target verified setup-login APIs.
 - Do not run `install-server` unless you intend to download the staging server
   artifact.
 
@@ -31,9 +32,10 @@ The plan output shows the target names, ports, emails, and follow-up command.
 ## Full Coordinated Run
 
 Use this when a staging server binary already exists or `BEEPER_SERVER_BIN` is
-set. This creates isolated targets, starts them, signs them in through the app
-CLI setup flow, checks readiness, attempts device verification commands, runs a small
-messaging pass, and stops managed server targets.
+set. This creates isolated targets, starts them, authenticates Desktop targets
+with `beeper setup --local` and Server targets with `beeper setup --oauth`,
+checks readiness, attempts device verification commands, runs a small messaging
+pass, and stops managed server targets.
 
 ```sh
 BEEPER_E2E_RUN_ID=qa-$(date +%Y%m%d-%H%M%S) \

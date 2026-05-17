@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { execFile } from 'node:child_process'
-import { createWriteStream } from 'node:fs'
+import { closeSync, openSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -145,11 +145,19 @@ async function startServerProfile(target: Target): Promise<ProfileRun> {
   await mkdir(profileLogDir(), { recursive: true })
   const log = profileLogPath(target.id)
   const errorLog = profileErrorLogPath(target.id)
-  const child = spawn(binary, serverArgs(target), {
-    detached: true,
-    stdio: ['ignore', createWriteStream(log, { flags: 'a' }), createWriteStream(errorLog, { flags: 'a' })],
-    env: { ...process.env, BEEPER_SERVER_DATA_DIR: target.dataDir! },
-  })
+  const outFd = openSync(log, 'a')
+  const errFd = openSync(errorLog, 'a')
+  let child
+  try {
+    child = spawn(binary, serverArgs(target), {
+      detached: true,
+      stdio: ['ignore', outFd, errFd],
+      env: { ...process.env, BEEPER_SERVER_DATA_DIR: target.dataDir! },
+    })
+  } finally {
+    closeSync(outFd)
+    closeSync(errFd)
+  }
   child.unref()
   const run = { id: target.id, pid: child.pid!, startedAt: new Date().toISOString(), log, errorLog }
   await writeFile(profileRunPath(target.id), `${JSON.stringify(run, null, 2)}\n`, { mode: 0o600 })

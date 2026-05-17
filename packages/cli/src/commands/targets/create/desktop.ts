@@ -11,7 +11,7 @@ export default class TargetsCreateDesktop extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsCreateDesktop)
     ensureWritable(flags)
-    const id = args.name ?? 'personal'
+    const id = args.name ?? 'desktop'
     if (await readTarget(id)) throw new Error(`Target "${id}" already exists.`)
     const target = await createProfileTarget('desktop', id, { serverEnv: flags['server-env'], port: flags.port })
     if (flags.default) await updateConfig(config => ({ ...config, defaultTarget: target.id }))

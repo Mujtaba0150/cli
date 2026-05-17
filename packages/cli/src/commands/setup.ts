@@ -1,196 +1,282 @@
 import { Flags } from '@oclif/core'
-import { BeeperDesktop } from '@beeper/desktop-api'
-import type { LoginResponseResponse } from '@beeper/desktop-api/resources/app/login'
 import { BeeperCommand, ensureWritable, writeEvent } from '../lib/command.js'
 import { evaluateReadiness } from '../lib/app-state.js'
 import { ensureDesktopToken, findLocalDesktop } from '../lib/desktop-auth.js'
 import { promptYesNo } from '../lib/app-api.js'
-import { launchDesktopApp } from '../lib/profiles.js'
-import { readTarget, saveTargetAuth, updateConfig, writeTarget, type Target } from '../lib/targets.js'
+import { installDesktop, installServer, type InstallChannel } from '../lib/installations.js'
+import { connectedAccountSummary, findLocalDesktopSession } from '../lib/local-desktop.js'
+import { loginWithPKCE } from '../lib/oauth.js'
+import { launchDesktopApp, startProfile } from '../lib/profiles.js'
+import {
+  builtInDesktopTargetID,
+  createProfileTarget,
+  listTargets,
+  readConfig,
+  readTarget,
+  saveTargetAuth,
+  updateConfig,
+  writeTarget,
+  type AuthSource,
+  type Target,
+} from '../lib/targets.js'
 import { printData, printSuccess } from '../lib/output.js'
 
 export default class Setup extends BeeperCommand {
   static override summary = 'Make the selected target ready'
   static override flags = {
+    local: Flags.boolean({ default: false, description: 'Use the local Beeper Desktop session on this device' }),
+    oauth: Flags.boolean({ default: false, description: 'Authorize the target with browser OAuth/PKCE' }),
+    remote: Flags.string({ description: 'Connect to a remote Beeper Desktop or Server URL' }),
+    server: Flags.boolean({ default: false, description: 'Set up a local Beeper Server target' }),
+    desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
-    email: Flags.string({ description: 'Email address for first-run sign-in' }),
-    code: Flags.string({ description: 'Email sign-in code for a pending setup login' }),
-    username: Flags.string({ description: 'Username to create when the account is new' }),
-    'accept-terms': Flags.boolean({ default: false, description: 'Accept Terms of Use when creating a new account' }),
+    channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
+    'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server environment. Staging forces nightly.' }),
   }
+
   async run(): Promise<void> {
     const { flags } = await this.parse(Setup)
     ensureWritable(flags)
-    let target: Target | undefined
-    if (flags['base-url']) {
-      const stored = await readTarget('custom')
-      target = stored?.baseURL === flags['base-url'] ? stored : { id: 'custom', type: 'desktop', baseURL: flags['base-url'] }
-    }
-    else if (flags.target) target = flags.target === 'personal' ? undefined : await readTarget(flags.target)
-    if (!target) {
-      const desktop = await findLocalDesktop({ scan: true, timeoutMs: 300 }).catch(() => undefined)
-      target = { id: 'personal', type: 'desktop', name: 'Desktop', baseURL: desktop?.baseURL ?? 'http://127.0.0.1:23373', managed: true, runtime: { install: 'desktop', port: 23373 } }
-      await writeTarget(target)
-      await updateConfig(config => ({ ...config, defaultTarget: target!.id }))
-    }
-    if (flags.events) writeEvent('setup_step', { step: 'readiness', target: target.id })
-    const readiness = await evaluateSetupReadiness(target, flags)
-    if (flags.email) {
-      if (flags.code) throw new Error('Run `beeper setup --email ...` first, then run `beeper setup --code ...` after the email arrives.')
-      if (flags.events) writeEvent('setup_step', { step: 'login-email', target: target.id })
-      const login = await startLogin(target, { email: flags.email, username: flags.username })
-      await printData({ target: login.target, login: login.data, readiness }, flags.json ? 'json' : 'human')
+    if (flags.events) writeEvent('setup_step', { step: 'start', target: flags.target })
+
+    if (flags.remote) {
+      await this.setupRemote(flags)
       return
     }
-    if (flags.code || flags['accept-terms']) {
-      if (flags.events) writeEvent('setup_step', { step: 'login', target: target.id })
-      const { accessToken, ...login } = await continueLogin(target, {
-        acceptTerms: flags['accept-terms'],
-        code: flags.code,
-        username: flags.username,
-      })
-      const nextReadiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id, token: accessToken })
-      await printData({ target, login, readiness: nextReadiness }, flags.json ? 'json' : 'human')
+    if (flags.server) {
+      await this.setupManaged('server', flags)
       return
     }
+    if (flags.desktop) {
+      await this.setupManaged('desktop', flags)
+      return
+    }
+
+    const target = await setupTarget(flags)
+    if (flags.local) {
+      await this.setupLocal(target, flags)
+      return
+    }
+    if (flags.oauth) {
+      await this.setupOAuth(target, flags)
+      return
+    }
+
+    await this.setupDefault(target, flags)
+  }
+
+  private async setupDefault(target: Target, flags: SetupFlags): Promise<void> {
+    if (target.type === 'desktop') {
+      const local = await tryLocalDesktop(target, flags)
+      if (local) {
+        await this.printSetupResult(local, flags)
+        return
+      }
+    }
+
+    const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id })
+    if (readiness.state === 'target-unreachable' && target.type === 'desktop' && !flags.json && process.stdin.isTTY) {
+      const shouldLaunch = flags.yes || await promptYesNo('Beeper Desktop is not reachable. Launch it now?')
+      if (shouldLaunch) {
+        if (flags.events) writeEvent('setup_step', { step: 'launch', target: target.id })
+        await launchDesktopApp(target)
+        await printSuccess({
+          message: 'Launched Beeper Desktop',
+          detail: `Run \`beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`}\` again after it finishes starting.`,
+          data: { target: publicTarget(target), readiness },
+        }, flags.json ? 'json' : 'human')
+        return
+      }
+    }
+
     if (flags.json || !process.stdin.isTTY) {
-      await printData({ target, readiness }, flags.json ? 'json' : 'human')
+      await printData({ target: publicTarget(target), readiness }, flags.json ? 'json' : 'human')
       return
     }
-    await printSuccess({ message: readiness.state === 'ready' ? 'Target ready' : `Setup paused: ${readiness.state}`, detail: readiness.message, data: { target, readiness } }, flags.json ? 'json' : 'human')
-  }
-}
 
-async function evaluateSetupReadiness(target: Target, flags: { json?: boolean; yes?: boolean; events?: boolean }) {
-  let readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id })
-  if (isUnauthorizedReadiness(readiness)) {
-    if (flags.events) writeEvent('setup_step', { step: 'authorize', target: target.id })
-    const token = await ensureDesktopToken({ baseURL: target.baseURL, scan: target.type === 'desktop' })
-    readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id, token })
+    await printSuccess({
+      message: readiness.state === 'ready' ? 'Target ready' : `Setup paused: ${readiness.state}`,
+      detail: readiness.message,
+      data: { target: publicTarget(target), readiness },
+    }, 'human')
   }
-  if (readiness.state === 'target-unreachable') return offerLaunchAndRecheck(target, flags, readiness)
-  return readiness
-}
 
-async function offerLaunchAndRecheck(
-  target: Target,
-  flags: { json?: boolean; yes?: boolean; events?: boolean },
-  readiness: Awaited<ReturnType<typeof evaluateReadiness>>,
-) {
-  if (target.type !== 'desktop' || flags.json || !process.stdin.isTTY) return readiness
-  const shouldLaunch = flags.yes || await promptYesNo('Beeper Desktop is not reachable. Launch it now?')
-  if (!shouldLaunch) return readiness
-  if (flags.events) writeEvent('setup_step', { step: 'launch', target: target.id })
-  await launchDesktopApp(target)
-  return {
-    ...readiness,
-    message: `Launched Beeper Desktop. Wait for it to finish starting, then rerun: beeper setup${target.id === 'desktop' || target.id === 'personal' ? '' : ` -t ${target.id}`}`,
+  private async setupLocal(target: Target, flags: SetupFlags): Promise<void> {
+    const result = await setupLocalDesktop(target, flags)
+    await this.printSetupResult(result, flags)
   }
-}
 
-function isUnauthorizedReadiness(readiness: Awaited<ReturnType<typeof evaluateReadiness>>): boolean {
-  return readiness.state === 'target-unreachable' && /\b401\b|unauthori[sz]ed|invalid or missing token/i.test(readiness.message ?? '')
-}
-
-async function startLogin(target: Target, options: { email: string; username?: string }) {
-  const client = new BeeperDesktop({ baseURL: target.baseURL, accessToken: '' })
-  const start = await client.app.login.start()
-  await client.app.login.email({ setupRequestID: start.setupRequestID, email: options.email })
-  const nextTarget: Target = {
-    ...target,
-    setup: {
-      ...target.setup,
-      login: {
-        createdAt: new Date().toISOString(),
-        email: options.email,
-        setupRequestID: start.setupRequestID,
-        username: options.username,
-      },
-    },
+  private async setupOAuth(target: Target, flags: SetupFlags): Promise<void> {
+    const result = await setupOAuthTarget(target, flags)
+    await this.printSetupResult(result, flags)
   }
-  await writeTarget(nextTarget)
-  return {
-    target: nextTarget,
-    data: {
-      email: options.email,
-      state: 'login-in-progress',
-      next: 'Run `beeper setup --code <code>` after the email arrives.',
-      signInMethods: start.signInMethods,
-    },
-  }
-}
 
-async function continueLogin(target: Target, options: { acceptTerms?: boolean; code?: string; username?: string }) {
-  const pending = target.setup?.login
-  if (!pending) throw new Error('No pending setup login. Run `beeper setup --email <email>` first.')
-  const client = new BeeperDesktop({ baseURL: target.baseURL, accessToken: '' })
-  const response = pending.leadToken
-    ? {
-      leadToken: pending.leadToken,
-      registrationRequired: true as const,
-      setupRequestID: pending.setupRequestID,
-      usernameSuggestions: pending.usernameSuggestions,
+  private async setupRemote(flags: SetupFlags): Promise<void> {
+    const name = flags.target ?? remoteName(flags.remote!)
+    const target: Target = {
+      id: name,
+      name,
+      type: 'remote',
+      baseURL: flags.remote!,
+      managed: false,
     }
-    : await client.app.login.response({ setupRequestID: pending.setupRequestID, response: requiredCode(options.code) })
-  if ('registrationRequired' in response && response.registrationRequired) {
-    if (!options.acceptTerms) {
-      await writeTarget({
-        ...target,
-        setup: {
-          ...target.setup,
-          login: {
-            ...pending,
-            leadToken: response.leadToken,
-            username: options.username ?? pending.username,
-            usernameSuggestions: response.usernameSuggestions,
-          },
-        },
-      })
-      throw new Error('Account creation requires --accept-terms. Run `beeper setup --accept-terms` to continue.')
-    }
+    await writeTarget(target)
+    if (!flags.target) await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? target.id }))
+    const result = await setupOAuthTarget(target, flags, 'remote-oauth')
+    await this.printSetupResult(result, flags)
   }
-  const login = 'registrationRequired' in response && response.registrationRequired
-    ? await registerTarget(client, response, {
-      acceptTerms: options.acceptTerms,
-      email: pending.email,
-      username: options.username ?? pending.username,
+
+  private async setupManaged(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
+    if (flags.install) {
+      if ((flags.json || !process.stdin.isTTY) && !flags.yes) throw new Error('Install requires --install --yes in non-interactive mode.')
+      if (type === 'desktop') await installDesktop({ channel: flags.channel as InstallChannel, serverEnv: flags['server-env'] })
+      else await installServer({ channel: flags.channel as InstallChannel, serverEnv: flags['server-env'] })
+    }
+    const id = flags.target ?? type
+    const target = await readTarget(id) ?? await createProfileTarget(type, id, { serverEnv: flags['server-env'], port: undefined })
+    if (!flags.target) await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? target.id }))
+    await startProfile(target).catch(error => {
+      if (type === 'desktop') return undefined
+      throw error
     })
-    : response
-  if (!('matrix' in login) || !login.matrix?.accessToken) throw new Error('Setup login did not return an access token.')
-  await saveTargetAuth({ ...target, setup: undefined }, { accessToken: login.matrix.accessToken, tokenType: 'Bearer' })
-  return {
-    accessToken: login.matrix.accessToken,
-    matrix: {
-      deviceID: login.matrix.deviceID,
-      homeserver: login.matrix.homeserver,
-      userID: login.matrix.userID,
-    },
-    session: login.session,
+    const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id })
+    await printData({ target: publicTarget(target), readiness }, flags.json ? 'json' : 'human')
+  }
+
+  private async printSetupResult(result: SetupResult, flags: SetupFlags): Promise<void> {
+    if (flags.json || !process.stdin.isTTY) {
+      await printData(result, flags.json ? 'json' : 'human')
+      return
+    }
+    await printSuccess({
+      message: result.readiness.state === 'ready'
+        ? `Connected to ${result.target.name ?? result.target.id}`
+        : `Connected; setup paused: ${result.readiness.state}`,
+      detail: result.accounts.length ? `Connected accounts: ${result.accounts.join(', ')}` : result.readiness.message,
+      data: result,
+    }, 'human')
   }
 }
 
-function requiredCode(code?: string): string {
-  if (!code) throw new Error('Setup needs --code to finish email sign-in.')
-  return code
+type SetupFlags = {
+  'base-url'?: string
+  channel?: string
+  desktop?: boolean
+  events?: boolean
+  install?: boolean
+  json?: boolean
+  local?: boolean
+  oauth?: boolean
+  remote?: string
+  server?: boolean
+  'server-env'?: string
+  target?: string
+  yes?: boolean
 }
 
-async function registerTarget(
-  client: BeeperDesktop,
-  response: Pick<LoginResponseResponse.RegistrationRequired, 'leadToken' | 'setupRequestID' | 'usernameSuggestions'>,
-  options: { acceptTerms?: boolean; email: string; username?: string },
-) {
-  if (!options.acceptTerms) throw new Error('Account creation requires --accept-terms.')
-  const username = options.username ?? usernameForEmail(options.email) ?? response.usernameSuggestions?.[0]
-  if (!username) throw new Error('Account creation requires --username.')
-  return client.app.login.register({
-    acceptTerms: true,
-    leadToken: response.leadToken,
-    setupRequestID: response.setupRequestID,
-    username,
-  })
+type SetupResult = {
+  accounts: string[]
+  authSource?: AuthSource
+  readiness: Awaited<ReturnType<typeof evaluateReadiness>>
+  target: ReturnType<typeof publicTarget>
 }
 
-function usernameForEmail(email: string): string | undefined {
-  const digits = email.match(/\+(\d+)@/)?.[1]
-  return digits ? `staging-user${digits}` : undefined
+async function setupTarget(flags: SetupFlags): Promise<Target> {
+  if (flags['base-url']) return { id: 'custom', type: 'desktop', baseURL: flags['base-url'] }
+  if (flags.target) {
+    const target = await readTarget(flags.target)
+    if (!target) throw new Error(`Unknown Beeper target "${flags.target}". Run \`beeper targets list\`.`)
+    return target
+  }
+  const config = await readConfig()
+  if (config.defaultTarget) {
+    const target = await readTarget(config.defaultTarget)
+    if (target) return target
+  }
+  const desktop = await readTarget(builtInDesktopTargetID)
+  if (desktop) return desktop
+  const detected = await findLocalDesktop({ scan: true, timeoutMs: 300 }).catch(() => undefined)
+  const target: Target = {
+    id: builtInDesktopTargetID,
+    type: 'desktop',
+    name: 'Beeper Desktop',
+    baseURL: detected?.baseURL ?? 'http://127.0.0.1:23373',
+    managed: false,
+    runtime: { install: 'desktop', port: 23373 },
+  }
+  await writeTarget(target)
+  await updateConfig(next => ({ ...next, defaultTarget: next.defaultTarget ?? target.id }))
+  return target
+}
+
+async function tryLocalDesktop(target: Target, flags: SetupFlags): Promise<SetupResult | undefined> {
+  try {
+    return await setupLocalDesktop(target, flags)
+  } catch {
+    return undefined
+  }
+}
+
+async function setupLocalDesktop(target: Target, flags: SetupFlags): Promise<SetupResult> {
+  if (flags.events) writeEvent('setup_step', { step: 'local-desktop', target: target.id })
+  const desktop = await findLocalDesktop({ baseURL: target.baseURL, scan: target.id === builtInDesktopTargetID, timeoutMs: 500 }).catch(() => undefined)
+  const resolvedTarget: Target = {
+    ...target,
+    id: target.id === 'custom' ? builtInDesktopTargetID : target.id,
+    type: 'desktop',
+    name: target.name ?? 'Beeper Desktop',
+    baseURL: desktop?.baseURL ?? target.baseURL,
+    managed: target.managed ?? false,
+  }
+  const session = await findLocalDesktopSession(resolvedTarget)
+  await writeTarget(resolvedTarget)
+  await saveTargetAuth(resolvedTarget, session.auth)
+  await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? resolvedTarget.id }))
+  const readiness = await evaluateReadiness({ baseURL: resolvedTarget.baseURL, target: resolvedTarget.id, token: session.auth.accessToken })
+  const accounts = await connectedAccountSummary(resolvedTarget, session.auth).catch(() => [])
+  return { accounts, authSource: session.auth.source, readiness, target: publicTarget({ ...resolvedTarget, auth: session.auth }) }
+}
+
+async function setupOAuthTarget(target: Target, flags: SetupFlags, source?: AuthSource): Promise<SetupResult> {
+  if (flags.events) writeEvent('setup_step', { step: 'oauth', target: target.id })
+  if ((flags.json || !process.stdin.isTTY) && !flags.yes) throw new Error('OAuth setup requires an interactive terminal or --yes to open the browser.')
+  const authSource = source ?? (target.type === 'remote' ? 'remote-oauth' : 'desktop-oauth')
+  const token = target.type === 'desktop' && target.id === builtInDesktopTargetID
+    ? await ensureDesktopToken({ baseURL: target.baseURL, save: false, scan: true })
+    : await loginWithPKCE({
+      baseURL: target.baseURL,
+      clientName: 'Beeper CLI',
+      openBrowser: true,
+      save: false,
+      scope: 'read write',
+      source: authSource,
+    })
+  const auth = typeof token === 'string'
+    ? { accessToken: token, source: authSource, tokenType: 'Bearer' as const }
+    : {
+      accessToken: token.access_token,
+      clientID: token.clientID,
+      expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
+      scope: token.scope,
+      source: authSource,
+      tokenType: token.token_type,
+    }
+  await writeTarget(target)
+  await saveTargetAuth(target, auth)
+  const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id, token: auth.accessToken })
+  const accounts = await connectedAccountSummary(target, auth).catch(() => [])
+  return { accounts, authSource, readiness, target: publicTarget({ ...target, auth }) }
+}
+
+function publicTarget(target: Target): Omit<Target, 'auth'> & { auth?: { source?: AuthSource; tokenType?: 'Bearer' } } {
+  const { auth, ...rest } = target
+  return { ...rest, auth: auth ? { source: auth.source, tokenType: auth.tokenType } : undefined }
+}
+
+function remoteName(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/[^a-zA-Z0-9._-]/g, '-') || 'remote'
+  } catch {
+    return 'remote'
+  }
 }

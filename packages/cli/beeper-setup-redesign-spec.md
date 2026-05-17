@@ -1,619 +1,475 @@
-# Final proposal: Beeper CLI setup redesign
+# Beeper CLI Setup Redesign Plan
 
-## Product goal
+## Goal
 
-`beeper setup` should make the CLI usable in the fastest, safest, least confusing way possible.
+`beeper setup` should make Beeper CLI usable with the least possible explanation.
 
-For most desktop users, setup should feel like:
+For most Desktop users, the happy path should be:
 
-```bash
+```sh
 beeper setup
 ```
+
+Then:
 
 ```txt
-✨ Found Beeper Desktop signed in as you@beeper.com
+Found Beeper Desktop on this device.
 
-Use this Desktop session for CLI access?
-This is the fastest option and works with your already-synced apps.
+Signed in as: you@beeper.com
+Connected accounts: iMessage, WhatsApp, Signal
 
-Press Enter to connect, or choose another option.
+Use this Desktop session for CLI access? [Y/n]
 ```
 
-Enter = done.
+Pressing Enter should leave the CLI ready.
 
----
+## Critique Of The Draft
 
-# 1. Setup concepts
+The intern proposal has the right product instinct, but it over-expands the public surface.
 
-## Connection targets
+Keep:
 
-The CLI can connect to:
+- Desktop-first setup.
+- Local Desktop session as the recommended path.
+- OAuth/PKCE as the limited-permission path.
+- Remote Desktop/Server setup.
+- Install Desktop/Server from setup when explicitly confirmed.
+- Concrete prompts that show the detected account and connected accounts.
+- Every interactive choice having a command or flag equivalent.
 
-1. **Local Beeper Desktop**
-2. **Remote Beeper Desktop**
-3. **Beeper Server**
-4. **Manual/custom config**
+Reject or defer:
 
-## Auth methods
+- A new public `connections` model. The CLI already has targets; use them.
+- `beeper auth list/use/desktop/remote/manual` in the first pass. That recreates target management under another noun.
+- Public `beeper setup desktop|server|remote|manual` subcommands for v1. They are redundant if flags and existing target/install commands exist.
+- Keychain as a blocker. Store like the current CLI first, add keychain later.
+- Email-code setup flags as the main Desktop experience. Normal users receive codes asynchronously, and installed Desktop may not expose the setup-login routes. Desktop login should be driven by Desktop itself unless the Server/headless API explicitly supports the flow.
 
-The CLI can authenticate via:
+## Product Model
 
-1. **Local Desktop session**
-   - Reads Matrix/access token from local Beeper Desktop DB/cache/config.
-   - Best for trusted local machines.
-   - No browser flow.
-   - Highest convenience.
+Use one object: **target**.
 
-2. **OAuth / PKCE**
-   - Browser-based authorization.
-   - Explicit, limited, revocable permissions.
-   - Good for remote, safer, or enterprise-like setups.
+A target is a runnable or reachable Beeper endpoint/profile:
 
-3. **Manual token/config**
-   - Escape hatch.
-   - Advanced users only.
+- Built-in local Desktop target: `desktop`
+- Managed Desktop profile: `targets create desktop <name>`
+- Managed Server profile: `targets create server <name>`
+- Remote Desktop or Server: `targets add remote <name> <url>`
+- One-off URL: `--base-url`
 
----
+Auth is target-scoped metadata, not a separate public object.
 
-# 2. Internal provider IDs
+`setup` is the guided orchestrator that creates, selects, starts, installs, and authenticates targets by calling the same primitives users can run directly.
 
-Use these:
+## Public Command Shape
 
-```ts
-type SetupProvider =
-  | "desktop-local"
-  | "desktop-oauth"
-  | "desktop-install"
-  | "server-install"
-  | "remote-oauth"
-  | "manual";
-```
+Keep the public command tree narrow:
 
-Optional richer model:
-
-```ts
-type SetupTarget =
-  | "desktop"
-  | "remote"
-  | "server"
-  | "manual";
-
-type SetupAuthMethod =
-  | "local"
-  | "oauth"
-  | "manual";
-
-type SetupAction =
-  | "connect"
-  | "install"
-  | "repair";
-```
-
-Connection config:
-
-```ts
-type ConnectionConfig =
-  | {
-      id: string;
-      name: string;
-      target: "desktop";
-      auth: "local";
-      desktopPath?: string;
-      userId?: string;
-      homeserverUrl?: string;
-      accessTokenRef: string;
-    }
-  | {
-      id: string;
-      name: string;
-      target: "desktop";
-      auth: "oauth";
-      endpoint: string;
-      accessTokenRef: string;
-      refreshTokenRef?: string;
-      scopes: string[];
-    }
-  | {
-      id: string;
-      name: string;
-      target: "remote";
-      auth: "oauth";
-      endpoint: string;
-      accessTokenRef: string;
-      refreshTokenRef?: string;
-      scopes: string[];
-    }
-  | {
-      id: string;
-      name: string;
-      target: "server";
-      auth: "oauth" | "manual";
-      endpoint: string;
-      accessTokenRef: string;
-    };
-```
-
----
-
-# 3. User-facing command structure
-
-## Primary command
-
-```bash
+```sh
 beeper setup
-```
+beeper setup --local
+beeper setup --oauth
+beeper setup --remote URL
+beeper setup --server
+beeper setup --desktop
+beeper setup --install
+beeper setup --yes
 
-Interactive smart wizard.
-
-## Explicit setup commands
-
-```bash
-beeper setup desktop
-beeper setup desktop --local
-beeper setup desktop --oauth
-beeper setup desktop --install
-beeper setup desktop --repair
-
-beeper setup remote
-beeper setup remote --url <url>
-
-beeper setup server
-beeper setup server --install
-beeper setup server --url <url>
-
-beeper setup manual
-```
-
-## Auth commands
-
-```bash
+beeper targets ...
+beeper install desktop
+beeper install server
 beeper auth status
-beeper auth list
-beeper auth use <connection>
 beeper auth logout
-beeper auth logout <connection>
+beeper verify ...
+beeper doctor
+```
 
-beeper auth desktop --local
-beeper auth desktop --oauth
+Do not add these in the first pass:
 
-beeper auth remote --url <url>
+```sh
+beeper setup desktop
+beeper setup server
+beeper setup remote
+beeper auth list
+beeper auth use
+beeper auth desktop
+beeper auth remote
 beeper auth manual
 ```
 
-## Install commands
+If we later need script-focused auth commands, add them only after targets/setup prove insufficient.
 
-```bash
-beeper install desktop
-beeper install server
-```
+## Setup Modes
 
-## Diagnostics
+### `beeper setup`
 
-```bash
-beeper doctor
-beeper doctor desktop
-beeper doctor server
-beeper doctor auth
-```
-
----
-
-# 4. Default `beeper setup` behavior
-
-`beeper setup` should inspect the machine first.
+Interactive, magical default.
 
 Detection order:
 
-1. Is there an existing valid CLI connection?
-2. Is Beeper Desktop installed?
-3. Is Beeper Desktop running?
-4. Is Beeper Desktop logged in?
-5. Is Desktop API reachable?
-6. Can we read local Desktop session/cache/token?
-7. Is Desktop synced enough to be useful?
-8. Is Beeper Server already configured locally?
-9. Is there a remote URL from env/config?
+1. Existing configured default target.
+2. Detected local Beeper Desktop.
+3. Running local Desktop API.
+4. Desktop login/session state.
+5. Local Desktop DB/cache/session token availability.
+6. Connected accounts via Desktop API when reachable.
+7. Managed Server install/config.
+8. Remote URL from env/config.
 
-Then display a contextual menu.
+Behavior:
 
----
+- If a ready target already exists, show it and offer to keep, repair, switch, or add another target.
+- If local Desktop is signed in and local session auth is readable, recommend direct Desktop connection.
+- If local Desktop is installed but logged out, launch Desktop and ask the user to sign in there.
+- If Desktop is missing, offer Desktop install only on supported GUI platforms.
+- If Server is requested or Desktop is unsuitable, offer Server install/setup.
+- If remote URL is supplied or selected, use PKCE against that target.
 
-# 5. Main UX flows
+### `beeper setup --local`
 
-## Case A: Desktop installed, logged in, token readable
+Explicit local Desktop DB/cache/session path.
 
-Default to `desktop-local`.
+Use when:
 
-```txt
-$ beeper setup
+- Desktop is installed locally.
+- The user wants the fastest trusted-device path.
+- QA wants to test the direct local Desktop flow without menu interaction.
 
-✨ Beeper CLI setup
+This should:
 
-Found:
-  ✅ Beeper Desktop installed
-  ✅ Signed in as you@beeper.com
-  ✅ Local Desktop session available
+1. Detect Desktop app/profile.
+2. Read local session/token from Desktop state.
+3. Materialize or update target `desktop`.
+4. Store target auth with `source: "desktop-db"` or `source: "desktop-cache"`.
+5. Fetch readiness and connected accounts.
 
-Recommended:
-  1. Connect to local Beeper Desktop
-     Fastest. Uses your existing Desktop session and synced apps.
+### `beeper setup --oauth`
 
-Other options:
-  2. Authorize with browser
-     OAuth/PKCE with explicit permissions.
+Explicit browser-authorized path for the resolved target.
 
-  3. Connect to remote Beeper Desktop or Server
-  4. Install or setup Beeper Server
-  5. Manual setup
+Use when:
 
-Select [1]:
+- The user wants limited/revocable permissions.
+- The target is remote.
+- Local Desktop DB/cache auth is unavailable or declined.
+
+This should use the existing PKCE implementation and store auth with:
+
+```ts
+source: "desktop-oauth" | "remote-oauth"
 ```
 
-Success:
+### `beeper setup --remote URL`
 
-```txt
-✅ Connected to local Beeper Desktop
-✅ Account: you@beeper.com
-✅ Ready to use synced apps
+Shortcut for:
 
-Try:
-  beeper chats
-  beeper send
+1. Create or update a remote target for `URL`.
+2. Use OAuth/PKCE.
+3. Optionally make it default after confirmation.
+
+Equivalent primitive path:
+
+```sh
+beeper targets add remote <name> <url>
+beeper setup -t <name> --oauth
+beeper targets use <name>
 ```
 
----
+### `beeper setup --server`
 
-## Case B: Desktop installed but not logged in
+Guided Server setup.
 
-```txt
-$ beeper setup
+If no local server binary exists:
 
-Found:
-  ✅ Beeper Desktop installed
-  ⚠️  Not signed in
+- Prompt to install.
+- Require `--install --yes` for non-interactive download/install.
+- Use staging only when requested by target/server env flags in tests.
 
-What would you like to do?
+Equivalent primitive path:
 
-  1. Open Beeper Desktop and sign in
-  2. Authorize with browser
-  3. Connect to remote Beeper Desktop or Server
-  4. Install/setup Beeper Server
-  5. Manual setup
-
-Select [1]:
+```sh
+beeper install server
+beeper targets create server <name>
+beeper targets start <name>
+beeper setup -t <name> --oauth
 ```
 
-If user picks 1:
+### `beeper setup --desktop --install`
 
-```txt
-Opening Beeper Desktop...
+Guided Desktop install/setup.
 
-Sign in to Beeper Desktop to continue.
-Waiting for login...
+Equivalent primitive path:
+
+```sh
+beeper install desktop
+beeper targets create desktop <name>
+beeper targets start <name>
+beeper setup -t <name> --local
 ```
 
-After login:
+## Target Schema
 
-```txt
-✅ Login detected
+Extend the current target model; do not create a separate connection schema.
 
-Connect using this local Desktop session? [Y/n]
+```ts
+type AuthSource =
+  | "desktop-db"
+  | "desktop-cache"
+  | "desktop-oauth"
+  | "remote-oauth"
+  | "manual";
+
+type StoredAuth = {
+  accessToken: string;
+  clientID?: string;
+  expiresAt?: string;
+  scope?: string;
+  tokenType: "Bearer";
+  source?: AuthSource;
+};
 ```
 
----
+Target records should contain stable endpoint/profile/runtime metadata.
 
-## Case C: Desktop not installed
+Volatile facts should go in cache:
 
-```txt
-$ beeper setup
+- Desktop app version.
+- Reachability.
+- Current signed-in user.
+- Connected account summary.
+- Readiness state.
 
-Beeper Desktop was not found on this computer.
+## Built-In Desktop Target
 
-Recommended:
-  1. Install Beeper Desktop
-     Best for personal desktop use.
+Stop creating `personal`.
 
-Other options:
-  2. Connect to remote Beeper Desktop or Server
-  3. Setup Beeper Server
-  4. Manual setup
+Use `desktop` as the built-in local Desktop target when a selector is needed.
 
-Select [1]:
-```
-
----
-
-## Case D: Existing connection exists
+User-facing UI should not lead with the ID:
 
 ```txt
-$ beeper setup
-
-Beeper CLI is already connected:
-
-  Active connection:
-    Local Beeper Desktop
-    you@beeper.com
-
-What would you like to do?
-
-  1. Keep current setup
-  2. Reconnect local Desktop
-  3. Add another connection
-  4. Switch connection
-  5. Remove connection
-  6. Run doctor
-
-Select [1]:
+Current connection:
+  Beeper Desktop v4.2.842 on this device
+  connected directly
 ```
 
----
+For named targets, use target language:
 
-# 6. Naming and copy
+```txt
+Default target:
+  work-server
+  Remote Beeper Server
+  https://beeper.example.com
+```
 
-Avoid scary words in the main UI:
+`beeper targets list` may show:
+
+```txt
+Built-in:
+  desktop       Beeper Desktop on this device      connected directly
+
+Targets:
+  work-server   remote server                      https://beeper.example.com
+  local-server  managed server                     http://127.0.0.1:23374
+```
+
+Removing `desktop` means forget CLI state only. Do not uninstall Desktop, delete Desktop data, or revoke anything remote unless a separate explicit command asks for it.
+
+## UX Copy
+
+Avoid scary or implementation-first language in the main path.
 
 Avoid:
 
-- “full access”
-- “unrestricted”
-- “extract token”
-- “database scraping”
-- “steal token”
-- “read DB”
+- full access
+- unrestricted
+- extract token
+- scrape database
+- read DB
 
 Use:
 
-- “Connect to local Beeper Desktop”
-- “Use your existing Desktop session”
-- “Authorize with browser”
-- “Limited permissions”
-- “Remote Beeper Desktop or Server”
+- Use your existing Desktop session.
+- Connect directly to Beeper Desktop.
+- Authorize with browser.
+- Limited permissions.
+- Connected accounts.
 
-Advanced/debug text can be more explicit:
-
-```txt
-Auth method: desktop-local
-Source: local Beeper Desktop session cache
-```
-
----
-
-# 7. Permissions model
-
-## `desktop-local`
-
-User-facing:
+Advanced/debug output can be explicit:
 
 ```txt
-Uses your signed-in Beeper Desktop app on this computer.
-Best for trusted personal machines.
+Auth source: desktop-db
+Requests: Desktop API at http://127.0.0.1:23373
 ```
 
-Advanced detail:
+## Readiness And Repair
+
+`setup`, `status`, `doctor`, and `verify` must share the same readiness evaluator.
+
+States:
 
 ```txt
-This gives the CLI similar access to your local Desktop app.
+no-target
+target-unreachable
+needs-login
+login-in-progress
+initializing
+needs-cross-signing-setup
+needs-verification
+verification-in-progress
+needs-recovery-key
+needs-secrets
+needs-first-sync
+ready
+error
 ```
 
-## `desktop-oauth`
+Setup should never dead-end on these states. It should show the next repair action:
+
+- `target-unreachable`: start target, install runtime, or fix URL.
+- `needs-login`: Desktop users sign in in Desktop; Server/headless may use supported setup API if available.
+- `needs-verification`: run or continue `verify`.
+- `needs-recovery-key` / `needs-secrets`: run recovery-key flow.
+- `needs-first-sync`: wait with events, and resume on rerun.
+
+Ctrl+C while waiting should not cancel remote verification or sync. Print:
 
 ```txt
-Uses browser authorization with explicit permissions.
-Recommended when you want limited or revocable access.
+Run `beeper setup` to continue.
 ```
 
-## `remote-oauth`
+## Non-Interactive Contract
 
-```txt
-Connects to another Beeper Desktop or Beeper Server using browser authorization.
-```
+No prompts when:
 
----
+- `--json`
+- non-TTY
+- `--yes`
 
-# 8. Configuration model
-
-Support multiple named connections.
-
-Example:
+If blocked on a human action, return JSON error on stderr:
 
 ```json
-{
-  "activeConnection": "local-desktop",
-  "connections": {
-    "local-desktop": {
-      "name": "Local Beeper Desktop",
-      "target": "desktop",
-      "auth": "local",
-      "userId": "@you:beeper.com",
-      "homeserverUrl": "https://matrix.beeper.com",
-      "accessTokenRef": "keychain:beeper-cli/local-desktop"
-    },
-    "work-server": {
-      "name": "Work Beeper Server",
-      "target": "remote",
-      "auth": "oauth",
-      "endpoint": "https://beeper.example.com",
-      "scopes": ["chats:read", "messages:send"],
-      "accessTokenRef": "keychain:beeper-cli/work-server"
-    }
-  }
-}
+{"success":false,"data":null,"error":"Desktop sign-in required"}
 ```
 
-Store secrets in OS keychain when possible.
+Include current state and available actions in `data` when possible.
 
-Fallback:
+Downloads/installs require:
 
-- macOS Keychain
-- Windows Credential Manager
-- libsecret on Linux
-- encrypted local file if needed
-- plaintext only with explicit opt-in
-
----
-
-# 9. First-principles changes I would make
-
-## A. Separate “setup” from “auth”
-
-`setup` is a guided product experience.
-
-`auth` is credential management.
-
-So:
-
-```bash
-beeper setup
+```sh
+--install --yes
 ```
 
-is for humans.
+## Implementation Plan
 
-```bash
-beeper auth desktop --local
-```
+1. Revert public email/code setup flags from the main UX.
+   - Do not make OTP login the normal Desktop setup path.
+   - Keep any Server/headless setup API helper internal until verified against live Server.
 
-is for power users/scripts.
+2. Replace `personal` with built-in `desktop`.
+   - Materialize `desktop` when detected or selected.
+   - Update `resolveTarget`, `targets list`, `targets remove`, setup docs, and smoke tests.
 
----
+3. Add auth source metadata.
+   - Extend `StoredAuth.source`.
+   - Populate for local Desktop, Desktop OAuth, remote OAuth, and manual token paths.
 
-## B. Make Desktop the default product path
+4. Implement local Desktop direct auth.
+   - Inspect Desktop app/profile/session state.
+   - Read Matrix access token from local Desktop state/cache using structured storage access, not ad hoc text parsing.
+   - Cache target auth and verify with Desktop API or Matrix-backed API calls.
+   - Show connected accounts before confirmation when possible.
 
-Most users probably have Desktop.
+5. Keep OAuth as setup mode, not auth namespace sprawl.
+   - Add `setup --oauth`.
+   - Reuse existing PKCE implementation.
+   - Support `setup -t <target> --oauth` and `setup --remote URL`.
 
-So the CLI should assume:
+6. Make setup orchestrate installs.
+   - Use existing `install desktop` and `install server`.
+   - Never download in non-interactive mode without `--install --yes`.
+   - Preserve `--server-env staging` for tests.
 
-> “You already use Beeper Desktop. Let me connect to that.”
+7. Use primitives for direct testing.
+   - `targets create/start/status/logs`
+   - `install desktop/server`
+   - `setup --local`
+   - `setup --oauth`
+   - `setup --remote`
+   - `verify ...`
 
-Instead of starting from abstract auth concepts.
+8. Keep `auth` narrow.
+   - `auth status`
+   - `auth logout`
+   - Add revoke/list/use only if target commands cannot cover the need.
 
----
+9. Regenerate docs from metadata.
+   - README and man output should describe `setup` as guided orchestration.
+   - Advanced examples should show primitive equivalents.
 
-## C. Support multiple connections from day one
+10. Update E2E staging scripts.
+    - Test primitives directly first.
+    - Test `beeper setup` as a shortcut over those primitives.
+    - Fail fast on required phase failures.
+    - Continue to isolate config, ports, and profiles from the default Desktop instance.
 
-Even if v1 only uses one, the mental model should support:
+## Test Plan
 
-```bash
-beeper auth list
-beeper auth use personal
-beeper auth use server-prod
-```
+### Local Unit/Smoke
 
-This prevents painful future migrations.
+- Command tree still matches the nuclear redesign.
+- No new public `auth login/list/use` unless deliberately added.
+- `setup --json` returns stable envelopes.
+- `setup --read-only` refuses writes.
+- `setup --install --yes` is required for downloads.
+- `targets list` shows built-in Desktop distinctly from named targets.
+- `targets remove desktop` forgets CLI state only.
 
----
+### Local Desktop
 
-## D. Add `doctor`
+- Running signed-in Desktop:
+  - `setup --local` detects user and connected accounts.
+  - Auth source is `desktop-db` or `desktop-cache`.
+  - `status`, `accounts list`, `chats list` work through the configured target.
 
-Every setup flow should have a diagnostic equivalent.
+- Installed but logged-out Desktop:
+  - `setup` launches or points to Desktop sign-in.
+  - Rerunning `setup` resumes after sign-in.
 
-```bash
-beeper doctor desktop
-```
+- No Desktop:
+  - `setup` offers install only where supported.
+  - Non-interactive mode returns actionable JSON instead of prompting.
 
-Should check:
+### OAuth / Remote
 
-- Desktop installed
-- Desktop running
-- user logged in
-- Desktop API reachable
-- token readable
-- token valid
-- homeserver reachable
-- config writable
-- keychain writable
+- `setup --oauth` uses PKCE for the resolved target.
+- `setup --remote URL` creates/updates a remote target and authenticates.
+- Remote targets reject local runtime commands with clear errors.
 
----
+### Server
 
-## E. Add repair paths, not just errors
+- `install server --server-env staging` installs the staging binary.
+- `targets create server/start/status/logs/stop` work.
+- `setup -t <server> --oauth` works when Server supports PKCE.
+- Server/headless email-code setup is tested only through verified supported routes, not assumed from Desktop.
 
-Bad:
+### Multi-Target Staging
 
-```txt
-Error: token not found
-```
+- Create three isolated targets:
+  - one managed Desktop profile
+  - two managed Server profiles
+- Use `staging-user@example.invalid` accounts and OTP `[REDACTED_OTP]` only in the scripts that target verified setup APIs.
+- Start all targets on non-default ports.
+- Authenticate each target through the appropriate setup mode.
+- Run device-to-device verification between two signed-in targets.
+- Send messages between targets.
+- Cleanup stops managed Server targets and records any Desktop target that must be quit manually.
 
-Good:
+## Acceptance Criteria
 
-```txt
-Could not find a local Desktop session.
-
-Try:
-  1. Open Beeper Desktop and sign in
-  2. Reconnect with browser authorization
-  3. Run beeper doctor desktop
-```
-
----
-
-## F. Make install part of setup
-
-If Desktop is missing, don’t dead-end. Offer install.
-
-```bash
-beeper setup desktop --install
-```
-
-Could use platform-specific instructions first, then automation later.
-
----
-
-## G. Keep advanced/manual flows hidden but available
-
-Manual setup should exist, but never be the recommended path unless detection fails badly.
-
----
-
-# 10. Recommended MVP
-
-Implement in this order:
-
-1. `beeper setup`
-2. `desktop-local`
-3. `desktop-oauth`
-4. `remote-oauth`
-5. `auth status/list/use/logout`
-6. `doctor desktop`
-7. `desktop-install`
-8. `server-install`
-9. `manual`
-
-MVP wizard options:
-
-```txt
-1. Connect to local Beeper Desktop
-2. Authorize with browser
-3. Connect to remote Beeper
-4. Manual setup
-```
-
-Then add install/server polish after.
-
----
-
-# 11. Final recommended top-level menu
-
-```txt
-✨ Beeper CLI setup
-
-Recommended:
-  1. Connect to local Beeper Desktop
-     Fastest. Uses your signed-in Desktop app on this computer.
-
-Other ways to connect:
-  2. Authorize with browser
-     OAuth/PKCE with explicit permissions.
-
-  3. Connect to remote Beeper Desktop or Server
-     For another machine or hosted server.
-
-Setup:
-  4. Install or repair Beeper Desktop
-  5. Install or setup Beeper Server
-
-Advanced:
-  6. Manual setup
-
-Select [1]:
-```
-
-That is the core experience I’d build around.
+- `beeper setup` feels like a product wizard, not an API debugger.
+- The default Desktop path succeeds without asking users to understand tokens, ports, profiles, or OAuth.
+- Every wizard choice has a direct command or flag equivalent.
+- The public model remains one target system, not targets plus connections.
+- E2E scripts test direct primitives and then setup shortcuts.
+- The default Desktop instance is never modified during staging tests unless explicitly requested.

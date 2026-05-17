@@ -40,6 +40,7 @@ export async function ensureDesktopToken(options: {
   baseURL?: string
   clientName?: string
   openBrowser?: boolean
+  save?: boolean
   scan?: boolean
   scope?: string
 } = {}): Promise<string> {
@@ -52,8 +53,9 @@ export async function ensureDesktopToken(options: {
     baseURL: desktop.baseURL,
     clientName: options.clientName ?? 'Beeper CLI',
     openBrowser: options.openBrowser ?? true,
-    save: true,
+    save: options.save ?? true,
     scope: options.scope ?? 'read write',
+    source: 'desktop-oauth',
   })
   return token.access_token
 }

@@ -2,17 +2,17 @@ import { constants as fsConstants } from 'node:fs'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import type { LoginResponseResponse, LoginStartResponse } from '@beeper/desktop-api/resources/app/login'
+
+export type AuthSource = 'desktop-db' | 'desktop-cache' | 'desktop-oauth' | 'remote-oauth' | 'manual'
 
 export type StoredAuth = {
   accessToken: string
   clientID?: string
   expiresAt?: string
   scope?: string
+  source?: AuthSource
   tokenType: 'Bearer'
 }
-
-type LoginRegistrationRequired = Extract<LoginResponseResponse, { registrationRequired: true }>
 
 export type Target = {
   id: string
@@ -20,16 +20,6 @@ export type Target = {
   name?: string
   baseURL: string
   auth?: StoredAuth
-  setup?: {
-    login?: {
-      createdAt: string
-      email: string
-      leadToken?: LoginRegistrationRequired['leadToken']
-      setupRequestID: LoginStartResponse['setupRequestID']
-      username?: string
-      usernameSuggestions?: LoginRegistrationRequired['usernameSuggestions']
-    }
-  }
   managed?: boolean
   dataDir?: string
   profile?: string
@@ -52,6 +42,7 @@ export type Config = {
 
 const defaultPort = 23_373
 const defaultBaseURL = `http://127.0.0.1:${defaultPort}`
+export const builtInDesktopTargetID = 'desktop'
 
 export function beeperDir(): string {
   return process.env.BEEPER_CLI_CONFIG_DIR ?? join(homedir(), '.beeper')
@@ -141,11 +132,15 @@ export async function writeTarget(target: Target): Promise<void> {
 
 export async function removeTarget(id: string): Promise<void> {
   await rm(targetPath(id), { force: true })
-  await updateConfig(config => config.defaultTarget === id ? {} : config)
+  await updateConfig(config => {
+    const next = config.defaultTarget === id ? { ...config, defaultTarget: undefined } : config
+    if (id === builtInDesktopTargetID) return { ...next, auth: undefined, baseURL: undefined }
+    return next
+  })
 }
 
 export async function saveTargetAuth(target: Target, auth: StoredAuth): Promise<void> {
-  if (target.id === 'custom' || target.id === 'desktop') {
+  if (target.id === 'custom') {
     await updateConfig(config => ({ ...config, baseURL: target.baseURL, auth }))
     return
   }
@@ -153,11 +148,12 @@ export async function saveTargetAuth(target: Target, auth: StoredAuth): Promise<
 }
 
 export async function clearTargetAuth(target: Target): Promise<void> {
-  if (target.id === 'custom' || target.id === 'desktop') {
+  if (target.id === 'custom') {
     await updateConfig(config => ({ ...config, auth: undefined }))
     return
   }
   await writeTarget({ ...target, auth: undefined })
+  if (target.id === builtInDesktopTargetID) await updateConfig(config => ({ ...config, auth: undefined }))
 }
 
 export async function resolveTarget(options: { target?: string; baseURL?: string } = {}): Promise<Target> {
@@ -172,7 +168,9 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   }
   const targets = await listTargets()
   if (targets.length === 1 && targets[0]) return withConfigAuth(targets[0], config)
-  return { id: 'desktop', type: 'desktop', name: 'Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
+  const desktopTarget = await readTarget(builtInDesktopTargetID)
+  if (desktopTarget) return withConfigAuth(desktopTarget, config)
+  return { id: builtInDesktopTargetID, type: 'desktop', name: 'Beeper Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
 }
 
 function withConfigAuth(target: Target, config: Config): Target {

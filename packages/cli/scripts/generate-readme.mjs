@@ -99,9 +99,12 @@ beeper send file --to "Family" --file ./photo.jpg --caption "from today"
 beeper export --out ./beeper-export
 \`\`\`
 
-\`beeper setup\` makes the selected target ready. It is safe to run again: the
-command inspects the current target state and continues from login, device
-verification, recovery-key, first-sync, or ready states.
+\`beeper setup\` makes the selected target ready. By default it looks for Beeper
+Desktop on this device and offers to use the existing Desktop session. Use
+\`setup --local\` for the direct Desktop-session path, \`setup --oauth\` for the
+browser-authorized path, \`setup --remote URL\` for a remote Desktop or Server,
+and \`setup --server --install\` or \`setup --desktop --install\` to orchestrate
+installation and target setup.
 
 For non-interactive use, pass a token through the environment:
 

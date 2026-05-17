@@ -13,7 +13,7 @@ export default class AuthStatus extends BeeperCommand {
       authenticated,
       target: target.id,
       baseURL: target.baseURL,
-      source: process.env.BEEPER_ACCESS_TOKEN ? 'env' : target.auth?.accessToken ? 'target' : 'none',
+      source: process.env.BEEPER_ACCESS_TOKEN ? 'env' : target.auth?.source ?? (target.auth?.accessToken ? 'target' : 'none'),
       clientID: target.auth?.clientID,
       expiresAt: target.auth?.expiresAt,
       scope: target.auth?.scope,
