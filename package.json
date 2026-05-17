@@ -8,7 +8,7 @@
     "check": "pnpm typecheck && pnpm test && pnpm build && pnpm pack:packages",
     "clean": "pnpm -r clean",
     "changeset": "changeset",
-    "lint": "eslint .",
+    "lint": "eslint eslint.config.mjs packages/cli-plugin-cloudflare/src packages/cli-plugin-cloudflare/test",
     "pack:packages": "mkdir -p .packs && pnpm -r --filter './packages/*' pack --pack-destination ./.packs",
     "release": "pnpm check && pnpm changeset publish",
     "test": "pnpm -r test",

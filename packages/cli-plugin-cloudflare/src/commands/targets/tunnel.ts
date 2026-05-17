@@ -73,6 +73,7 @@ async function waitForExit(stop: () => void): Promise<void> {
       stop()
       resolve()
     }
+
     process.once('SIGINT', finish)
     process.once('SIGTERM', finish)
   })

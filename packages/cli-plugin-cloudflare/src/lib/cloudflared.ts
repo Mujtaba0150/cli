@@ -2,9 +2,10 @@ import { createWriteStream } from 'node:fs'
 import { access, chmod, mkdir, rename, rm } from 'node:fs/promises'
 import { arch, platform } from 'node:os'
 import { basename, dirname, join } from 'node:path'
+import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { fileURLToPath } from 'node:url'
-import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 
 export const currentCloudflaredVersion = '2024.8.2'
 const repo = `https://github.com/cloudflare/cloudflared/releases/download/${currentCloudflaredVersion}/`
@@ -42,7 +43,7 @@ export type StartTunnelOptions = {
 }
 
 export type StartedTunnel = {
-  process: ChildProcessWithoutNullStreams
+  process: ChildProcess
   stop: () => void
   url: string
 }
@@ -61,6 +62,7 @@ export async function ensureCloudflared(options: { cloudflaredPath?: string; ins
   if (!options.install) {
     throw new Error(`cloudflared not found at ${target}. Install it or rerun with --install.`)
   }
+
   await installCloudflared(target)
   return target
 }
@@ -89,12 +91,15 @@ export async function startCloudflareTunnel(options: StartTunnelOptions): Promis
 
   while (true) {
     try {
-      return await runCloudflared(bin, options)
+      const started = await runCloudflared(bin, options)
+      return started
     } catch (error) {
       attempt += 1
       if (attempt > retries) throw error
       if (options.debug) process.stderr.write(`cloudflared crashed before connecting; retrying (${attempt}/${retries})\n`)
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => {
+        setTimeout(resolve, 1000)
+      })
     }
   }
 }
@@ -107,7 +112,7 @@ async function runCloudflared(bin: string, options: StartTunnelOptions): Promise
   let connected = false
   let publicURL: string | undefined
 
-  return await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       child.kill('SIGTERM')
       reject(new Error(lastTunnelError(errors) ?? 'Could not start Cloudflare Tunnel: timed out waiting for a public URL.'))
@@ -167,7 +172,7 @@ function downloadURL(system = platform(), cpu = arch()): string {
 async function downloadFile(url: string, to: string): Promise<void> {
   const response = await fetch(url, { redirect: 'follow' })
   if (!response.ok || !response.body) throw new Error(`Could not download ${url}: ${response.status} ${response.statusText}`)
-  await pipeline(response.body, createWriteStream(to))
+  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), createWriteStream(to))
 }
 
 function findTunnelURL(data: string): string | undefined {

@@ -54,9 +54,9 @@ const expectedCommands = [
   'auth verify start',
   'auth verify show',
   'auth verify sas',
-  'auth verify sas confirm',
-  'auth verify qr scan',
-  'auth verify qr confirm-scanned',
+  'auth verify sas-confirm',
+  'auth verify qr-scan',
+  'auth verify qr-confirm',
   'accounts list',
   'accounts add',
   'accounts show',
@@ -80,7 +80,7 @@ const expectedCommands = [
   'chats description',
   'chats avatar',
   'chats draft',
-  'chats expiry',
+  'chats disappear',
   'chats remind',
   'chats unremind',
   'chats focus',
@@ -135,7 +135,9 @@ assert.match(help, /\btargets\b/, 'help should expose targets')
 assert.match(help, /\bchats\b/, 'help should expose chats')
 assert.match(help, /\bmessages\b/, 'help should expose messages')
 assert.doesNotMatch(help, /\bprofile\b|\bcommands\b|\bllm\b|\blogin\b|\blogout\b/, 'help must not expose deleted root/internal commands')
-assert.doesNotMatch(help, /\bplugins\b|\bautocomplete\b|\bassets\b|\bapp\b/, 'help must not expose oclif or old API namespaces')
+assert.match(help, /\bplugins\b/, 'help should expose plugin management')
+assert.match(help, /\bautocomplete\b/, 'help should expose shell autocomplete')
+assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')
 
 for (const command of expectedCommands) {
   ok(...command.split(' '), '--help')

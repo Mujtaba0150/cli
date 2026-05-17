@@ -53,6 +53,15 @@ brew install beeper/tap/beeper-cli
 
 The installed command is \`beeper\`.
 
+### npm
+
+\`\`\`sh
+npx beeper-cli --help
+npm install -g beeper-cli
+\`\`\`
+
+The package name is \`beeper-cli\`; the installed command is \`beeper\`.
+
 ### Build from source
 
 Install dependencies before running these commands.
@@ -129,6 +138,28 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 
 Use \`beeper docs\` to open the CLI docs and \`beeper man\` to print the local
 command manual.
+
+## Plugins
+
+Beeper CLI supports oclif plugins. Install a published plugin:
+
+\`\`\`sh
+beeper plugins install @beeper/cli-plugin-cloudflare
+\`\`\`
+
+For plugin development, import from \`beeper-cli/plugin-sdk\` and expose oclif
+commands from your package. Link a local plugin while working on it:
+
+\`\`\`sh
+beeper plugins link ./packages/cli-plugin-cloudflare
+beeper targets tunnel --help
+\`\`\`
+
+First-party optional plugins:
+
+| Package | Adds |
+| --- | --- |
+| \`@beeper/cli-plugin-cloudflare\` | \`targets tunnel\` for exposing a selected Beeper target through Cloudflare Tunnel. |
 
 ## Configuration
 

@@ -30,6 +30,15 @@ brew install beeper/tap/beeper-cli
 
 The installed command is `beeper`.
 
+### npm
+
+```sh
+npx beeper-cli --help
+npm install -g beeper-cli
+```
+
+The package name is `beeper-cli`; the installed command is `beeper`.
+
 ### Build from source
 
 Install dependencies before running these commands.
@@ -106,6 +115,28 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 
 Use `beeper docs` to open the CLI docs and `beeper man` to print the local
 command manual.
+
+## Plugins
+
+Beeper CLI supports oclif plugins. Install a published plugin:
+
+```sh
+beeper plugins install @beeper/cli-plugin-cloudflare
+```
+
+For plugin development, import from `beeper-cli/plugin-sdk` and expose oclif
+commands from your package. Link a local plugin while working on it:
+
+```sh
+beeper plugins link ./packages/cli-plugin-cloudflare
+beeper targets tunnel --help
+```
+
+First-party optional plugins:
+
+| Package | Adds |
+| --- | --- |
+| `@beeper/cli-plugin-cloudflare` | `targets tunnel` for exposing a selected Beeper target through Cloudflare Tunnel. |
 
 ## Configuration
 
@@ -208,9 +239,9 @@ explicit writes, and names based on what people are trying to do.
 | `auth verify start` | Start a device verification request |
 | `auth verify show` | Show active verification details |
 | `auth verify sas` | Start short-authentication-string (emoji) verification |
-| `auth verify sas confirm` | Confirm short-authentication-string (emoji) verification |
-| `auth verify qr scan` | Submit a scanned QR-code verification payload |
-| `auth verify qr confirm-scanned` | Confirm that the other device scanned your QR code |
+| `auth verify sas-confirm` | Confirm short-authentication-string (emoji) verification |
+| `auth verify qr-scan` | Submit a scanned QR-code verification payload |
+| `auth verify qr-confirm` | Confirm that the other device scanned your QR code |
 | `accounts list` | List connected accounts |
 | `accounts add` | Add a Beeper account |
 | `accounts show` | Show account details |
@@ -234,7 +265,7 @@ explicit writes, and names based on what people are trying to do.
 | `chats description` | Set a chat description |
 | `chats avatar` | Set a chat avatar |
 | `chats draft` | Set or clear a chat draft |
-| `chats expiry` | Set disappearing-message expiry |
+| `chats disappear` | Set disappearing messages for a chat |
 | `chats remind` | Set a chat reminder |
 | `chats unremind` | Clear a chat reminder |
 | `chats focus` | Focus Beeper Desktop on a chat |
@@ -747,10 +778,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--code=<value>` | option | Out-of-band approval code from the other device |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
-| `--payload=<value>` | option | Raw verification payload (e.g. scanned QR contents) |
-| `--user=<value>` | option | User ID whose verification request to approve |
 
 Examples:
 
@@ -771,10 +799,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--code=<value>` | option | Recovery key string |
-| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
-| `--payload=<value>` | option | Raw recovery payload (advanced) |
-| `--user=<value>` | option | User ID whose recovery key to use (defaults to your own account) |
+| `--key=<value>` | option | Recovery key string Required. |
 
 Examples:
 
@@ -790,15 +815,6 @@ Create a new encrypted-messages recovery key
 ```sh
 beeper auth verify reset-recovery-key
 ```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--code=<value>` | option | Optional confirmation code |
-| `--id=<value>` | option | Verification request ID (rarely needed; set by the server) |
-| `--payload=<value>` | option | Optional raw payload |
-| `--user=<value>` | option | User ID to reset (defaults to your own account) |
 
 Examples:
 
@@ -819,10 +835,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--code=<value>` | option | Optional cancellation code |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
-| `--payload=<value>` | option | Optional cancellation payload |
-| `--user=<value>` | option | User ID whose verification request to cancel |
 
 Examples:
 
@@ -858,9 +871,6 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--code=<value>` | option | Optional start-code payload |
-| `--id=<value>` | option | Verification request ID (rarely needed; set by the server) |
-| `--payload=<value>` | option | Optional raw start payload |
 | `--user=<value>` | option | User ID to verify with (defaults to your own account) |
 
 Examples:
@@ -907,11 +917,11 @@ beeper auth verify sas
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
-### `beeper auth verify sas confirm`
+### `beeper auth verify sas-confirm`
 Confirm short-authentication-string (emoji) verification
 
 ```sh
-beeper auth verify sas confirm
+beeper auth verify sas-confirm
 ```
 
 Flags:
@@ -923,16 +933,16 @@ Flags:
 Examples:
 
 ```sh
-beeper auth verify sas confirm
+beeper auth verify sas-confirm
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
-### `beeper auth verify qr scan`
+### `beeper auth verify qr-scan`
 Submit a scanned QR-code verification payload
 
 ```sh
-beeper auth verify qr scan
+beeper auth verify qr-scan
 ```
 
 Flags:
@@ -945,16 +955,16 @@ Flags:
 Examples:
 
 ```sh
-beeper auth verify qr scan --payload "..."
+beeper auth verify qr-scan --payload "..."
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
-### `beeper auth verify qr confirm-scanned`
+### `beeper auth verify qr-confirm`
 Confirm that the other device scanned your QR code
 
 ```sh
-beeper auth verify qr confirm-scanned
+beeper auth verify qr-confirm
 ```
 
 Flags:
@@ -966,7 +976,7 @@ Flags:
 Examples:
 
 ```sh
-beeper auth verify qr confirm-scanned
+beeper auth verify qr-confirm
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1516,8 +1526,8 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--clear` | boolean | Clear the existing draft instead of setting one |
 | `--file=<value>` | option | Attachment file to upload with the draft |
-| `--file-name=<value>` | option | Override the displayed filename of the attachment |
-| `--mime-type=<value>` | option | Override MIME type detection for the attachment |
+| `--filename=<value>` | option | Override the displayed filename of the attachment |
+| `--mime=<value>` | option | Override MIME type detection for the attachment |
 | `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 | `--text=<value>` | option | Draft text. Omit and pass --clear to remove the draft. |
 
@@ -1530,11 +1540,11 @@ beeper chats draft --chat "Family" --clear
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
-### `beeper chats expiry`
-Set disappearing-message expiry
+### `beeper chats disappear`
+Set disappearing messages for a chat
 
 ```sh
-beeper chats expiry
+beeper chats disappear
 ```
 
 Flags:
@@ -1543,12 +1553,12 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
-| `--seconds=<value>` | option | Disappearing-message expiry in seconds, or "off" to disable Required. |
+| `--seconds=<value>` | option | Timer in seconds, or "off" to disable Required. |
 
 Examples:
 
 ```sh
-beeper chats expiry --chat "Friends" --seconds 86400
+beeper chats disappear --chat "Friends" --seconds 86400
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1686,28 +1696,26 @@ Search messages across chats
 beeper messages search [query]
 ```
 
-Search messages across chats.
-
 Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `query` | no | User-typed search text. Literal word matching (non-semantic). |
+| `query` | no | Search text (literal word match) |
 
 Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--account=<value>...` | option | Limit to an account selector. Repeat for multiple. |
 | `--after=<value>` | option | Only messages at or after this ISO timestamp |
 | `--before=<value>` | option | Only messages at or before this ISO timestamp |
-| `--chat=<value>...` | option | Limit to Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available. Also accepts exact chat titles or search text. |
-| `--chat-type=<group|single>` | option | Limit to group chats or direct messages |
-| `--exclude-low-priority` | boolean | Exclude low-priority chats. Use --no-exclude-low-priority to include all. |
+| `--chat=<value>...` | option | Limit to a chat selector. Repeat for multiple. |
+| `--chat-type=<group|single>` | option | Only group chats or direct messages |
+| `--exclude-low-priority` | boolean | Exclude low-priority chats |
 | `--ids` | boolean | Print only message IDs |
-| `--include-muted` | boolean | Include muted chats. Use --no-include-muted for a tighter search. |
-| `--limit=<value>` | option | Maximum messages to print Default: 50 |
-| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for more types. |
+| `--include-muted` | boolean | Include muted chats |
+| `--limit=<value>` | option | Maximum results Default: 50 |
+| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for multiple. |
 | `--sender=<value>` | option | me, others, or a user ID |
 
 Examples:
@@ -1909,13 +1917,14 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--mention=<value>...` | option | User ID to @-mention (repeatable) |
 | `--message=<value>` | option | Message text to send Required. |
+| `--no-preview` | boolean | Disable automatic link preview for URLs in the message |
 | `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
-| `--wait-interval=<value>` | option | Poll interval (ms) while --wait is set Default: 750 |
-| `--wait-timeout=<value>` | option | Maximum time (ms) to wait when --wait is set Default: 30000 |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
 
 Examples:
 
@@ -1939,14 +1948,13 @@ Flags:
 | --- | --- | --- |
 | `--caption=<value>` | option | Optional caption to send alongside the file |
 | `--file=<value>` | option | Local file path to upload (max 500 MB) Required. |
-| `--file-name=<value>` | option | Override the displayed filename |
-| `--mime-type=<value>` | option | Override MIME type detection |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | Override MIME type detection |
 | `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
-| `--wait-interval=<value>` | option | Poll interval (ms) while --wait is set Default: 750 |
-| `--wait-timeout=<value>` | option | Maximum time (ms) to wait when --wait is set Default: 30000 |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
 
 Examples:
 

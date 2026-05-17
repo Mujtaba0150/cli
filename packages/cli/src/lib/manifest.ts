@@ -157,19 +157,19 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper auth verify sas'],
   },
   {
-    command: 'auth verify sas confirm',
+    command: 'auth verify sas-confirm',
     description: 'Confirm short-authentication-string (emoji) verification',
-    examples: ['beeper auth verify sas confirm'],
+    examples: ['beeper auth verify sas-confirm'],
   },
   {
-    command: 'auth verify qr scan',
+    command: 'auth verify qr-scan',
     description: 'Submit a scanned QR-code verification payload',
-    examples: ['beeper auth verify qr scan --payload "..."'],
+    examples: ['beeper auth verify qr-scan --payload "..."'],
   },
   {
-    command: 'auth verify qr confirm-scanned',
+    command: 'auth verify qr-confirm',
     description: 'Confirm that the other device scanned your QR code',
-    examples: ['beeper auth verify qr confirm-scanned'],
+    examples: ['beeper auth verify qr-confirm'],
   },
   {
     command: 'accounts list',
@@ -304,9 +304,9 @@ export const commandManifest: ManifestCommand[] = [
     ],
   },
   {
-    command: 'chats expiry',
+    command: 'chats disappear',
     description: 'Set disappearing-message expiry',
-    examples: ['beeper chats expiry --chat "Friends" --seconds 86400'],
+    examples: ['beeper chats disappear --chat "Friends" --seconds 86400'],
   },
   {
     command: 'chats remind',
