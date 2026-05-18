@@ -166,10 +166,15 @@ type WebViewConstructor = new (options?: Record<string, unknown>) => {
 }
 
 const EXTRACT_JS_KEY = '__BEEP_BEEP_AUTH_RESULTS__'
+let webViewConstructorOverride: WebViewConstructor | undefined
+
+export function setWebViewConstructorForTest(constructor: WebViewConstructor | undefined): void {
+  webViewConstructorOverride = constructor
+}
 
 async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: AccountLoginOptions): Promise<Record<string, string>> {
   const BunRuntime = (globalThis as { Bun?: { WebView?: WebViewConstructor } }).Bun
-  const WebView = BunRuntime?.WebView
+  const WebView = webViewConstructorOverride ?? BunRuntime?.WebView
   if (!WebView) throw new Error('Bun.WebView is not available in this Bun runtime.')
 
   const backend = options.webviewBackend && options.webviewBackend !== 'auto' ? options.webviewBackend : undefined

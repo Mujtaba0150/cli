@@ -14,14 +14,17 @@ export type TargetLiveStatus = {
   }
 }
 
-export async function targetLiveStatus(target: Pick<Target, 'type' | 'baseURL'>): Promise<TargetLiveStatus> {
+export async function targetLiveStatus(target: Pick<Target, 'type' | 'baseURL' | 'managed'>): Promise<TargetLiveStatus> {
   try {
     const response = await fetch(new URL('/v1/info', target.baseURL), { signal: AbortSignal.timeout(3000) })
     if (!response.ok) return { reachable: false, error: `${response.status} ${response.statusText}` }
-    const info = await response.json() as { app?: { version?: string; bundle_id?: string } }
+    const info = await response.json() as {
+      app?: { version?: string; bundle_id?: string }
+      server?: { hostname?: string; remote_access?: boolean }
+    }
     const version = info.app?.version
     const bundleID = info.app?.bundle_id
-    const actualType = typeFromBundleID(bundleID)
+    const actualType = typeFromInfo(info, target)
 
     if (target.type !== 'remote' && actualType && actualType !== target.type) {
       return {
@@ -52,6 +55,14 @@ export async function targetLiveStatus(target: Pick<Target, 'type' | 'baseURL'>)
   } catch {
     return { reachable: false, error: `Could not reach ${target.baseURL}` }
   }
+}
+
+function typeFromInfo(
+  info: { app?: { bundle_id?: string }; server?: { hostname?: string; remote_access?: boolean } },
+  target: Pick<Target, 'type' | 'managed'>,
+): 'desktop' | 'server' | undefined {
+  if (target.type === 'server' && target.managed && info.server?.hostname === '127.0.0.1' && info.server.remote_access === false) return 'server'
+  return typeFromBundleID(info.app?.bundle_id)
 }
 
 function typeFromBundleID(bundleID?: string): 'desktop' | 'server' | undefined {

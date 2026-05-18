@@ -1,14 +1,10 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test'
-import { runGuidedAccountLogin } from '../src/lib/account-login.js'
+import { runGuidedAccountLogin, setWebViewConstructorForTest } from '../src/lib/account-login.js'
 
 type Session = Parameters<typeof runGuidedAccountLogin>[2]
 
-const bunWithWebView = globalThis.Bun as typeof globalThis.Bun & { WebView?: unknown }
-const previousWebView = bunWithWebView.WebView
-
 afterEach(() => {
-  if (previousWebView === undefined) delete bunWithWebView.WebView
-  else bunWithWebView.WebView = previousWebView
+  setWebViewConstructorForTest(undefined)
 })
 
 describe('runGuidedAccountLogin', () => {
@@ -147,7 +143,7 @@ describe('runGuidedAccountLogin', () => {
       }
     }
 
-    bunWithWebView.WebView = FakeWebView
+    setWebViewConstructorForTest(FakeWebView)
 
     const cookieStep = session({
       currentStep: {

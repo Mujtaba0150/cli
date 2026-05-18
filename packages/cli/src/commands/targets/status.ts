@@ -15,6 +15,6 @@ export default class TargetsStatus extends BeeperCommand {
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     const status = await targetLiveStatus(target)
     await printData({ target, ...status }, flags.json ? 'json' : 'human')
-    if (!status.reachable) this.exit(1)
+    if (!status.reachable) process.exitCode = 1
   }
 }
