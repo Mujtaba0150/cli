@@ -33,31 +33,31 @@ const commandList = commands.map(command => {
 const examplesByID = new Map(commandManifest.map(item => [item.command, item.examples ?? []]));
 const commandSections = commands.map(command => commandSection(command)).join('\n\n');
 
-const readme = `# 💬 beeper — Beeper CLI: connect, search, send
+const intro = `# beeper — One CLI for all your chats
 
-A scriptable Beeper client for humans and agents. Drives Beeper Desktop on this
-machine by default, with first-class paths for self-hosting Beeper Server and
-for talking to remote Desktop or Server targets — then gives you account
-management, chat search, message reading, sending, media downloads, exports,
-diagnostics, and raw API access from the command line.
+> Built for you and your agent. Batteries included.
 
-> Third-party-friendly: speaks the Beeper Desktop API. Pairs over the local
-> loopback by default; remote targets authorize over OAuth (PKCE) or with a
-> bearer token you provide.
+Talks to Beeper Desktop on this machine, to a Beeper Server you self-host, or
+to either one running somewhere else. Send and receive across the chat
+networks Beeper bridges, from one CLI shaped for scripts, agents, and humans
+in a hurry.
+
+**Supported chat networks** (via Beeper's bridges):
+WhatsApp · iMessage · Telegram · Discord · Signal · Instagram DMs ·
+Facebook Messenger · X (Twitter) DMs · LinkedIn · Slack ·
+Google Messages (RCS/SMS) · Google Chat · Matrix · IRC · Bluesky.
+Run \`beeper bridges list\` for the live list on your target.
 
 Command manual: \`beeper man\` · CLI docs: \`beeper docs\`
 
 ## Features
 
-- **One CLI, three targets** — local Beeper Desktop on this machine (default), a managed local Beeper Server you install via the CLI, or a remote Beeper Desktop/Server you authorize over OAuth/PKCE or with a bearer token.
-- **Guided setup** — \`beeper setup\` discovers a Desktop on this device and adopts its session; \`--server --install\`, \`--desktop --install\`, \`--oauth\`, and \`--remote URL\` cover every other path.
-- **Runtime installers** — \`install desktop\` and \`install server\` install and manage the local Beeper runtimes; \`targets start/stop/restart/logs/enable\` runs them.
-- **Bridges + accounts** — list bridge connectors, walk login flows, connect accounts (WhatsApp, Telegram, Discord, iMessage, …), switch defaults, and remove accounts.
-- **Chats, messages, contacts** — list, search, start, archive, pin, mute, rename, focus, read, edit, delete, react, send text/files/reactions/stickers/voice, send typing indicators, download media.
-- **Verification + readiness** — \`verify\`, \`verify status\`, SAS/QR flows, recovery-key unlock, and \`status\`/\`doctor\` to reach an encrypted-ready target.
-- **Exports** — \`export\` for full chats/transcripts/attachments and \`messages export\` for one-chat JSON.
-- **Automation** — \`--json\` everywhere, NDJSON \`--events\`, \`watch\` (WS + outbound webhooks with HMAC), \`rpc\` over stdin/stdout, \`man --json\` for tool manifests.
-- **Safety** — \`--read-only\` rejects mutating commands; raw API access stays explicit under \`api get\`, \`api post\`, and \`api request\`.
+- **Connects to your Beeper.** Local Beeper Desktop on this machine (default), a Beeper Server you install and manage via the CLI, or a remote Beeper Desktop or Beeper Server authorized over OAuth/PKCE — or a bearer token in CI.
+- **Setup that does the work.** \`beeper setup\` finds Beeper Desktop, offers to launch it, adopts the session. \`--server --install\` installs and starts a headless server in one step. \`--oauth\` opens the browser. \`--remote URL\` does the rest.
+- **Every chat, every network.** List, search, start, archive, pin, mute, rename, focus. Read, edit, delete, react. Send text, files, stickers, voice, typing indicators. Download media. Export to JSON or Markdown.
+- **Verification first-class.** SAS/QR device verification, recovery-key unlock, \`status\`/\`doctor\` to reach an encrypted-ready target — without leaving the shell.
+- **Agent-shaped automation.** \`--json\` everywhere, NDJSON \`--events\`, \`watch\` with WebSocket + outbound HMAC-signed webhooks, \`rpc\` over stdin/stdout, \`man --json\` tool manifests, raw \`api get\`/\`post\`/\`request\` for Beeper Client API endpoints we haven't wrapped yet.
+- **Safe by default.** \`--read-only\` rejects every mutating command. Writes stay explicit. Plugins extend the CLI without forking it.
 
 ## Install
 
@@ -102,32 +102,39 @@ bun run readme
 
 ## Quick start
 
-The happy path: you already run Beeper Desktop on this machine. \`beeper setup\`
-will find it, adopt its session, and you're ready.
+The happy path: Beeper Desktop is already on this machine. \`beeper setup\` finds
+it, offers to launch it if it's not running, and adopts the session.
 
-\`\`\`sh
-# 1. Adopt the local Beeper Desktop session (or pick another target)
-beeper setup
+\`\`\`text
+$ beeper setup
+Looking for Beeper Desktop… found, not running.
+Launch it now? [Y/n] y
+▎ Launched   Beeper Desktop
+  next       Run \`beeper setup\` again once it finishes starting.
 
-# 2. Check readiness
-beeper status
-beeper doctor
+$ beeper setup
+Use this Desktop session for CLI access? [Y/n] y
+▎ Connected  desktop
+  accounts   whatsapp, telegram, imessage
+  endpoint   http://127.0.0.1:23373
 
-# 3. Inspect bridges and connected chat accounts
-beeper bridges list
-beeper accounts list
+$ beeper chats list --limit 3
+  10313  Family             3 unread
+   8951  Alice              ·
+   7204  Eng standup        12 unread
 
-# 4. Read and search
-beeper chats list
-beeper messages list --chat 10313 --limit 50
-beeper messages search "flight"
+$ beeper messages search "flight"
+   8951  Alice    · "your flight is at 6:40, gate B23"   2d ago
+  10313  Family   · "what flight are you on?"            1w ago
 
-# 5. Send
-beeper send text --to 10313 --message "on my way"
-beeper send file --to 8951 --file ./photo.jpg --caption "from today"
+$ beeper send text --to Family --message "on my way"
+▎ Sent       Family
+  message    "on my way"
+  at         2026-05-18T14:02:11Z
 
-# 6. Export
-beeper export --out ./beeper-export
+$ beeper export --out ./beeper-export
+▎ Exported   ./beeper-export
+  chats      214   messages   38,901   attachments 1,205
 \`\`\`
 
 Recipients accept a numeric local chat ID, a full Beeper/Matrix chat ID, an
@@ -136,50 +143,73 @@ TTY; pass \`--pick N\` in scripts.
 
 ## Connecting a target
 
-A *target* is the endpoint \`beeper\` talks to. You pick one of four paths
-depending on where Beeper lives.
+A *target* is the Beeper endpoint \`beeper\` talks to — local Beeper Desktop,
+local Beeper Server, or a remote Beeper Desktop or Beeper Server. Pick one of
+four paths.
 
 ### 1. Local Beeper Desktop (default, recommended)
 
-If Beeper Desktop is already installed and signed in on this machine, no
-configuration is required — \`beeper setup\` discovers it on the loopback Desktop
-API (\`http://127.0.0.1:23373\`) and adopts the existing session.
+If Beeper Desktop is installed and signed in here, \`beeper setup\` discovers it
+on \`http://127.0.0.1:23373\` and adopts the existing session. If it's installed
+but not running, \`setup\` offers to launch it. If it's not installed at all,
+\`--install\` does that in one step.
 
-\`\`\`sh
-beeper setup            # auto-detect; offers to use the running Desktop
-beeper setup --local    # force the direct local-Desktop path
+\`\`\`text
+$ beeper setup --desktop --install
+▎ Installed   Beeper Desktop (stable)
+▎ Launched    Beeper Desktop
+  next        Sign in to Beeper Desktop, then re-run \`beeper setup\`.
+
+$ beeper setup
+▎ Connected   desktop
+  accounts    whatsapp, telegram
 \`\`\`
 
-If Beeper Desktop is not installed, install it and configure the target in one
-step, or install it directly:
-
-\`\`\`sh
-beeper setup --desktop --install
-beeper install desktop                  # install only
-beeper install desktop --channel nightly
-\`\`\`
+Variants: \`beeper setup --local\` to skip discovery and force the local path;
+\`beeper install desktop --channel nightly\` for the nightly channel.
 
 ### 2. Local Beeper Server (self-hosted, managed by the CLI)
 
-For a long-running headless setup on this machine, install and adopt a local
-Beeper Server. The CLI manages the process (\`targets start/stop/logs/enable\`).
+For a headless long-running setup on this machine, install and adopt a local
+Beeper Server. The CLI manages the process — \`targets start/stop/restart/logs/enable\`.
 
-\`\`\`sh
-beeper setup --server --install
-beeper install server
-beeper install server --server-env staging
+\`\`\`text
+$ beeper setup --server --install
+▎ Installed   Beeper Server (stable)
+▎ Started     server on http://127.0.0.1:23373
+  auth        Opening browser to authorize this server…
+▎ Connected   server
+  accounts    (none)
+  next        Run \`beeper accounts add\` to connect a network.
+
+$ beeper accounts add
+? Which bridge?  whatsapp
+  Scan this QR code with WhatsApp on your phone:
+    ▄▄▄▄▄▄▄  ▄ ▄  ▄▄▄▄▄▄▄
+    █ ███ █  ▄█▄  █ ███ █
+    █ ███ █  ▀█▀  █ ███ █
+    ▀▀▀▀▀▀▀  ▀ ▀  ▀▀▀▀▀▀▀
+▎ Connected   whatsapp · +1•••4242
 \`\`\`
+
+Variants: \`beeper install server\`, \`beeper install server --server-env staging\`.
 
 ### 3. Remote Desktop or Server via OAuth (PKCE)
 
 For a Beeper Desktop or Server running on another machine, authorize the CLI
 through a browser-based OAuth/PKCE flow.
 
-\`\`\`sh
-beeper setup --oauth                                # PKCE against the default Beeper auth
-beeper setup --remote https://desktop.example.com   # remote URL, OAuth as needed
-beeper targets add remote work https://desktop.example.com --default
+\`\`\`text
+$ beeper setup --remote https://desktop.example.com
+▎ Authorizing  https://desktop.example.com
+  flow         OAuth (PKCE) — opening browser…
+▎ Connected    remote (desktop.example.com)
+  accounts     whatsapp, telegram, signal
 \`\`\`
+
+Variants: \`beeper setup --oauth\` (PKCE against the default Beeper auth);
+\`beeper targets add remote work https://desktop.example.com --default\` to
+register additional remotes.
 
 ### 4. Bearer token (non-interactive / CI)
 
@@ -193,8 +223,8 @@ BEEPER_ACCESS_TOKEN=... BEEPER_DESKTOP_BASE_URL=https://desktop.example.com \\
 \`\`\`
 
 Once connected, \`beeper accounts add\` walks each chat-network bridge through
-its own login (QR, code, OAuth, cookie — whatever the bridge requires) so your
-WhatsApp, Telegram, Discord, iMessage, and other accounts show up.
+its own login — QR, code, OAuth, cookie, whatever the bridge requires — so
+WhatsApp, Telegram, Discord, iMessage, and the rest show up under \`accounts list\`.
 
 ## Documentation
 
@@ -214,7 +244,7 @@ command manual.
 
 ## Configuration
 
-Default Desktop API target: \`http://127.0.0.1:23373\`. CLI configuration is
+Default Beeper Client API target: \`http://127.0.0.1:23373\`. CLI configuration is
 stored under your user config dir; print it with \`beeper config path\`.
 
 **Global flags:** \`--base-url\`, \`--target\`, \`--json\`, \`--events\`,
@@ -308,14 +338,22 @@ First-party optional plugins:
 | --- | --- |
 | \`@beeper/cli-plugin-cloudflare\` | \`targets tunnel\` for exposing a selected Beeper target through Cloudflare Tunnel. |
 
-## Inspiration
+`;
+
+const inspiration = `## Inspiration
 
 Shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI that gets
 the command-line product shape right. Beeper CLI borrows the same taste:
 workflow-first commands, readable default output, boring machine output,
 explicit writes, and names based on what people are trying to do.
+`;
 
-## Command Summary
+const license = `## License
+
+MIT — see [\`packages/cli/LICENSE\`](packages/cli/LICENSE).
+`;
+
+const fullReference = `## Command Summary
 
 | Command | Summary |
 | --- | --- |
@@ -324,8 +362,9 @@ ${commandList.join('\n')}
 ## Command Reference
 
 ${commandSections}
+`;
 
-## Publishing
+const publishing = `## Publishing
 
 Beeper CLI releases are built as Homebrew archives and uploaded to GitHub
 Releases. Push a \`v*\` tag to run \`.github/workflows/publish-release.yml\`.
@@ -342,19 +381,33 @@ Required repository secrets:
 - \`HOMEBREW_TAP_GITHUB_TOKEN\`
 `;
 
-const targets = ['README.md', '../../README.md'];
+const referencePointer = `## Full command reference
+
+The complete \`beeper\` command summary and per-command reference (every flag,
+arg, and example) lives in [\`packages/cli/README.md\`](packages/cli/README.md).
+For terminal-side reference, \`beeper man\` prints the same manual locally and
+\`beeper man --json\` emits a tool manifest for agents.
+`;
+
+const rootReadme = [intro, referencePointer, inspiration, license].join('\n');
+const packageReadme = [intro, fullReference, publishing, inspiration, license].join('\n');
+
+const outputs = [
+  { path: 'README.md', body: packageReadme },
+  { path: '../../README.md', body: rootReadme },
+];
 
 if (check) {
-  for (const target of targets) {
-    const current = await readFile(target, 'utf8');
-    if (current !== readme) {
-      console.error(`${target} is out of date. Run bun run readme.`);
+  for (const { path, body } of outputs) {
+    const current = await readFile(path, 'utf8');
+    if (current !== body) {
+      console.error(`${path} is out of date. Run bun run readme.`);
       process.exit(1);
     }
   }
 } else {
-  for (const target of targets) {
-    await writeFile(target, readme);
+  for (const { path, body } of outputs) {
+    await writeFile(path, body);
   }
 }
 
