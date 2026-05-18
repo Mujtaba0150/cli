@@ -53,7 +53,9 @@
     },
     "scope": "beeper",
     "pluginPrefix": "plugin",
-    "jitPlugins": {},
+    "jitPlugins": {
+      "@beeper/cli-plugin-cloudflare": "^0.0.0"
+    },
     "plugins": [
       "@oclif/plugin-autocomplete",
       "@oclif/plugin-help",

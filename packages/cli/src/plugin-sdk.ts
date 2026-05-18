@@ -52,15 +52,6 @@ export {
 } from './lib/resolve.js'
 export { appRequest } from './lib/app-api.js'
 export {
-  cloudflaredBinPath,
-  ensureCloudflared,
-  startTunnel,
-  CLOUDFLARED_VERSION,
-  type TunnelHandle,
-  type TunnelStatus,
-  type StartTunnelOptions,
-} from './lib/cloudflared.js'
-export {
   confirmSuggestion,
   declineWithExit127,
   levenshtein,
