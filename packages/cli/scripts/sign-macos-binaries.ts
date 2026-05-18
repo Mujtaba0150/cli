@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -141,7 +141,8 @@ async function prepareCredentials(workDir) {
 
 async function importDeveloperID(workDir) {
   const fastlaneDir = join(workDir, 'fastlane')
-  const keychainPath = join(workDir, 'beeper-cli-signing.keychain-db')
+  const keychainName = `beeper-cli-signing-${process.pid}.keychain-db`
+  const keychainPath = join(homedir(), 'Library', 'Keychains', keychainName)
   const keychainPassword = `beeper-cli-${Date.now()}-${Math.random().toString(36).slice(2)}`
   await createKeychain(keychainPath, keychainPassword)
   await mkdir(fastlaneDir, { recursive: true })
@@ -163,6 +164,7 @@ lane :import_developer_id do
     s3_secret_access_key: ENV.fetch("MATCH_S3_SECRET_ACCESS_KEY"),
     keychain_name: ENV.fetch("BEEPER_CLI_KEYCHAIN_PATH"),
     keychain_password: ENV.fetch("BEEPER_CLI_KEYCHAIN_PASSWORD"),
+    skip_provisioning_profiles: true,
     readonly: true
   )
 end
@@ -176,9 +178,9 @@ end
         ...process.env,
         FASTLANE_DISABLE_COLORS: '1',
         BEEPER_CLI_KEYCHAIN_PASSWORD: keychainPassword,
-        BEEPER_CLI_KEYCHAIN_PATH: keychainPath,
+        BEEPER_CLI_KEYCHAIN_PATH: keychainName,
         BEEPER_CLI_TEAM_ID: teamID,
-        MATCH_KEYCHAIN_NAME: keychainPath,
+        MATCH_KEYCHAIN_NAME: keychainName,
         MATCH_KEYCHAIN_PASSWORD: keychainPassword,
       },
       scrub: [
@@ -188,6 +190,8 @@ end
         process.env.MATCH_PASSWORD,
       ],
     })
+    await run('/usr/bin/security', ['unlock-keychain', '-p', keychainPassword, keychainPath], { scrub: [keychainPassword] })
+    await run('/usr/bin/security', ['set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', keychainPassword, keychainPath], { scrub: [keychainPassword] })
     process.env.MACOS_CODESIGN_KEYCHAIN = keychainPath
     return
   }
@@ -195,6 +199,7 @@ end
 }
 
 async function createKeychain(path, password) {
+  await rm(path, { force: true })
   await run('/usr/bin/security', ['create-keychain', '-p', password, path], { scrub: [password] })
   await run('/usr/bin/security', ['set-keychain-settings', '-lut', '21600', path], { scrub: [password] })
   await run('/usr/bin/security', ['unlock-keychain', '-p', password, path], { scrub: [password] })
