@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "${root}"
+
 errors=()
 
-for path in package.json bun.lock scripts/build-homebrew-archive.ts scripts/publish-homebrew-formula.ts .github/workflows/publish-release.yml; do
+for path in package.json bun.lock packages/cli/scripts/build-homebrew-archive.ts packages/cli/scripts/publish-homebrew-formula.ts .github/workflows/publish-release.yml; do
   if [[ ! -f "${path}" ]]; then
     errors+=("Missing required release file: ${path}")
   fi

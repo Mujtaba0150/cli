@@ -26,10 +26,10 @@ export function printAccountLoginStep(session: AccountLoginStep): void {
   if ('stepID' in step) output.write(`step_id: ${step.stepID}\n`)
 
   if (step.type === 'display_and_wait') {
+    const display = step.display as { type: string; data?: string; imageURL?: string }
     output.write(`display: ${step.display.type}\n`)
-    if (step.display.type === 'qr') output.write(`${step.display.data}\n`)
-    if (step.display.type === 'emoji') output.write(`image: ${step.display.imageURL}\n`)
-    const display = step.display as { type: string; data?: string }
+    if (display.type === 'qr' && display.data) output.write(`${display.data}\n`)
+    if (display.type === 'emoji' && display.imageURL) output.write(`image: ${display.imageURL}\n`)
     if (display.type === 'code' && display.data) output.write(`${display.data}\n`)
   } else if (step.type === 'user_input') {
     for (const field of step.fields) {

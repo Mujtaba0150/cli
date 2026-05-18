@@ -14,6 +14,11 @@ export default [
   ...oclif,
   prettier,
   {
+    languageOptions: {
+      globals: {
+        Bun: 'readonly',
+      },
+    },
     rules: {
       'import/no-unresolved': 'off',
       'n/no-unsupported-features/node-builtins': 'off',
