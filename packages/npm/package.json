@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "beeper": "./bin/beeper.js"
+    "beeper": "bin/beeper.js"
   },
   "files": [
     "bin",

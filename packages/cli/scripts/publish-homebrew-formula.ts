@@ -8,7 +8,7 @@ const root = new URL('..', import.meta.url).pathname;
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const metadata = JSON.parse(await readFile(new URL('../dist/release/homebrew.json', import.meta.url), 'utf8'));
 
-const token = process.env.HOMEBREW_TAP_GITHUB_TOKEN;
+const token = process.env.HOMEBREW_TAP_GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 const tapRepository = process.env.HOMEBREW_TAP_REPOSITORY || 'beeper/homebrew-tap';
 const sourceRepository = process.env.GITHUB_REPOSITORY || 'beeper/cli';
 const version = process.env.PACKAGE_VERSION || metadata.version || packageJson.version;
@@ -21,7 +21,7 @@ const formulaClass = formulaName
 const tag = process.env.GITHUB_REF_NAME || `v${version}`;
 
 if (!token) {
-  throw new Error('HOMEBREW_TAP_GITHUB_TOKEN is required to publish the Homebrew formula.');
+  throw new Error('HOMEBREW_TAP_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN is required to publish the Homebrew formula.');
 }
 
 const cloneRoot = await mkdtemp(join(tmpdir(), 'beeper-cli-homebrew-'));
