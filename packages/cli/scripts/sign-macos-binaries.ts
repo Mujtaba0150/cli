@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,7 +35,13 @@ try {
   }
 
   const resolvedIdentity = identity || await findIdentity(teamID)
-  if (!resolvedIdentity) throw new Error(`No Developer ID Application identity for team ${teamID}`)
+  if (!resolvedIdentity) {
+    throw new Error(
+      `Fastlane match completed, but macOS still has no usable Developer ID Application identity for team ${teamID}. ` +
+        'Run `security find-identity -v -p codesigning`; it must list a Developer ID Application certificate with an attached private key. ' +
+        'If it does not, fix the local keychain or match signing storage before rerunning release.',
+    )
+  }
 
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
   const darwinArtifacts = manifest.artifacts.filter(artifact => artifact.platform.startsWith('darwin-'))
@@ -141,9 +147,7 @@ async function prepareCredentials(workDir) {
 
 async function importDeveloperID(workDir) {
   const fastlaneDir = join(workDir, 'fastlane')
-  const matchOutputDir = join(workDir, 'match-output')
   await mkdir(fastlaneDir, { recursive: true })
-  await mkdir(matchOutputDir, { recursive: true })
   await writeFile(
     join(fastlaneDir, 'Fastfile'),
     `default_platform(:mac)
@@ -160,7 +164,6 @@ lane :import_developer_id do
     s3_region: "us-east-2",
     s3_access_key: ENV.fetch("MATCH_S3_ACCESS_KEY"),
     s3_secret_access_key: ENV.fetch("MATCH_S3_SECRET_ACCESS_KEY"),
-    output_path: ENV.fetch("BEEPER_CLI_MATCH_OUTPUT_PATH"),
     readonly: true
   )
 end
@@ -173,7 +176,8 @@ end
       env: {
         ...process.env,
         FASTLANE_DISABLE_COLORS: '1',
-        BEEPER_CLI_MATCH_OUTPUT_PATH: matchOutputDir,
+        FASTLANE_HIDE_CHANGELOG: '1',
+        FASTLANE_SKIP_UPDATE_CHECK: '1',
         BEEPER_CLI_TEAM_ID: teamID,
       },
       scrub: [
@@ -182,41 +186,9 @@ end
         process.env.MATCH_PASSWORD,
       ],
     })
-    if (!await findIdentity(teamID)) await importMatchOutput(matchOutputDir)
     return
   }
   throw new Error('No Developer ID identity found and fastlane is unavailable.')
-}
-
-async function importMatchOutput(outputDir) {
-  const files = await listFiles(outputDir)
-  const certs = files.filter(file => /\.cer$/i.test(file))
-  const p12s = files.filter(file => /\.p12$/i.test(file))
-
-  for (const cert of certs) {
-    await runAllowFailure('/usr/bin/security', ['import', cert, '-A'], { quiet: true })
-  }
-
-  for (const p12 of p12s) {
-    const imported =
-      await runAllowFailure('/usr/bin/security', ['import', p12, '-A', '-P', ''], { quiet: true }) === 0 ||
-      await runAllowFailure('/usr/bin/security', ['import', p12, '-A', '-P', process.env.MATCH_PASSWORD || ''], {
-        quiet: true,
-        scrub: [process.env.MATCH_PASSWORD],
-      }) === 0
-    if (!imported) throw new Error(`Could not import signing private key from ${basename(p12)}`)
-  }
-}
-
-async function listFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
-  const files = []
-  for (const entry of entries) {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) files.push(...await listFiles(path))
-    else if (entry.isFile()) files.push(path)
-  }
-  return files
 }
 
 async function findIdentity(team) {
