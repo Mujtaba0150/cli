@@ -502,6 +502,11 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper completion'],
   },
   {
+    command: 'plugins available',
+    description: 'List recommended Beeper CLI plugins',
+    examples: ['beeper plugins available', 'beeper plugins available --json'],
+  },
+  {
     command: 'update',
     description: 'Check and install Beeper updates',
     examples: ['beeper update --check', 'beeper update --cli', 'beeper update --server'],

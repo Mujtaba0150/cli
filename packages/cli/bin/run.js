@@ -1,19 +1,9 @@
 #!/usr/bin/env node
 import { execute } from '@oclif/core'
-
-const logo = String.raw`
-    @@@@@@@@@@@@@@@      @@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@   @@@@@@@@  @@@@@@@
-  @@@@           @@@@    @@    @@  @@        @@        @@    @@  @@        @@    @@
- @@@               @@@   @@@@@@@   @@@@@@    @@@@@@    @@@@@@@   @@@@@@    @@@@@@@
- @@@               @@@   @@    @@  @@        @@        @@        @@        @@  @@
-  @@@             @@@    @@    @@  @@        @@        @@        @@        @@   @@
-    @@@@@@     @@@@      @@@@@@@   @@@@@@@@  @@@@@@@@  @@        @@@@@@@@  @@    @@
-      @@@@@@ @@@@@@@
-      @@@@@@@@@@@@@
-`
+import { renderStartupLogo } from './logo.js'
 
 if (process.argv.slice(2).length === 0 && process.env.BEEPER_NO_LOGO !== '1') {
-  process.stdout.write(`${logo}\n`)
+  process.stdout.write(`${renderStartupLogo()}\n`)
 }
 
 await execute({ dir: import.meta.url })

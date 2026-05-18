@@ -1,7 +1,17 @@
 import type { BeeperDesktop } from '@beeper/desktop-api'
 
 export { Args, Command, Flags, ux } from '@oclif/core'
-export { BeeperCommand, ensureWritable, writeEvent } from './lib/command.js'
+export { BeeperCommand, ensureWritable, writeEvent, isQuiet } from './lib/command.js'
+export {
+  CLIError,
+  ExitCodes,
+  ambiguous,
+  authRequired,
+  notFound,
+  notReady,
+  usageError,
+  type ExitCode,
+} from './lib/errors.js'
 export {
   configPath,
   getAccessToken,
@@ -29,6 +39,16 @@ export {
   type OutputFormat,
   type Suggestion,
 } from './lib/output.js'
+export {
+  resolveAccountID,
+  resolveAccountIDs,
+  resolveChatID,
+  listAccountIDs,
+  userQueryFromInput,
+  type AccountResolutionOptions,
+  type ChatResolutionOptions,
+} from './lib/resolve.js'
+export { appRequest } from './lib/app-api.js'
 
 export type BeeperClient = BeeperDesktop
 
@@ -37,4 +57,5 @@ export type BeeperPluginContext = {
   debug?: boolean
   json?: boolean
   readOnly?: boolean
+  quiet?: boolean
 }

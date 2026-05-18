@@ -81,6 +81,7 @@ async function checkDesktop(installation: Installation): Promise<Record<string, 
 
 async function checkCLI(): Promise<Record<string, unknown>> {
   const currentVersion = pkg.version
+  const installMethod = detectCLIInstallMethod()
   try {
     const response = await fetch('https://api.github.com/repos/beeper/desktop-api-cli/releases/latest', {
       headers: { accept: 'application/vnd.github+json', 'user-agent': 'beeper-cli' },
@@ -89,19 +90,48 @@ async function checkCLI(): Promise<Record<string, unknown>> {
     if (!response.ok) throw new Error(`GitHub releases returned ${response.status}`)
     const latest = await response.json() as { tag_name?: string }
     const latestVersion = latest.tag_name?.replace(/^v/, '')
+    const available = !!latestVersion && latestVersion !== currentVersion
     return {
       currentVersion,
       latestVersion,
-      available: !!latestVersion && latestVersion !== currentVersion,
-      action: latestVersion && latestVersion !== currentVersion
-        ? 'Update with: brew upgrade beeper/tap/beeper-cli'
-        : 'beeper-cli is up to date.',
+      installMethod: installMethod.kind,
+      available,
+      action: available ? upgradeAction(installMethod) : 'beeper-cli is up to date.',
     }
   } catch (error) {
     return {
       currentVersion,
+      installMethod: installMethod.kind,
       available: false,
       action: `Could not check GitHub releases for beeper-cli updates: ${(error as Error).message}`,
     }
+  }
+}
+
+type CLIInstallMethod =
+  | { kind: 'brew' }
+  | { kind: 'npm-global' }
+  | { kind: 'git'; path: string }
+  | { kind: 'unknown'; path: string }
+
+function detectCLIInstallMethod(): CLIInstallMethod {
+  const path = decodeURI(new URL(import.meta.url).pathname)
+  if (/\/(Cellar|homebrew|linuxbrew)\//.test(path)) return { kind: 'brew' }
+  // pnpm/npm/yarn global installs end up under `<prefix>/lib/node_modules/...` or `<prefix>/global/...`
+  if (/\/(lib\/node_modules|global\/(\d+\.\d+\.\d+\/)?node_modules)\//.test(path)) return { kind: 'npm-global' }
+  if (/\/(\.packs|packages\/cli\/dist|packages\/cli\/src)\//.test(path)) return { kind: 'git', path }
+  return { kind: 'unknown', path }
+}
+
+function upgradeAction(method: CLIInstallMethod): string {
+  switch (method.kind) {
+    case 'brew':
+      return 'Update with: brew upgrade beeper/tap/beeper-cli'
+    case 'npm-global':
+      return 'Update with: npm install -g beeper-cli@latest'
+    case 'git':
+      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && pnpm --filter beeper-cli build`
+    default:
+      return 'Update with: brew upgrade beeper/tap/beeper-cli  OR  npm install -g beeper-cli@latest'
   }
 }

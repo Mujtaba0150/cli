@@ -301,6 +301,7 @@ explicit writes, and names based on what people are trying to do.
 | `docs` | Open Beeper CLI docs |
 | `version` | Print CLI version |
 | `completion` | Print shell completion setup (alias for autocomplete) |
+| `plugins available` | List recommended Beeper CLI plugins |
 | `update` | Check and install Beeper updates |
 | `config get` | Print CLI configuration |
 | `config set` | Set a CLI configuration value |
@@ -2596,6 +2597,28 @@ Examples:
 ```sh
 beeper completion
 ```
+
+### `beeper plugins available`
+List recommended Beeper CLI plugins
+
+```sh
+beeper plugins available
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
+Examples:
+
+```sh
+beeper plugins available
+beeper plugins available --json
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper update`
 Check and install Beeper updates

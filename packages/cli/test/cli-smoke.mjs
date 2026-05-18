@@ -113,6 +113,7 @@ const expectedCommands = [
   'docs',
   'version',
   'completion',
+  'plugins available',
   'update',
   'config get',
   'config set',
@@ -166,6 +167,12 @@ const man = JSON.parse(ok('man', '--json'))
 assert.equal(man.success, true)
 assert.equal(man.error, null)
 assert.deepEqual(man.data.map(item => item.command), expectedCommands)
+
+const availablePlugins = JSON.parse(ok('plugins', 'available', '--json'))
+assert.equal(availablePlugins.success, true)
+assert.equal(availablePlugins.data[0].name, '@beeper/cli-plugin-cloudflare')
+assert.equal(availablePlugins.data[0].status, 'not installed')
+assert.deepEqual(availablePlugins.data[0].commands, ['targets tunnel'])
 
 rmSync(configDir, { recursive: true, force: true })
 let result = run('targets', 'add', 'remote', 'work', 'http://127.0.0.1:23373', '--default', '--json')
