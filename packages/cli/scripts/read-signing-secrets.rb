@@ -15,7 +15,7 @@ required = {
 
 missing = required.values.reject { |key| secrets[key] && !secrets[key].to_s.empty? }
 unless missing.empty?
-  warn "missing required signing-secrets keys: #{missing.join(", ")}"
+  warn "missing required signing secret keys: #{missing.join(", ")}"
   exit 1
 end
 
