@@ -1,21 +1,27 @@
-# 💬 beeper — One CLI for all your chats
+# beeper — One CLI for all your chats
 
 > Built for you and your agent. Batteries included.
 
-Connect to and manage Beeper Desktop and Beeper Server installations on any
-machine. Send and receive across every network you've bridged — WhatsApp,
-Telegram, Discord, iMessage, Signal, Matrix, and the rest — from one CLI
-shaped for scripts, agents, and humans in a hurry.
+Talks to Beeper Desktop on this machine, to a Beeper Server you self-host, or
+to either one running somewhere else. Send and receive across the chat
+networks Beeper bridges, from one CLI shaped for scripts, agents, and humans
+in a hurry.
+
+**Supported chat networks** (via Beeper's bridges):
+WhatsApp · iMessage · Telegram · Discord · Signal · Instagram DMs ·
+Facebook Messenger · X (Twitter) DMs · LinkedIn · Slack ·
+Google Messages (RCS/SMS) · Google Chat · Matrix · IRC · Bluesky.
+Run `beeper bridges list` for the live list on your target.
 
 Command manual: `beeper man` · CLI docs: `beeper docs`
 
 ## Features
 
-- **Talks to any Beeper.** Local Desktop on this machine (default), a managed local Beeper Server you install via the CLI, or a remote Desktop/Server authorized over OAuth/PKCE — or a bearer token in CI.
+- **Connects to your Beeper.** Local Beeper Desktop on this machine (default), a Beeper Server you install and manage via the CLI, or a remote Beeper Desktop or Beeper Server authorized over OAuth/PKCE — or a bearer token in CI.
 - **Setup that does the work.** `beeper setup` finds Beeper Desktop, offers to launch it, adopts the session. `--server --install` installs and starts a headless server in one step. `--oauth` opens the browser. `--remote URL` does the rest.
 - **Every chat, every network.** List, search, start, archive, pin, mute, rename, focus. Read, edit, delete, react. Send text, files, stickers, voice, typing indicators. Download media. Export to JSON or Markdown.
 - **Verification first-class.** SAS/QR device verification, recovery-key unlock, `status`/`doctor` to reach an encrypted-ready target — without leaving the shell.
-- **Agent-shaped automation.** `--json` everywhere, NDJSON `--events`, `watch` with WebSocket + outbound HMAC-signed webhooks, `rpc` over stdin/stdout, `man --json` tool manifests, raw `api get`/`post`/`request` for endpoints we haven't wrapped yet.
+- **Agent-shaped automation.** `--json` everywhere, NDJSON `--events`, `watch` with WebSocket + outbound HMAC-signed webhooks, `rpc` over stdin/stdout, `man --json` tool manifests, raw `api get`/`post`/`request` for Beeper Client API endpoints we haven't wrapped yet.
 - **Safe by default.** `--read-only` rejects every mutating command. Writes stay explicit. Plugins extend the CLI without forking it.
 
 ## Install
@@ -102,8 +108,9 @@ TTY; pass `--pick N` in scripts.
 
 ## Connecting a target
 
-A *target* is the Beeper endpoint `beeper` talks to — local Desktop, local
-Server, or a remote installation on any machine. Pick one of four paths.
+A *target* is the Beeper endpoint `beeper` talks to — local Beeper Desktop,
+local Beeper Server, or a remote Beeper Desktop or Beeper Server. Pick one of
+four paths.
 
 ### 1. Local Beeper Desktop (default, recommended)
 
@@ -202,7 +209,7 @@ command manual.
 
 ## Configuration
 
-Default Desktop API target: `http://127.0.0.1:23373`. CLI configuration is
+Default Beeper Client API target: `http://127.0.0.1:23373`. CLI configuration is
 stored under your user config dir; print it with `beeper config path`.
 
 **Global flags:** `--base-url`, `--target`, `--json`, `--events`,
@@ -213,7 +220,7 @@ stored under your user config dir; print it with `beeper config path`.
 | Variable | Effect |
 | --- | --- |
 | `BEEPER_ACCESS_TOKEN` | Bearer token for the selected target. Overrides stored OAuth login. |
-| `BEEPER_DESKTOP_BASE_URL` | Desktop/Server API base URL. Defaults to `http://127.0.0.1:23373`. |
+| `BEEPER_DESKTOP_BASE_URL` | Beeper Client API base URL (Desktop or Server). Defaults to `http://127.0.0.1:23373`. |
 | `BEEPER_READONLY` | `1`/`true`/`yes`/`on` enables read-only mode globally. |
 | `BEEPER_CLI_CONFIG_DIR` | Override config directory for testing or isolated profiles. |
 
@@ -259,7 +266,7 @@ Most commands support:
 
 ## Raw API access
 
-Raw Desktop/Server API calls live under `api`, so scripts can reach a new
+Raw Beeper Client API calls live under `api`, so scripts can reach a new
 endpoint before a workflow command exists:
 
 ```sh
@@ -2739,10 +2746,7 @@ Required repository secrets:
 
 ## Inspiration
 
-Shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI that gets
-the command-line product shape right. Beeper CLI borrows the same taste:
-workflow-first commands, readable default output, boring machine output,
-explicit writes, and names based on what people are trying to do.
+- [wacli](https://wacli.sh/) — scriptable WhatsApp CLI whose command-line product shape we borrow from.
 
 ## License
 

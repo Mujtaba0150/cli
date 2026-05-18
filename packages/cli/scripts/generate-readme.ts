@@ -255,7 +255,7 @@ stored under your user config dir; print it with \`beeper config path\`.
 | Variable | Effect |
 | --- | --- |
 | \`BEEPER_ACCESS_TOKEN\` | Bearer token for the selected target. Overrides stored OAuth login. |
-| \`BEEPER_DESKTOP_BASE_URL\` | Desktop/Server API base URL. Defaults to \`http://127.0.0.1:23373\`. |
+| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Client API base URL (Desktop or Server). Defaults to \`http://127.0.0.1:23373\`. |
 | \`BEEPER_READONLY\` | \`1\`/\`true\`/\`yes\`/\`on\` enables read-only mode globally. |
 | \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
 
@@ -301,7 +301,7 @@ Most commands support:
 
 ## Raw API access
 
-Raw Desktop/Server API calls live under \`api\`, so scripts can reach a new
+Raw Beeper Client API calls live under \`api\`, so scripts can reach a new
 endpoint before a workflow command exists:
 
 \`\`\`sh
@@ -342,10 +342,7 @@ First-party optional plugins:
 
 const inspiration = `## Inspiration
 
-Shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI that gets
-the command-line product shape right. Beeper CLI borrows the same taste:
-workflow-first commands, readable default output, boring machine output,
-explicit writes, and names based on what people are trying to do.
+- [wacli](https://wacli.sh/) — scriptable WhatsApp CLI whose command-line product shape we borrow from.
 `;
 
 const license = `## License

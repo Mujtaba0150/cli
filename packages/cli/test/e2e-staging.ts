@@ -116,8 +116,8 @@ async function phaseTargets() {
   report.targets = targets
   for (const target of targets) {
     const args = target.kind === 'desktop'
-      ? ['targets', 'create', 'desktop', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
-      : ['targets', 'create', 'server', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
+      ? ['targets', 'add', 'desktop', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
+      : ['targets', 'add', 'server', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
     const result = runCli(args, { allowFailure: true })
     if (result.status !== 0 && !`${result.stderr}${result.stdout}`.includes('already exists')) fail(result, args)
     recordCommand('targets', args, result)
@@ -352,8 +352,13 @@ async function phaseCliSurface() {
     ['status', '--target', target.name, '--json'],
     ['doctor', '--target', target.name, '--json'],
     ['auth', 'status', '--target', target.name, '--json'],
+    ['bridges', 'list', '--target', target.name, '--json'],
+    ['bridges', 'list', '--target', target.name, '--provider', 'local', '--available', '--json'],
+    ['bridges', 'show', 'local-dummy', '--target', target.name, '--json'],
     ['accounts', 'list', '--target', target.name, '--json'],
     ['accounts', 'add', '--target', target.name, '--json'],
+    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'password', '--field', 'username=cli-e2e', '--field', 'password=example-password', '--non-interactive', '--json'],
+    ['accounts', 'list', '--target', target.name, '--account', 'local-dummy', '--json'],
     ['chats', 'list', '--target', target.name, '--limit', '20', '--json'],
     ['chats', 'search', runID, '--target', target.name, '--limit', '10', '--json'],
     ['contacts', 'list', '--target', target.name, '--limit', '20', '--json'],
@@ -403,8 +408,8 @@ async function phaseCliSurface() {
     const result = runCli(args, { env, allowFailure: true })
     recordCommand('cli-surface', args, result)
     recordCoverage('commands', args, result)
-    if (args[0] === 'accounts' && args[1] === 'add') {
-      recordBlock('cli-surface', target, 'accounts add intentionally stops before adding network accounts; that flow remains manual.')
+    if (args[0] === 'accounts' && args[1] === 'add' && args.length === 5) {
+      recordBlock('cli-surface', target, 'accounts add without a bridge intentionally lists available account types; local-dummy covers the actual login flow.')
     } else if (result.status !== 0) {
       recordFailure('cli-surface', target, `beeper ${args.join(' ')} failed with status ${result.status}`)
     }
