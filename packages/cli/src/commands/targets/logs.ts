@@ -9,8 +9,8 @@ export default class TargetsLogs extends BeeperCommand {
   static override summary = 'Print logs for a local Beeper Desktop or Server install'
   static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
-    const { args } = await this.parse(TargetsLogs)
-    const target = args.name ? await readTarget(args.name) : await resolveTarget()
+    const { args, flags } = await this.parse(TargetsLogs)
+    const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     if (target.type === 'remote' || target.id === customTargetID) throw new Error(`Target "${target.id}" is remote and has no local logs.`)
     if (target.type === 'server') {

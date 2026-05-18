@@ -238,12 +238,12 @@ explicit writes, and names based on what people are trying to do.
 | `targets use` | Set the default target |
 | `targets show` | Show target details |
 | `targets status` | Check endpoint and process reachability for a target |
-| `targets start` | Start a managed target |
-| `targets stop` | Stop a managed target |
-| `targets restart` | Restart a managed target |
-| `targets logs` | Print managed target logs |
-| `targets enable` | Enable managed target startup at login |
-| `targets disable` | Disable managed target startup at login |
+| `targets start` | Start a local Server target or open Beeper Desktop |
+| `targets stop` | Stop a local Beeper Server target |
+| `targets restart` | Restart a local Beeper Server target |
+| `targets logs` | Print logs for a local Beeper Desktop or Server install |
+| `targets enable` | Enable a local Beeper Server target at login |
+| `targets disable` | Disable a local Beeper Server target at login |
 | `targets remove` | Remove a target |
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show stored auth for the selected target |
@@ -620,7 +620,7 @@ beeper targets status work --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets start`
-Start a managed target
+Start a local Server target or open Beeper Desktop
 
 ```sh
 beeper targets start [name]
@@ -641,7 +641,7 @@ beeper targets start work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets stop`
-Stop a managed target
+Stop a local Beeper Server target
 
 ```sh
 beeper targets stop [name]
@@ -662,7 +662,7 @@ beeper targets stop work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets restart`
-Restart a managed target
+Restart a local Beeper Server target
 
 ```sh
 beeper targets restart [name]
@@ -683,7 +683,7 @@ beeper targets restart work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets logs`
-Print managed target logs
+Print logs for a local Beeper Desktop or Server install
 
 ```sh
 beeper targets logs [name]
@@ -704,7 +704,7 @@ beeper targets logs work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets enable`
-Enable managed target startup at login
+Enable a local Beeper Server target at login
 
 ```sh
 beeper targets enable [name]
@@ -725,7 +725,7 @@ beeper targets enable work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets disable`
-Disable managed target startup at login
+Disable a local Beeper Server target at login
 
 ```sh
 beeper targets disable [name]
