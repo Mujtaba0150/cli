@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun run --filter beeper-cli build && bun run clean && tsc -p tsconfig.json",
+    "build": "bun run --filter @beeper/cli build && bun run clean && tsc -p tsconfig.json",
     "clean": "rm -rf dist",
     "test": "bun run build && bun test/smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@oclif/core": "^4.11.2",
-    "beeper-cli": "^0.6.0"
+    "@beeper/cli": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -1,4 +1,4 @@
-import { Args, Flags, BeeperCommand, ensureWritable, printData, printSuccess, resolveTarget, writeEvent } from 'beeper-cli/plugin-sdk'
+import { Args, Flags, BeeperCommand, ensureWritable, printData, printSuccess, resolveTarget, writeEvent } from '@beeper/cli/plugin-sdk'
 import { cloudflaredPath, startCloudflareTunnel } from '../../lib/cloudflared.js'
 
 export default class TargetsTunnel extends BeeperCommand {

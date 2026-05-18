@@ -6,13 +6,13 @@ cd "${root}"
 
 errors=()
 
-for path in package.json bun.lock packages/cli/scripts/build-homebrew-archive.ts packages/cli/scripts/publish-homebrew-formula.ts .github/workflows/publish-release.yml; do
+for path in package.json bun.lock scripts/release.ts packages/npm/package.json packages/npm/scripts/build.ts packages/cli/scripts/build-homebrew-archive.ts packages/cli/scripts/publish-homebrew-formula.ts packages/cli/scripts/publish-local-release.ts packages/cli/scripts/sign-macos-binaries.ts .github/workflows/publish-release.yml; do
   if [[ ! -f "${path}" ]]; then
     errors+=("Missing required release file: ${path}")
   fi
 done
 
-for command in bun git gh tar; do
+for command in bun git gh npm tar; do
   if ! command -v "${command}" >/dev/null 2>&1; then
     errors+=("Missing required release command: ${command}")
   fi

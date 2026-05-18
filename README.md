@@ -29,7 +29,7 @@ Command manual: `beeper man` · CLI docs: `beeper docs`
 ### Homebrew (recommended)
 
 ```sh
-brew install beeper/tap/beeper-cli
+brew install beeper/tap/cli
 ```
 
 The installed command is `beeper`.
@@ -49,8 +49,8 @@ This repo is a Bun workspace. From the repo root:
 
 ```sh
 bun install
-bun --filter beeper-cli run build
-bun --filter beeper-cli run dev -- --help
+bun --filter @beeper/cli run build
+bun --filter @beeper/cli run dev -- --help
 ```
 
 For local CLI development inside `packages/cli`:
@@ -289,7 +289,7 @@ Install a published plugin:
 beeper plugins install @beeper/cli-plugin-cloudflare
 ```
 
-For plugin development, import from `beeper-cli/plugin-sdk` and expose oclif
+For plugin development, import from `@beeper/cli/plugin-sdk` and expose oclif
 commands from your package. Link a local plugin while working on it:
 
 ```sh

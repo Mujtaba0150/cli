@@ -29,7 +29,7 @@ Command manual: `beeper man` · CLI docs: `beeper docs`
 ### Homebrew (recommended)
 
 ```sh
-brew install beeper/tap/beeper-cli
+brew install beeper/tap/cli
 ```
 
 The installed command is `beeper`.
@@ -49,8 +49,8 @@ This repo is a Bun workspace. From the repo root:
 
 ```sh
 bun install
-bun --filter beeper-cli run build
-bun --filter beeper-cli run dev -- --help
+bun --filter @beeper/cli run build
+bun --filter @beeper/cli run dev -- --help
 ```
 
 For local CLI development inside `packages/cli`:
@@ -289,7 +289,7 @@ Install a published plugin:
 beeper plugins install @beeper/cli-plugin-cloudflare
 ```
 
-For plugin development, import from `beeper-cli/plugin-sdk` and expose oclif
+For plugin development, import from `@beeper/cli/plugin-sdk` and expose oclif
 commands from your package. Link a local plugin while working on it:
 
 ```sh
@@ -2778,19 +2778,30 @@ Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json
 
 ## Publishing
 
-Beeper CLI releases are built as Homebrew archives and uploaded to GitHub
-Releases. Push a `v*` tag to run `.github/workflows/publish-release.yml`.
+Beeper CLI releases ship signed macOS Bun binaries, Homebrew archives, and a
+thin npm package that downloads and verifies the matching GitHub Release binary.
 
-The release workflow:
+For now, publishing runs from a local macOS machine:
 
-- runs the Bun test suite
-- builds standalone Bun binaries and Homebrew archives
-- uploads the archive to the GitHub release
+```sh
+bun run release 0.6.1
+```
+
+The local release command:
+
+- builds standalone Bun binaries
+- signs and notarizes macOS binaries when local signing credentials are available
+- uploads binaries and Homebrew archives to the GitHub release
+- publishes `beeper-cli` to npm as a thin binary launcher package
 - updates `beeper/homebrew-tap` with the pinned archive SHA
 
-Required repository secrets:
+Required local credentials:
 
-- `HOMEBREW_TAP_GITHUB_TOKEN`
+- GitHub CLI authenticated with release and tap access
+- npm auth for publishing `beeper-cli`
+- local Developer ID signing identity, or Fastlane match access via
+  `MOBILE_SECRETS_FILE`
+- `HOMEBREW_TAP_GITHUB_TOKEN` for updating the tap
 
 ## Inspiration
 

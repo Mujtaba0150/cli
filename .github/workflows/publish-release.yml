@@ -35,14 +35,3 @@ jobs:
         if ! gh release view "${tag}" >/dev/null 2>&1; then
           gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag
         fi
-
-    - name: Build binary release assets
-      run: bun run --filter beeper-cli binary
-
-    - name: Publish GitHub release assets
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        set -euo pipefail
-        tag="${GITHUB_REF_NAME}"
-        gh release upload "${tag}" packages/cli/dist/bin/beeper-* packages/cli/dist/bin/binaries.json --clobber

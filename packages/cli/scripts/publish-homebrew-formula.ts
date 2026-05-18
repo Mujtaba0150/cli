@@ -10,9 +10,9 @@ const metadata = JSON.parse(await readFile(new URL('../dist/release/homebrew.jso
 
 const token = process.env.HOMEBREW_TAP_GITHUB_TOKEN;
 const tapRepository = process.env.HOMEBREW_TAP_REPOSITORY || 'beeper/homebrew-tap';
-const sourceRepository = process.env.GITHUB_REPOSITORY || 'beeper/desktop-api-cli';
+const sourceRepository = process.env.GITHUB_REPOSITORY || 'beeper/cli';
 const version = process.env.PACKAGE_VERSION || metadata.version || packageJson.version;
-const formulaName = process.env.HOMEBREW_FORMULA_NAME || 'beeper-cli';
+const formulaName = process.env.HOMEBREW_FORMULA_NAME || 'cli';
 const commandName = process.env.HOMEBREW_COMMAND_NAME || metadata.command || 'beeper';
 const formulaClass = formulaName
   .split(/[-_]/)
@@ -79,7 +79,6 @@ function formula({formulaClass, formulaName, sourceRepository, tag, version, met
 
   def install
     bin.install "bin/${commandName}"
-    bin.install_symlink bin/"${commandName}" => "${formulaName}"
   end
 
   test do

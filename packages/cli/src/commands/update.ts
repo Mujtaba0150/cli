@@ -83,7 +83,7 @@ async function checkCLI(): Promise<Record<string, unknown>> {
   const currentVersion = pkg.version
   const installMethod = detectCLIInstallMethod()
   try {
-    const response = await fetch('https://api.github.com/repos/beeper/desktop-api-cli/releases/latest', {
+    const response = await fetch('https://api.github.com/repos/beeper/cli/releases/latest', {
       headers: { accept: 'application/vnd.github+json', 'user-agent': 'beeper-cli' },
       signal: AbortSignal.timeout(5000),
     })
@@ -126,12 +126,12 @@ function detectCLIInstallMethod(): CLIInstallMethod {
 function upgradeAction(method: CLIInstallMethod): string {
   switch (method.kind) {
     case 'brew':
-      return 'Update with: brew upgrade beeper/tap/beeper-cli'
+      return 'Update with: brew upgrade beeper/tap/cli'
     case 'npm-global':
       return 'Update with: npm install -g beeper-cli@latest'
     case 'git':
-      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && bun run --filter beeper-cli build`
+      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && bun run --filter @beeper/cli build`
     default:
-      return 'Update with: brew upgrade beeper/tap/beeper-cli  OR  npm install -g beeper-cli@latest'
+      return 'Update with: brew upgrade beeper/tap/cli  OR  npm install -g beeper-cli@latest'
   }
 }
