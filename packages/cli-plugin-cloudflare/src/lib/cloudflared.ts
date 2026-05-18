@@ -196,7 +196,7 @@ function downloadURL(system = platform(), cpu = arch()): string {
 async function downloadFile(url: string, to: string): Promise<void> {
   const response = await fetch(url, { redirect: 'follow' })
   if (!response.ok || !response.body) throw new Error(`Could not download ${url}: ${response.status} ${response.statusText}`)
-  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), createWriteStream(to))
+  await pipeline(Readable.fromWeb(response.body as unknown as import('node:stream/web').ReadableStream), createWriteStream(to))
 }
 
 export function findTunnelURL(data: string, domain = cloudflaredDomain()): string | undefined {

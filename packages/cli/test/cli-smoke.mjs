@@ -114,6 +114,7 @@ const expectedCommands = [
   'docs',
   'version',
   'completion',
+  'plugins',
   'plugins available',
   'update',
   'config get',
@@ -143,7 +144,7 @@ assert.match(help, /\bmessages\b/, 'help should expose messages')
 // "commands" inside another command's summary (e.g. rpc).
 assert.doesNotMatch(help, /^\s{2,}(profile|commands|llm|login|logout)\s/m, 'help must not expose deleted root/internal commands')
 assert.match(help, /\bplugins\b/, 'help should expose plugin management')
-assert.match(help, /\bautocomplete\b/, 'help should expose shell autocomplete')
+assert.doesNotMatch(help, /^\s{2,}autocomplete\s/m, 'help should expose completion instead of raw autocomplete')
 assert.match(help, /\bbridges\b/, 'help should expose bridges')
 assert.match(help, /\bverify\b/, 'help should expose verification')
 assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')

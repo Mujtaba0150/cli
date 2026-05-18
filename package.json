@@ -10,15 +10,15 @@
     "@beeper/desktop-api"
   ],
   "scripts": {
-    "build": "bun --workspaces run build",
+    "build": "bun run --workspaces build",
     "check": "bun run typecheck && bun run test && bun run build && bun run pack:packages",
-    "clean": "bun --workspaces run clean",
+    "clean": "bun run --workspaces clean",
     "changeset": "changeset",
     "lint": "eslint eslint.config.mjs packages/cli-plugin-cloudflare/src packages/cli-plugin-cloudflare/test",
-    "pack:packages": "mkdir -p .packs && bun --filter beeper-cli pm pack --destination ../../.packs && bun --filter @beeper/cli-plugin-cloudflare pm pack --destination ../../.packs",
+    "pack:packages": "mkdir -p .packs && (cd packages/cli && bun pm pack --destination ../../.packs) && (cd packages/cli-plugin-cloudflare && bun pm pack --destination ../../.packs)",
     "release": "bun run check && bun changeset publish",
-    "test": "bun --workspaces run test",
-    "typecheck": "bun --workspaces run typecheck",
+    "test": "bun run --workspaces test",
+    "typecheck": "bun run --workspaces typecheck",
     "version-packages": "changeset version"
   },
   "devDependencies": {

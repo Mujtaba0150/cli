@@ -5,6 +5,14 @@ export default class Man extends BeeperCommand {
   static override summary = 'Print the command manual'
   async run(): Promise<void> {
     const { flags } = await this.parse(Man)
-    await printCommands(commandManifest, flags.json ? 'json' : 'human', { title: 'Beeper CLI' })
+    const commandsByID = new Map(this.config.commands.map(command => [command.id.replaceAll(':', ' '), command]))
+    const commands = commandManifest.map(item => {
+      const command = commandsByID.get(item.command)
+      return {
+        ...item,
+        description: command?.summary || command?.description || item.description,
+      }
+    })
+    await printCommands(commands, flags.json ? 'json' : 'human', { title: 'Beeper CLI' })
   }
 }

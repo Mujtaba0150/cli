@@ -7,7 +7,7 @@ import { targetLiveStatus } from '../../lib/target-status.js'
 import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsList extends BeeperCommand {
-  static override summary = 'List Beeper targets'
+  static override summary = 'List configured Beeper targets'
   async run(): Promise<void> {
     const { flags } = await this.parse(TargetsList)
     const config = await readConfig()

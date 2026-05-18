@@ -130,7 +130,7 @@ function upgradeAction(method: CLIInstallMethod): string {
     case 'npm-global':
       return 'Update with: bun install -g beeper-cli@latest'
     case 'git':
-      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && bun --filter beeper-cli run build`
+      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && bun run --filter beeper-cli build`
     default:
       return 'Update with: brew upgrade beeper/tap/beeper-cli  OR  bun install -g beeper-cli@latest'
   }

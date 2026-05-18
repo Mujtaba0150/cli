@@ -27,7 +27,7 @@ jobs:
     - name: Test
       run: bun run test
     - name: Build Homebrew archive
-      run: bun --filter beeper-cli run pack:homebrew
+      run: bun run --filter beeper-cli pack:homebrew
     - name: Publish GitHub release assets
       env:
         GH_TOKEN: ${{ github.token }}

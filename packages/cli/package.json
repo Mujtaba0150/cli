@@ -21,7 +21,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun scripts/generate-command-map.mjs && bun run clean && tsc -p tsconfig.json",
+    "build": "bun scripts/prepare-desktop-api.mjs && bun scripts/generate-command-map.mjs && bun run clean && tsc -p tsconfig.json",
     "binary": "bun run build && bun scripts/build-binaries.mjs",
     "check:api-copy": "bun run build && bun scripts/check-api-copy.mjs",
     "check:readme": "bun run build && bun scripts/generate-readme.mjs --check",

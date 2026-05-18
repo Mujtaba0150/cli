@@ -10,10 +10,13 @@
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { Config } from '@oclif/core/config'
 import { commandManifest } from '../dist/lib/manifest.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const failures = []
+const config = await Config.load({ root })
+const commandsByID = new Map(config.commands.map(command => [displayID(command.id), command]))
 
 const seen = new Set()
 for (const entry of commandManifest) {
@@ -21,6 +24,11 @@ for (const entry of commandManifest) {
   seen.add(entry.command)
   if (!entry.examples?.length) failures.push(`Missing examples[] for: ${entry.command}`)
   if (!entry.description) failures.push(`Missing description for: ${entry.command}`)
+  const command = commandsByID.get(entry.command)
+  const summary = command?.summary || command?.description
+  if (summary && entry.description !== summary) {
+    failures.push(`Manifest description for "${entry.command}" must match oclif summary: "${summary}"`)
+  }
 }
 
 // The manifest may list commands shipped by first-party plugins (e.g. `targets tunnel`
@@ -66,4 +74,8 @@ function fileToCommand(file) {
   const relative = file.slice(join(root, 'src/commands').length + 1)
   const parts = relative.replace(/\.(ts|tsx)$/, '').split('/')
   return parts.map(part => part === 'index' ? undefined : part).filter(Boolean).join(' ')
+}
+
+function displayID(id) {
+  return id.replaceAll(':', ' ')
 }

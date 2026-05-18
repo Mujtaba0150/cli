@@ -55,4 +55,4 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Package Homebrew archive
-        run: bun --filter beeper-cli run pack:homebrew
+        run: bun run --filter beeper-cli pack:homebrew

@@ -3,7 +3,7 @@ import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 export default class AuthVerifySas extends BeeperCommand {
-  static override summary = 'Start short-authentication-string (emoji) verification'
+  static override summary = 'Start emoji verification'
   static override flags = {
     id: Flags.string({ description: 'Verification request ID. Defaults to the active request.' }),
   }

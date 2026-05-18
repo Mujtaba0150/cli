@@ -12,11 +12,11 @@ Command manual: `beeper man`
 ## Features
 
 - **Setup + readiness** - `setup`, `verify`, `status`, and `doctor` guide a target from login through encrypted-message readiness.
-- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile.
-- **Bridges + accounts** - list bridges that can connect chat accounts, connect accounts, switch defaults, inspect details, and remove accounts.
+- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile: local Server, local Desktop, Desktop API, or a profile that combines Desktop/Server runtime state.
+- **Bridges + accounts** - list bridge connectors, inspect login flows and capabilities, connect accounts, switch defaults, inspect details, and remove accounts.
 - **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
 - **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
-- **Exports** - heavy `export` for full chats/transcripts/attachments and light `messages export` for single-chat JSON.
+- **Exports** - `export` for full chats/transcripts/attachments and `messages export` for one-chat JSON.
 - **Automation** - `--json` everywhere, NDJSON `--events`, `watch` (WS + outbound webhooks with HMAC), `rpc` over stdin/stdout, `man --json` for tool manifests.
 - **Safety** - `--read-only` rejects mutating commands; raw API access stays explicit under `api get` and `api post`.
 
@@ -44,20 +44,20 @@ The package name is `beeper-cli`; the installed command is `beeper`.
 Install dependencies before running these commands.
 
 ```sh
-pnpm --filter beeper-cli build
-pnpm --filter beeper-cli dev -- --help
+bun run --filter beeper-cli build
+bun run --filter beeper-cli dev -- --help
 ```
 
 For local CLI development inside `packages/cli`:
 
 ```sh
-pnpm dev -- --help
+bun run dev -- --help
 ```
 
 Regenerate this README after command, flag, or argument changes:
 
 ```sh
-pnpm readme
+bun run readme
 ```
 
 ## Quick start
@@ -95,6 +95,10 @@ and `setup --server --install` or `setup --desktop --install` to orchestrate
 installation and target setup. To install runtimes directly: `install desktop`
 and `install server`.
 
+`install desktop` and `install server` install runtimes directly.
+`setup --desktop --install` and `setup --server --install` are one-shot
+setup paths that install when needed, then configure the target.
+
 For non-interactive use, pass a token through the environment:
 
 ```sh
@@ -119,7 +123,13 @@ command manual.
 
 ## Plugins
 
-Beeper CLI supports oclif plugins. Install a published plugin:
+Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
+
+```sh
+beeper plugins available
+```
+
+Install a published plugin:
 
 ```sh
 beeper plugins install @beeper/cli-plugin-cloudflare
@@ -172,7 +182,8 @@ JSON output preserves the same envelope on failure: `{"success":false,"data":nul
 ## Addressing
 
 - Chat arguments accept numeric local chat IDs, full Beeper/Matrix chat IDs, iMessage chat IDs, exact titles, or search text.
-- For scripts, prefer the numeric local chat ID shown by `beeper chats list`, or the full Beeper/Matrix chat ID.
+- For scripts on the same target/profile, prefer the numeric local chat ID shown by `beeper chats list`; use the full Beeper/Matrix chat ID when the selector must work across targets or profiles.
+- Numeric local chat IDs come from the selected Desktop database. Treat them as local to that target/profile.
 - Ambiguous chat matches return numbered choices; pass `--pick N` to select one.
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand a network name to multiple matching accounts.
@@ -218,15 +229,15 @@ explicit writes, and names based on what people are trying to do.
 | `setup` | Make the selected target ready for messaging |
 | `install desktop` | Install Beeper Desktop locally |
 | `install server` | Install Beeper Server locally |
-| `targets list` | List Beeper targets |
+| `targets list` | List configured Beeper targets |
 | `bridges list` | List bridges that can connect chat accounts |
-| `bridges show` | Show bridge details |
+| `bridges show` | Show bridge details, login flows, and connected accounts |
 | `targets add desktop` | Add a managed Beeper Desktop target |
 | `targets add server` | Add a managed Beeper Server target |
 | `targets add remote` | Add a remote Beeper Desktop or Server target |
 | `targets use` | Set the default target |
 | `targets show` | Show target details |
-| `targets status` | Check target reachability |
+| `targets status` | Check endpoint and process reachability for a target |
 | `targets start` | Start a managed target |
 | `targets stop` | Stop a managed target |
 | `targets restart` | Restart a managed target |
@@ -235,19 +246,19 @@ explicit writes, and names based on what people are trying to do.
 | `targets disable` | Stop starting a managed target at login |
 | `targets remove` | Remove a target |
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
-| `auth status` | Show authentication status |
+| `auth status` | Show stored auth for the selected target |
 | `auth logout` | Log out and invalidate the session |
 | `verify` | Continue or start device verification |
-| `verify status` | Show encryption readiness |
+| `verify status` | Show encryption and device-verification readiness |
 | `verify approve` | Approve a pending device verification request |
 | `verify recovery-key` | Unlock encrypted messages with a recovery key |
 | `verify reset-recovery-key` | Create a new encrypted-messages recovery key |
 | `verify cancel` | Cancel an in-progress device verification |
 | `verify list` | List active verification work |
 | `verify start` | Start a device verification request |
-| `verify show` | Show active verification details |
-| `verify sas` | Start short-authentication-string (emoji) verification |
-| `verify sas-confirm` | Confirm short-authentication-string (emoji) verification |
+| `verify show` | Show the current active verification request |
+| `verify sas` | Start emoji verification |
+| `verify sas-confirm` | Confirm matching emoji verification |
 | `verify qr-scan` | Submit a scanned QR-code verification payload |
 | `verify qr-confirm` | Confirm that the other device scanned your QR code |
 | `accounts list` | List connected accounts |
@@ -300,10 +311,11 @@ explicit writes, and names based on what people are trying to do.
 | `rpc` | Execute commands via JSON-line RPC (reads stdin) |
 | `man` | Print the command manual |
 | `doctor` | Probe the target live and report diagnostics |
-| `status` | Print a snapshot of the selected target and readiness |
+| `status` | Show selected target and setup readiness |
 | `docs` | Open Beeper CLI docs |
 | `version` | Print CLI version |
-| `completion` | Print shell completion setup (alias for autocomplete) |
+| `completion` | Print shell completion setup |
+| `plugins` | Manage Beeper CLI plugins |
 | `plugins available` | List recommended Beeper CLI plugins |
 | `update` | Check and install Beeper updates |
 | `config get` | Print CLI configuration |
@@ -394,7 +406,7 @@ beeper install server --server-env staging
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets list`
-List Beeper targets
+List configured Beeper targets
 
 ```sh
 beeper targets list
@@ -433,7 +445,7 @@ beeper bridges list --provider local --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper bridges show`
-Show bridge details
+Show bridge details, login flows, and connected accounts
 
 ```sh
 beeper bridges show <bridge>
@@ -584,7 +596,7 @@ beeper targets show work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets status`
-Check target reachability
+Check endpoint and process reachability for a target
 
 ```sh
 beeper targets status [name]
@@ -768,7 +780,7 @@ beeper targets tunnel --as work-laptop --port 23373
 ```
 
 ### `beeper auth status`
-Show authentication status
+Show stored auth for the selected target
 
 ```sh
 beeper auth status
@@ -821,7 +833,7 @@ beeper verify --user @alice:beeper.com
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify status`
-Show encryption readiness
+Show encryption and device-verification readiness
 
 ```sh
 beeper verify status
@@ -950,7 +962,7 @@ beeper verify start --user @alice:beeper.com
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify show`
-Show active verification details
+Show the current active verification request
 
 ```sh
 beeper verify show
@@ -965,7 +977,7 @@ beeper verify show --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify sas`
-Start short-authentication-string (emoji) verification
+Start emoji verification
 
 ```sh
 beeper verify sas
@@ -986,7 +998,7 @@ beeper verify sas
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify sas-confirm`
-Confirm short-authentication-string (emoji) verification
+Confirm matching emoji verification
 
 ```sh
 beeper verify sas-confirm
@@ -1076,14 +1088,16 @@ Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json
 Connect a chat account
 
 ```sh
-beeper accounts add [type]
+beeper accounts add [bridge]
 ```
+
+`accounts add` without an argument opens the guided bridge chooser. Pass a bridge ID when you already know which chat network connector to use.
 
 Arguments:
 
 | Name | Required | Description |
 | --- | --- | --- |
-| `type` | no | Bridge ID, network, or type to connect. Omit to list available bridges. |
+| `bridge` | no | Bridge ID, network, or type to connect. Omit to list available bridges. |
 
 Flags:
 
@@ -1874,7 +1888,7 @@ Export one chat's messages to JSON
 beeper messages export
 ```
 
-Lightweight per-chat export. For a full multi-chat export with transcripts and attachments use `beeper export`.
+Lightweight per-chat JSON export. For a full export with transcripts, attachments, and multiple chats, use `beeper export`.
 
 Flags:
 
@@ -1894,8 +1908,8 @@ Examples:
 
 ```sh
 beeper messages export --chat 10313 --output chat.json
-beeper messages export --chat 10313 --after 2026-01-01T00:00:00Z --output -
-beeper messages export --chat 10313 --before-cursor "<messageID>" --limit 500
+beeper messages export --chat 8951 --after 2026-01-01T00:00:00Z --output -
+beeper messages export --chat '!plUOsWkvMmJmJPVAjS:beeper.com' --before-cursor "<messageID>" --limit 500
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
@@ -1906,6 +1920,8 @@ Send a text message
 ```sh
 beeper send text
 ```
+
+Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.
 
 Flags:
 
@@ -1978,7 +1994,7 @@ Flags:
 Examples:
 
 ```sh
-beeper send react --to 10313 --id <messageID> --reaction "🎉"
+beeper send react --to 10313 --id <messageID> --reaction "+1"
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
@@ -2033,7 +2049,7 @@ Flags:
 Examples:
 
 ```sh
-beeper send unreact --to 10313 --id <messageID> --reaction "🎉"
+beeper send unreact --to 10313 --id <messageID> --reaction "+1"
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
@@ -2321,13 +2337,13 @@ beeper doctor --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper status`
-Print a snapshot of the selected target and readiness
+Show selected target and setup readiness
 
 ```sh
 beeper status
 ```
 
-Cheap, read-only snapshot. For active reachability checks and diagnostics, run `beeper doctor`.
+Read-only readiness snapshot for the selected target. For active reachability checks and diagnostics, run `beeper doctor`.
 
 Examples:
 
@@ -2369,13 +2385,13 @@ beeper version
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper completion`
-Print shell completion setup (alias for autocomplete)
+Print shell completion setup
 
 ```sh
 beeper completion [shell]
 ```
 
-Same as `beeper autocomplete`: prints setup instructions and the generated completion script for the requested shell. Pass `--semantic` to print a small supplementary snippet that adds live suggestions for `--chat`, `--to`, `--account`, and `--target` by calling back into `beeper _complete`. Source it *after* the static autocomplete setup.
+Print static shell completion setup for bash, zsh, fish, or PowerShell. Pass `--semantic` to print a small supplementary snippet that adds live suggestions for `--chat`, `--to`, `--account`, and `--target` by calling back into `beeper _complete`. Source it after the static completion setup.
 
 Arguments:
 
@@ -2394,6 +2410,22 @@ Examples:
 
 ```sh
 beeper completion
+```
+
+### `beeper plugins`
+Manage Beeper CLI plugins
+
+```sh
+beeper plugins
+```
+
+List recommended Beeper CLI plugins, or use oclif plugin commands to install, link, update, and remove plugins.
+
+Examples:
+
+```sh
+beeper plugins
+beeper plugins install @beeper/cli-plugin-cloudflare
 ```
 
 ### `beeper plugins available`
@@ -2604,8 +2636,8 @@ Releases. Push a `v*` tag to run `.github/workflows/publish-release.yml`.
 
 The release workflow:
 
-- runs the TypeScript test suite
-- builds a Homebrew archive containing the compiled CLI and production dependencies
+- runs the Bun test suite
+- builds standalone Bun binaries and Homebrew archives
 - uploads the archive to the GitHub release
 - updates `beeper/homebrew-tap` with the pinned archive SHA
 

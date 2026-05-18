@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun --filter beeper-cli run build && bun run clean && tsc -p tsconfig.json",
+    "build": "bun run --filter beeper-cli build && bun run clean && tsc -p tsconfig.json",
     "clean": "rm -rf dist",
     "test": "bun run build && bun test/smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

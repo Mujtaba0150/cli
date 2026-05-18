@@ -79,8 +79,8 @@ The package name is \`beeper-cli\`; the installed command is \`beeper\`.
 Install dependencies before running these commands.
 
 \`\`\`sh
-bun --filter beeper-cli run build
-bun --filter beeper-cli run dev -- --help
+bun run --filter beeper-cli build
+bun run --filter beeper-cli dev -- --help
 \`\`\`
 
 For local CLI development inside \`packages/cli\`:
