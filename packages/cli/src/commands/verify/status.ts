@@ -1,6 +1,6 @@
-import { BeeperCommand } from '../../../lib/command.js'
-import { evaluateReadiness } from '../../../lib/app-state.js'
-import { printData } from '../../../lib/output.js'
+import { BeeperCommand } from '../../lib/command.js'
+import { evaluateReadiness } from '../../lib/app-state.js'
+import { printData } from '../../lib/output.js'
 export default class AuthVerifyStatus extends BeeperCommand {
   static override summary = 'Show encryption readiness'
   async run(): Promise<void> {

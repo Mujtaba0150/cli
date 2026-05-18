@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
-import { createClient } from '../../../lib/client.js'
-import { printData } from '../../../lib/output.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { createClient } from '../../lib/client.js'
+import { printData } from '../../lib/output.js'
 export default class AuthVerifyQrConfirm extends BeeperCommand {
   static override summary = 'Confirm that the other device scanned your QR code'
   static override flags = {

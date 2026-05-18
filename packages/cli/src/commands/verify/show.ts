@@ -1,6 +1,6 @@
-import { BeeperCommand } from '../../../lib/command.js'
-import { getAppState } from '../../../lib/app-state.js'
-import { printData } from '../../../lib/output.js'
+import { BeeperCommand } from '../../lib/command.js'
+import { getAppState } from '../../lib/app-state.js'
+import { printData } from '../../lib/output.js'
 export default class AuthVerifyShow extends BeeperCommand {
   static override summary = 'Show active verification details'
   async run(): Promise<void> {

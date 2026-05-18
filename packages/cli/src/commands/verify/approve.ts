@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
-import { createClient } from '../../../lib/client.js'
-import { printData } from '../../../lib/output.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { createClient } from '../../lib/client.js'
+import { printData } from '../../lib/output.js'
 export default class AuthVerifyApprove extends BeeperCommand {
   static override summary = 'Approve a pending device verification request'
   static override flags = {

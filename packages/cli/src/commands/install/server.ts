@@ -1,8 +1,8 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
-import { installServer, type InstallChannel } from '../../../lib/installations.js'
-import { pathSetupHint } from '../../../lib/env.js'
-import { printSuccess } from '../../../lib/output.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { installServer, type InstallChannel } from '../../lib/installations.js'
+import { pathSetupHint } from '../../lib/env.js'
+import { printSuccess } from '../../lib/output.js'
 
 export default class SetupInstallServer extends BeeperCommand {
   static override summary = 'Install Beeper Server locally'

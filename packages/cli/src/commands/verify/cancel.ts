@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
-import { createClient } from '../../../lib/client.js'
-import { printData } from '../../../lib/output.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { createClient } from '../../lib/client.js'
+import { printData } from '../../lib/output.js'
 export default class AuthVerifyCancel extends BeeperCommand {
   static override summary = 'Cancel an in-progress device verification'
   static override flags = {

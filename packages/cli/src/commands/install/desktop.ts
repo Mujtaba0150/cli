@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
-import { installDesktop, type InstallChannel } from '../../../lib/installations.js'
-import { printSuccess } from '../../../lib/output.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
+import { installDesktop, type InstallChannel } from '../../lib/installations.js'
+import { printSuccess } from '../../lib/output.js'
 
 export default class SetupInstallDesktop extends BeeperCommand {
   static override summary = 'Install Beeper Desktop locally'
@@ -20,4 +20,3 @@ export default class SetupInstallDesktop extends BeeperCommand {
     }, flags.json ? 'json' : 'human')
   }
 }
-
