@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { homedir, tmpdir } from 'node:os'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -141,13 +141,7 @@ async function prepareCredentials(workDir) {
 
 async function importDeveloperID(workDir) {
   const fastlaneDir = join(workDir, 'fastlane')
-  const matchOutputDir = join(workDir, 'match-output')
-  const keychainName = `beeper-cli-signing-${process.pid}.keychain-db`
-  const keychainPath = join(homedir(), 'Library', 'Keychains', keychainName)
-  const keychainPassword = `beeper-cli-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  await createKeychain(keychainPath, keychainPassword)
   await mkdir(fastlaneDir, { recursive: true })
-  await mkdir(matchOutputDir, { recursive: true })
   await writeFile(
     join(fastlaneDir, 'Fastfile'),
     `default_platform(:mac)
@@ -164,10 +158,6 @@ lane :import_developer_id do
     s3_region: "us-east-2",
     s3_access_key: ENV.fetch("MATCH_S3_ACCESS_KEY"),
     s3_secret_access_key: ENV.fetch("MATCH_S3_SECRET_ACCESS_KEY"),
-    keychain_name: ENV.fetch("BEEPER_CLI_KEYCHAIN_PATH"),
-    keychain_password: ENV.fetch("BEEPER_CLI_KEYCHAIN_PASSWORD"),
-    output_path: ENV.fetch("BEEPER_CLI_MATCH_OUTPUT_PATH"),
-    skip_provisioning_profiles: true,
     readonly: true
   )
 end
@@ -176,77 +166,25 @@ end
   const fastlane = await commandExists('fastlane')
   if (fastlane) {
     await run('fastlane', ['import_developer_id'], {
-      cwd: fastlaneDir,
+      cwd: workDir,
       env: {
         ...process.env,
         FASTLANE_DISABLE_COLORS: '1',
-        BEEPER_CLI_KEYCHAIN_PASSWORD: keychainPassword,
-        BEEPER_CLI_KEYCHAIN_PATH: keychainName,
-        BEEPER_CLI_MATCH_OUTPUT_PATH: matchOutputDir,
         BEEPER_CLI_TEAM_ID: teamID,
-        MATCH_KEYCHAIN_NAME: keychainName,
-        MATCH_KEYCHAIN_PASSWORD: keychainPassword,
       },
       scrub: [
-        keychainPassword,
         process.env.MATCH_S3_ACCESS_KEY,
         process.env.MATCH_S3_SECRET_ACCESS_KEY,
         process.env.MATCH_PASSWORD,
       ],
     })
-    await importMatchOutput(matchOutputDir, keychainPath, keychainPassword)
-    await run('/usr/bin/security', ['unlock-keychain', '-p', keychainPassword, keychainPath], { scrub: [keychainPassword] })
-    await run('/usr/bin/security', ['set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', keychainPassword, keychainPath], { quiet: true, scrub: [keychainPassword] })
-    process.env.MACOS_CODESIGN_KEYCHAIN = keychainPath
     return
   }
   throw new Error('No Developer ID identity found and fastlane is unavailable.')
 }
 
-async function importMatchOutput(outputDir, keychainPath, keychainPassword) {
-  const files = await listFiles(outputDir)
-  const importable = files.filter(file => /\.(cer|p12)$/i.test(file))
-  for (const file of importable) {
-    const args = ['import', file, '-k', keychainPath, '-A']
-    if (/\.p12$/i.test(file)) args.push('-P', process.env.MATCH_PASSWORD || '')
-    await run('/usr/bin/security', args, { quiet: true, scrub: [process.env.MATCH_PASSWORD] })
-  }
-  await run('/usr/bin/security', ['unlock-keychain', '-p', keychainPassword, keychainPath], { scrub: [keychainPassword] })
-}
-
-async function listFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
-  const files = []
-  for (const entry of entries) {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) files.push(...await listFiles(path))
-    else if (entry.isFile()) files.push(path)
-  }
-  return files
-}
-
-async function createKeychain(path, password) {
-  await rm(path, { force: true })
-  await run('/usr/bin/security', ['create-keychain', '-p', password, path], { scrub: [password] })
-  await run('/usr/bin/security', ['set-keychain-settings', '-lut', '21600', path], { scrub: [password] })
-  await run('/usr/bin/security', ['unlock-keychain', '-p', password, path], { scrub: [password] })
-  const existing = await keychainList()
-  await run('/usr/bin/security', ['list-keychains', '-d', 'user', '-s', path, ...existing])
-}
-
-async function keychainList() {
-  const child = Bun.spawn(['/usr/bin/security', 'list-keychains', '-d', 'user'], { stdout: 'pipe', stderr: 'pipe' })
-  const [stdout, code] = await Promise.all([new Response(child.stdout).text(), child.exited])
-  if (code !== 0) return []
-  return stdout
-    .split('\n')
-    .map(line => line.trim().replace(/^"|"$/g, ''))
-    .filter(Boolean)
-}
-
 async function findIdentity(team) {
   const args = ['/usr/bin/security', 'find-identity', '-v', '-p', 'codesigning']
-  if (process.env.MACOS_CODESIGN_KEYCHAIN) args.push(process.env.MACOS_CODESIGN_KEYCHAIN)
   const child = Bun.spawn(args, {
     stdout: 'pipe',
     stderr: 'pipe',
@@ -304,7 +242,7 @@ async function run(command, args, options = {}) {
     options.quiet ? drain(child.stderr) : options.scrub ? collect(child.stderr, process.stderr, options.scrub) : Promise.resolve(),
     child.exited,
   ])
-  if (code !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${code}`)
+  if (code !== 0) throw new Error(`${command} ${scrub(args.join(' '), options.scrub ?? [])} exited with ${code}`)
 }
 
 async function drain(stream) {
