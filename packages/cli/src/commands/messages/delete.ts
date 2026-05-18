@@ -9,7 +9,7 @@ export default class MessagesDelete extends BeeperCommand {
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     id: Flags.string({ required: true, description: 'Message ID to delete (final message ID; pending IDs are rejected)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     'for-everyone': Flags.boolean({ default: false, description: 'Delete for everyone when the network supports it (otherwise deletes only for you)' }),
   }
   async run(): Promise<void> {

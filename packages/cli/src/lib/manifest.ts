@@ -457,6 +457,7 @@ export const commandManifest: ManifestCommand[] = [
     examples: [
       'beeper watch',
       'beeper watch --chat \'!abc:beeper.com\' --json',
+      'beeper watch --include-type message.upserted --include-type message.deleted',
       'beeper watch --webhook https://example.com/hook --webhook-secret "$BEEPER_WEBHOOK_SECRET"',
     ],
   },
@@ -529,5 +530,10 @@ export const commandManifest: ManifestCommand[] = [
     command: 'api post',
     description: 'Call a raw Desktop API POST path with a JSON body',
     examples: ['beeper api post /v1/chats/abc/read --body \'{"messageID":"x"}\''],
+  },
+  {
+    command: 'api request',
+    description: 'Call a raw Desktop API path with any supported HTTP method',
+    examples: ['beeper api request DELETE /v1/chats/abc/messages/def/reactions --body \'{"reactionKey":"👍"}\''],
   },
 ]

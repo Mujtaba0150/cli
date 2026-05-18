@@ -9,7 +9,7 @@ export default class MessagesEdit extends BeeperCommand {
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     id: Flags.string({ required: true, description: 'Message ID to edit (must be one of your own messages with no attachments)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     message: Flags.string({ required: true, description: 'New message text' }),
   }
   async run(): Promise<void> {

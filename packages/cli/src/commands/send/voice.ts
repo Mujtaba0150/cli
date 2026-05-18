@@ -14,7 +14,7 @@ export default class SendVoice extends BeeperCommand {
     duration: Flags.integer({ description: 'Voice note duration in seconds (overrides upload-detected duration)' }),
     filename: Flags.string({ description: 'Override the displayed filename' }),
     mime: Flags.string({ default: 'audio/ogg', description: 'MIME type for the voice note (default: audio/ogg)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --to is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     'reply-to': Flags.string({ description: 'Send as a reply to this message ID' }),
     wait: Flags.boolean({ default: false, description: 'Wait for the message to leave the pending state (or fail) before returning' }),
     'wait-timeout': Flags.integer({ default: 30_000, description: 'Maximum wait time in ms when --wait is set' }),

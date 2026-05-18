@@ -13,7 +13,7 @@ export default class SendSticker extends BeeperCommand {
     file: Flags.string({ required: true, description: 'Sticker file (typically 512x512 WebP)' }),
     filename: Flags.string({ description: 'Override the displayed filename' }),
     mime: Flags.string({ default: 'image/webp', description: 'MIME type for the sticker (default: image/webp)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --to is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     'reply-to': Flags.string({ description: 'Send as a reply to this message ID' }),
     wait: Flags.boolean({ default: false, description: 'Wait for the message to leave the pending state (or fail) before returning' }),
     'wait-timeout': Flags.integer({ default: 30_000, description: 'Maximum wait time in ms when --wait is set' }),

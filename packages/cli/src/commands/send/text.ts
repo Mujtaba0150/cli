@@ -7,11 +7,16 @@ import { resolveChatID } from '../../lib/resolve.js'
 import { sendMessage } from '../../lib/send-message.js'
 
 export default class SendText extends BeeperCommand {
-  static override summary = 'Send text'
+  static override summary = 'Send a text message'
+  static override examples = [
+    'beeper send text --to "Mom" --message "On my way"',
+    'beeper send text --to "Team Chat" --message "See @alice" --mention alice@whatsapp',
+    'beeper send text --to alice@whatsapp --message "Got it" --reply-to <msgID>',
+  ]
   static override flags = {
     to: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     message: Flags.string({ required: true, description: 'Message text to send' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --to is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     'reply-to': Flags.string({ description: 'Send as a reply to this message ID' }),
     mention: Flags.string({ multiple: true, description: 'User ID to @-mention (repeatable)' }),
     'no-preview': Flags.boolean({ default: false, description: 'Disable automatic link preview for URLs in the message' }),

@@ -29,6 +29,19 @@ Or let the plugin download the pinned `cloudflared` binary:
 beeper targets tunnel --install
 ```
 
+Environment overrides:
+
+| Variable | Effect |
+| --- | --- |
+| `BEEPER_CLOUDFLARED_PATH` | Use this `cloudflared` binary path. |
+| `BEEPER_IGNORE_CLOUDFLARED` | Skip install/version checks and try to run the configured binary path directly. |
+| `BEEPER_CLOUDFLARED_DOMAIN` | Override the domain used when parsing the public URL from `cloudflared` output. Defaults to `trycloudflare.com`. |
+
 Tunneling makes the Desktop API reachable from the public internet. Only run it
 for targets and networks you intend to expose, and stop it with `Ctrl-C` when you
 are done.
+
+`targets tunnel` uses Cloudflare quick tunnels. Quick tunnels return temporary
+public URLs. For a stable hostname on your own domain, configure a named
+Cloudflare Tunnel and public hostname in Cloudflare, then route it to your Beeper
+target outside this quick-tunnel command.

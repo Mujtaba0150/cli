@@ -8,7 +8,7 @@ export default class ChatsRename extends BeeperCommand {
   static override summary = 'Rename a chat'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     title: Flags.string({ required: true, description: 'New chat title' }),
   }
   async run(): Promise<void> {

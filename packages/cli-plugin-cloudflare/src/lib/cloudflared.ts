@@ -43,8 +43,10 @@ export type StartTunnelOptions = {
 }
 
 export type StartedTunnel = {
+  done: Promise<{ code: number | null; signal: NodeJS.Signals | null }>
   process: ChildProcess
   stop: () => void
+  tryMessage: string
   url: string
 }
 
@@ -56,11 +58,16 @@ export function cloudflaredPath(explicit?: string): string {
   return explicit ?? process.env.BEEPER_CLOUDFLARED_PATH ?? defaultCloudflaredPath()
 }
 
-export async function ensureCloudflared(options: { cloudflaredPath?: string; install?: boolean } = {}): Promise<string> {
+export async function ensureCloudflared(options: { cloudflaredPath?: string; debug?: boolean; install?: boolean } = {}): Promise<string> {
   const target = cloudflaredPath(options.cloudflaredPath)
+  if (isTruthy(process.env.BEEPER_IGNORE_CLOUDFLARED)) {
+    if (options.debug) process.stderr.write('Skipping cloudflared installation because BEEPER_IGNORE_CLOUDFLARED is set.\n')
+    return target
+  }
+
   if (await isUsableCloudflared(target)) return target
   if (!options.install) {
-    throw new Error(`cloudflared not found at ${target}. Install it or rerun with --install.`)
+    throw new Error(`cloudflared not found at ${target}. Install it or rerun with --install.\n${whatToTry()}`)
   }
 
   await installCloudflared(target)
@@ -88,12 +95,14 @@ export async function startCloudflareTunnel(options: StartTunnelOptions): Promis
   const bin = await ensureCloudflared(options)
   const retries = options.retries ?? 5
   let attempt = 0
+  let lastError: Error | undefined
 
-  while (true) {
+  while (attempt <= retries) {
     try {
       const started = await runCloudflared(bin, options)
       return started
     } catch (error) {
+      lastError = error as Error
       attempt += 1
       if (attempt > retries) throw error
       if (options.debug) process.stderr.write(`cloudflared crashed before connecting; retrying (${attempt}/${retries})\n`)
@@ -102,6 +111,8 @@ export async function startCloudflareTunnel(options: StartTunnelOptions): Promis
       })
     }
   }
+
+  throw new Error(`Could not start Cloudflare Tunnel: max retries reached.${lastError ? `\n${lastError.message}` : ''}\n${whatToTry()}`)
 }
 
 async function runCloudflared(bin: string, options: StartTunnelOptions): Promise<StartedTunnel> {
@@ -111,11 +122,17 @@ async function runCloudflared(bin: string, options: StartTunnelOptions): Promise
   const errors: string[] = []
   let connected = false
   let publicURL: string | undefined
+  let resolved = false
+  let stopped = false
+  let exitResolve!: (value: { code: number | null; signal: NodeJS.Signals | null }) => void
+  const done = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(resolve => {
+    exitResolve = resolve
+  })
 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       child.kill('SIGTERM')
-      reject(new Error(lastTunnelError(errors) ?? 'Could not start Cloudflare Tunnel: timed out waiting for a public URL.'))
+      reject(new Error(`${lastTunnelError(errors) ?? 'Could not start Cloudflare Tunnel: timed out waiting for a public URL.'}\n${whatToTry()}`))
     }, options.timeoutMs ?? 40_000)
 
     const cleanup = () => clearTimeout(timeout)
@@ -128,10 +145,16 @@ async function runCloudflared(bin: string, options: StartTunnelOptions): Promise
       if (error) errors.push(error)
 
       if (connected && publicURL) {
+        resolved = true
         cleanup()
         resolve({
+          done,
           process: child,
-          stop: () => child.kill('SIGTERM'),
+          stop() {
+            stopped = true
+            child.kill('SIGTERM')
+          },
+          tryMessage: whatToTry(),
           url: publicURL,
         })
       }
@@ -143,10 +166,11 @@ async function runCloudflared(bin: string, options: StartTunnelOptions): Promise
       cleanup()
       reject(error)
     })
-    child.once('exit', code => {
-      if (publicURL) return
+    child.once('exit', (code, signal) => {
+      exitResolve({ code, signal })
+      if (resolved || stopped) return
       cleanup()
-      reject(new Error(lastTunnelError(errors) ?? `cloudflared exited before connecting${code === null ? '' : ` with code ${code}`}.`))
+      reject(new Error(`${lastTunnelError(errors) ?? `cloudflared exited before connecting${code === null ? '' : ` with code ${code}`}.`}\n${whatToTry()}`))
     })
   })
 }
@@ -175,15 +199,15 @@ async function downloadFile(url: string, to: string): Promise<void> {
   await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), createWriteStream(to))
 }
 
-function findTunnelURL(data: string): string | undefined {
-  return data.match(/https:\/\/[^\s]+\.trycloudflare\.com/)?.[0]
+export function findTunnelURL(data: string, domain = cloudflaredDomain()): string | undefined {
+  return data.match(new RegExp(`https:\\/\\/[^\\s]+\\.${escapeRegExp(domain)}`))?.[0]
 }
 
 function hasConnection(data: string): boolean {
   return /(INF Registered tunnel connection|INF Connection)/.test(data)
 }
 
-function findKnownError(data: string): string | undefined {
+export function findKnownError(data: string): string | undefined {
   const knownErrors = [
     /failed to request quick Tunnel/i,
     /failed to unmarshal quick Tunnel/i,
@@ -203,6 +227,27 @@ function cleanCloudflareLog(input: string): string {
 
 function lastTunnelError(errors: string[]): string | undefined {
   return [...new Set(errors)].slice(-5).join('\n') || undefined
+}
+
+export function cloudflaredDomain(): string {
+  return process.env.BEEPER_CLOUDFLARED_DOMAIN ?? 'trycloudflare.com'
+}
+
+export function whatToTry(): string {
+  return [
+    'Try running the command again.',
+    'If cloudflared is already installed, set BEEPER_CLOUDFLARED_PATH or pass --cloudflared-path.',
+    'If the bundled binary is missing, rerun with --install.',
+    'For a stable hostname, configure a named Cloudflare Tunnel and route the Beeper target outside this quick-tunnel command.',
+  ].join(' ')
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[|\\{}()[\]^$+*?.]/g, match => `\\${match}`)
+}
+
+function isTruthy(value: string | undefined): boolean {
+  return ['1', 'on', 'true', 'yes'].includes(String(value ?? '').toLowerCase())
 }
 
 export function versionIsGreaterThan(versionA: string, versionB: string): boolean {

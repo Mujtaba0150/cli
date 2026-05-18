@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsMarkRead extends BeeperCommand {
   static override summary = 'Mark a chat read'
-  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), message: Flags.string({ description: 'Mark read at (or unread starting from) this message ID' }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }), message: Flags.string({ description: 'Mark read at (or unread starting from) this message ID' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsMarkRead)
     ensureWritable(flags)

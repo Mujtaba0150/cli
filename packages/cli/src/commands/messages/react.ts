@@ -5,11 +5,12 @@ import { printData, printSuccess } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesReact extends BeeperCommand {
+  static override hidden = true
   static override summary = 'React to a message'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     id: Flags.string({ required: true, description: 'Message ID to react to' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     reaction: Flags.string({ required: true, description: 'Reaction key (emoji, shortcode, or custom emoji key)' }),
     transaction: Flags.string({ description: 'Optional transaction ID for deduplication' }),
   }

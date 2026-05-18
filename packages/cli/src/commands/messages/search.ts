@@ -7,6 +7,12 @@ import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class MessagesSearch extends BeeperCommand {
   static override summary = 'Search messages across chats'
+  static override examples = [
+    'beeper messages search "quarterly report"',
+    'beeper messages search --chat "Work" --sender me --limit 20',
+    'beeper messages search --media image --after 2024-01-01T00:00:00Z',
+    'beeper messages search --chat-type group --sender others "meeting"',
+  ]
   static override args = {
     query: Args.string({ description: 'Search text (literal word match)', required: false }),
   }

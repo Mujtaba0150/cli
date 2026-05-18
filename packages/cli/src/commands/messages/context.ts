@@ -11,7 +11,7 @@ export default class MessagesContext extends BeeperCommand {
     id: Flags.string({ required: true, description: 'Target message ID to center the window on' }),
     before: Flags.integer({ default: 10, description: 'Number of messages to include before the target' }),
     after: Flags.integer({ default: 10, description: 'Number of messages to include after the target' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesContext)

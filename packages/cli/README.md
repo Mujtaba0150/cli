@@ -227,8 +227,8 @@ explicit writes, and names based on what people are trying to do.
 | `targets enable` | Start a managed target at login |
 | `targets disable` | Stop starting a managed target at login |
 | `targets remove` | Remove a target |
-| `auth status` | Show local auth status and token metadata |
-| `auth logout` | Clear stored authentication |
+| `auth status` | Show authentication status |
+| `auth logout` | Log out and invalidate the session |
 | `auth verify` | Continue (or start) a device verification flow interactively |
 | `auth verify status` | Show encryption readiness |
 | `auth verify approve` | Approve a pending device verification request |
@@ -260,7 +260,7 @@ explicit writes, and names based on what people are trying to do.
 | `chats mark-read` | Mark a chat read |
 | `chats mark-unread` | Mark a chat unread |
 | `chats priority` | Move a chat to the Inbox or Low Priority |
-| `chats notify-anyway` | Notify a muted chat |
+| `chats notify-anyway` | Receive the next notification from a muted chat |
 | `chats rename` | Rename a chat |
 | `chats description` | Set a chat description |
 | `chats avatar` | Set a chat avatar |
@@ -278,7 +278,7 @@ explicit writes, and names based on what people are trying to do.
 | `messages react` | React to a message |
 | `messages unreact` | Remove a reaction |
 | `messages export` | Export one chat's messages to JSON |
-| `send text` | Send text |
+| `send text` | Send a text message |
 | `send file` | Send a file |
 | `send react` | Send a reaction to a message (alias of messages react) |
 | `send sticker` | Send a sticker |
@@ -290,13 +290,13 @@ explicit writes, and names based on what people are trying to do.
 | `media download` | Download message media |
 | `export` | Export accounts, chats, messages, Markdown transcripts, and attachments |
 | `watch` | Stream Desktop API WebSocket events |
-| `rpc` | Run newline-delimited JSON command RPC |
+| `rpc` | Execute commands via JSON-line RPC (reads stdin) |
 | `man` | Print the command manual |
 | `doctor` | Probe the target live and report diagnostics |
 | `status` | Print a snapshot of the selected target and readiness |
 | `docs` | Open Beeper CLI docs |
 | `version` | Print CLI version |
-| `completion` | Print shell completion help |
+| `completion` | Print shell completion setup (alias for autocomplete) |
 | `update` | Check and install Beeper updates |
 | `config get` | Print CLI configuration |
 | `config set` | Set a CLI configuration value |
@@ -304,6 +304,7 @@ explicit writes, and names based on what people are trying to do.
 | `config reset` | Reset CLI configuration |
 | `api get` | Call a raw Desktop API GET path |
 | `api post` | Call a raw Desktop API POST path with a JSON body |
+| `api request` | Call a raw Desktop API path with any supported HTTP method |
 
 ## Command Reference
 
@@ -699,7 +700,7 @@ beeper targets remove work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper auth status`
-Show local auth status and token metadata
+Show authentication status
 
 ```sh
 beeper auth status
@@ -715,7 +716,7 @@ beeper auth status --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper auth logout`
-Clear stored authentication
+Log out and invalidate the session
 
 ```sh
 beeper auth logout
@@ -1174,7 +1175,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--max-participants=<value>` | option | Limit number of participants returned in chat details |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1226,7 +1227,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1248,7 +1249,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1270,7 +1271,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1292,7 +1293,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1314,7 +1315,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1336,7 +1337,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1359,7 +1360,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1382,7 +1383,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1405,7 +1406,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--level=<inbox|low>` | option | Destination: inbox (default mailbox) or low (Low Priority) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1417,7 +1418,7 @@ beeper chats priority --chat "Marketing" --level low
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats notify-anyway`
-Notify a muted chat
+Receive the next notification from a muted chat
 
 ```sh
 beeper chats notify-anyway
@@ -1428,7 +1429,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1450,7 +1451,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--title=<value>` | option | New chat title Required. |
 
 Examples:
@@ -1475,7 +1476,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--clear` | boolean | Clear the existing description instead of setting one |
 | `--description=<value>` | option | New chat description |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1500,7 +1501,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--clear` | boolean | Clear the existing avatar instead of setting a new one |
 | `--file=<value>` | option | Image file to upload as the new avatar |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1526,7 +1527,7 @@ Flags:
 | `--file=<value>` | option | Attachment file to upload with the draft |
 | `--filename=<value>` | option | Override the displayed filename of the attachment |
 | `--mime=<value>` | option | Override MIME type detection for the attachment |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--text=<value>` | option | Draft text. Omit and pass --clear to remove the draft. |
 
 Examples:
@@ -1550,7 +1551,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--seconds=<value>` | option | Timer in seconds, or "off" to disable Required. |
 
 Examples:
@@ -1574,7 +1575,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--dismiss-on-message` | boolean | Dismiss the reminder automatically when a new message arrives |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--when=<value>` | option | ISO timestamp when the reminder should trigger Required. |
 
 Examples:
@@ -1598,7 +1599,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1623,7 +1624,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--draft=<value>` | option | Prefill the chat composer with this draft text |
 | `--message=<value>` | option | Scroll Desktop to this message ID after focusing |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1650,7 +1651,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--ids` | boolean | Print only message IDs |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--sender=<value>` | option | Filter by sender: me, others, or a specific user ID (client-side) |
 
 Examples:
@@ -1715,7 +1716,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID, pendingMessageID, or Matrix event ID Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1740,7 +1741,7 @@ Flags:
 | `--before=<value>` | option | Number of messages to include before the target Default: 10 |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Target message ID to center the window on Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1764,7 +1765,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID to edit (must be one of your own messages with no attachments) Required. |
 | `--message=<value>` | option | New message text Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1788,7 +1789,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--for-everyone` | boolean | Delete for everyone when the network supports it (otherwise deletes only for you) |
 | `--id=<value>` | option | Message ID to delete (final message ID; pending IDs are rejected) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1811,7 +1812,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID to react to Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
 | `--transaction=<value>` | option | Optional transaction ID for deduplication |
 
@@ -1836,7 +1837,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID whose reaction to remove Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reaction=<value>` | option | Reaction key previously added (emoji, shortcode, or custom emoji key) Required. |
 
 Examples:
@@ -1868,7 +1869,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--limit=<value>` | option | Maximum messages to export |
 | `-o, --output=<value>` | option | Output path; - writes JSON to stdout Default: - |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1881,7 +1882,7 @@ beeper messages export --chat "Family" --before-cursor "<messageID>" --limit 500
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send text`
-Send text
+Send a text message
 
 ```sh
 beeper send text
@@ -1894,7 +1895,7 @@ Flags:
 | `--mention=<value>...` | option | User ID to @-mention (repeatable) |
 | `--message=<value>` | option | Message text to send Required. |
 | `--no-preview` | boolean | Disable automatic link preview for URLs in the message |
-| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -1924,7 +1925,7 @@ Flags:
 | `--file=<value>` | option | Local file path to upload (max 500 MB) Required. |
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | Override MIME type detection |
-| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -1950,7 +1951,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Message ID to react to Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--transaction=<value>` | option | Optional transaction ID for deduplication |
@@ -1979,7 +1980,7 @@ Flags:
 | `--file=<value>` | option | Sticker file (typically 512x512 WebP) Required. |
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | MIME type for the sticker (default: image/webp) Default: image/webp |
-| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -2010,7 +2011,7 @@ Flags:
 | `--file=<value>` | option | Voice note audio file (OGG/Opus recommended) Required. |
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | MIME type for the voice note (default: audio/ogg) Default: audio/ogg |
-| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -2039,7 +2040,8 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--duration=<value>` | option | When --state is typing, send paused automatically after this many seconds |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--state=<typing|paused>` | option | Indicator to send Default: typing |
 
 Examples:
@@ -2047,6 +2049,7 @@ Examples:
 ```sh
 beeper presence --chat "Family"
 beeper presence --chat "Family" --state paused
+beeper presence --chat "Family" --duration 5
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -2182,7 +2185,7 @@ Flags:
 | `--max-participants=<value>` | option | Maximum participants to include in each chat.json. Default: 500 |
 | `--no-attachments` | boolean | Skip downloading message attachments. |
 | `-o, --out=<value>` | option | Export directory. Default: beeper-export |
-| `--pick=<value>` | option | Pick the Nth chat when a --chat selector is ambiguous. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 | `--quiet` | boolean | Suppress progress output. |
 
 Examples:
@@ -2206,6 +2209,8 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
+| `--exclude-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
+| `--include-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
 | `--webhook=<value>` | option | Forward each event to this URL as a POST request (best-effort, fire-and-forget) |
 | `--webhook-queue=<value>` | option | Maximum pending webhook deliveries before dropping events Default: 64 |
 | `--webhook-secret=<value>` | option | HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex> |
@@ -2215,13 +2220,14 @@ Examples:
 ```sh
 beeper watch
 beeper watch --chat '!abc:beeper.com' --json
+beeper watch --include-type message.upserted --include-type message.deleted
 beeper watch --webhook https://example.com/hook --webhook-secret "$BEEPER_WEBHOOK_SECRET"
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper rpc`
-Run newline-delimited JSON command RPC
+Execute commands via JSON-line RPC (reads stdin)
 
 ```sh
 beeper rpc
@@ -2320,19 +2326,31 @@ beeper version
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper completion`
-Print shell completion help
+Print shell completion setup (alias for autocomplete)
 
 ```sh
-beeper completion
+beeper completion [shell]
 ```
+
+Same as `beeper autocomplete`: prints setup instructions and the generated completion script for the requested shell. Use `eval` or redirect to a shell init file as documented.
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `shell` | no | Shell to set up (bash, zsh, fish, or powershell) |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-r, --refresh-cache` | boolean | Refresh the autocomplete cache before printing setup |
 
 Examples:
 
 ```sh
 beeper completion
 ```
-
-Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper update`
 Check and install Beeper updates
@@ -2486,6 +2504,35 @@ Examples:
 
 ```sh
 beeper api post /v1/chats/abc/read --body '{"messageID":"x"}'
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper api request`
+Call a raw Desktop API path with any supported HTTP method
+
+```sh
+beeper api request <method> <path>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `method` | yes | HTTP method |
+| `path` | yes | API path, for example /v1/info |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--body=<value>` | option | JSON request body |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
+
+Examples:
+
+```sh
+beeper api request DELETE /v1/chats/abc/messages/def/reactions --body '{"reactionKey":"👍"}'
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.

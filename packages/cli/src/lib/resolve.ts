@@ -1,4 +1,5 @@
 import { readConfig } from './targets.js'
+import { ambiguous, notFound } from './errors.js'
 
 type AnyRecord = Record<string, any>
 
@@ -28,9 +29,9 @@ export async function resolveAccountIDs(
   const resolved: string[] = []
   for (const input of effectiveInputs) {
     const matches = matchAccounts(accounts, input)
-    if (matches.length === 0) throw new Error(`No account matches "${input}"`)
+    if (matches.length === 0) throw notFound(`No account matches "${input}"`)
     if (matches.length > 1 && !options.allowMultiplePerInput) {
-      throw new Error(formatAmbiguous(`account "${input}"`, matches.map(formatAccount)))
+      throw ambiguous(formatAmbiguous(`account "${input}"`, matches.map(formatAccount)))
     }
     resolved.push(...matches.map(account => String(account.accountID)))
   }
@@ -40,7 +41,7 @@ export async function resolveAccountIDs(
 
 export async function resolveAccountID(client: any, input: string): Promise<string> {
   const [accountID] = await resolveAccountIDs(client, [input]) ?? []
-  if (!accountID) throw new Error(`No account matches "${input}"`)
+  if (!accountID) throw notFound(`No account matches "${input}"`)
   return accountID
 }
 
@@ -72,11 +73,11 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
 
   if (options.pick) {
     const selected = matches[options.pick - 1]
-    if (!selected) throw new Error(`--pick ${options.pick} is outside the ${matches.length} matching chats`)
+    if (!selected) throw notFound(`--pick ${options.pick} is outside the ${matches.length} matching chats`)
     return chatInputID(selected)
   }
 
-  throw new Error(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
+  throw ambiguous(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
 }
 
 function accountItems(accounts: unknown): AnyRecord[] {

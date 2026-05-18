@@ -15,7 +15,7 @@ export default class MessagesList extends BeeperCommand {
     asc: Flags.boolean({ default: false, description: 'Order oldest first (default: newest first)' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
     limit: Flags.integer({ default: 50, description: 'Maximum messages to print' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesList)

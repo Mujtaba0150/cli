@@ -18,7 +18,12 @@ export default class ApiPost extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ApiPost)
     ensureWritable(flags)
-    const body = JSON.parse(flags.body) as Record<string, unknown>
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(flags.body) as Record<string, unknown>
+    } catch {
+      throw new Error(`--body is not valid JSON: ${flags.body}`)
+    }
     if (flags['no-auth']) {
       await printData(await appRequest('POST', args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')
       return

@@ -1,4 +1,5 @@
 import { readConfig } from './targets.js'
+import { authRequired, notReady } from './errors.js'
 import { loginWithPKCE } from './oauth.js'
 
 export type DesktopAppStatus = {
@@ -33,7 +34,7 @@ export async function findLocalDesktop(options: { baseURL?: string; scan?: boole
     } catch { /* fall through */ }
   }
 
-  throw new Error(`Could not find a running Beeper Desktop API on ${candidates.join(', ')}.`)
+  throw notReady(`Could not find a running Beeper Desktop API on ${candidates.join(', ')}.`)
 }
 
 export async function ensureDesktopToken(options: {
@@ -46,7 +47,7 @@ export async function ensureDesktopToken(options: {
 } = {}): Promise<string> {
   const desktop = await findLocalDesktop({ baseURL: options.baseURL, scan: options.scan })
   if (desktop.status?.state === 'needs-login') {
-    throw new Error('Beeper Desktop is not signed in. Open Beeper Desktop and sign in, then rerun this command.')
+    throw authRequired('Beeper Desktop is not signed in. Open Beeper Desktop and sign in, then rerun this command.')
   }
 
   const token = await loginWithPKCE({

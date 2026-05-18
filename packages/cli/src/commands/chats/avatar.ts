@@ -7,7 +7,7 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsAvatar extends BeeperCommand {
   static override summary = 'Set a chat avatar'
-  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }), file: Flags.string({ description: 'Image file to upload as the new avatar' }), clear: Flags.boolean({ default: false, description: 'Clear the existing avatar instead of setting a new one' }), }
+  static override flags = { chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }), pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }), file: Flags.string({ description: 'Image file to upload as the new avatar' }), clear: Flags.boolean({ default: false, description: 'Clear the existing avatar instead of setting a new one' }), }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsAvatar)
     ensureWritable(flags)

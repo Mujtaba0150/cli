@@ -5,7 +5,9 @@ import {commandManifest} from '../dist/lib/manifest.js';
 
 const config = await Config.load({root: process.cwd()});
 const check = process.argv.includes('--check');
-const commandsByID = new Map([...config.commands].filter(command => !command.hidden).map(command => [displayID(command.id), command]));
+// Include hidden commands so manifest-listed commands (e.g. `messages react`, which is hidden
+// in favor of `send react`) still render in the README and pass the manifest match.
+const commandsByID = new Map([...config.commands].map(command => [displayID(command.id), command]));
 const commands = commandManifest.map(item => {
   const command = commandsByID.get(item.command);
   if (!command) throw new Error(`Missing command from built oclif config: ${item.command}`);

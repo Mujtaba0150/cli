@@ -8,7 +8,7 @@ export default class ChatsPriority extends BeeperCommand {
   static override summary = 'Move a chat to the Inbox or Low Priority'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     level: Flags.string({ required: true, options: ['inbox', 'low'], description: 'Destination: inbox (default mailbox) or low (Low Priority)' }),
   }
   async run(): Promise<void> {

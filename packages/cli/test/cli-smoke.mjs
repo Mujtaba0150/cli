@@ -119,6 +119,7 @@ const expectedCommands = [
   'config reset',
   'api get',
   'api post',
+  'api request',
 ]
 
 const commandFiles = listCommandFiles(join(root, 'src/commands'))

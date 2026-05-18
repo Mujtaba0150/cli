@@ -6,9 +6,13 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsDisappear extends BeeperCommand {
   static override summary = 'Set disappearing messages for a chat'
+  static override examples = [
+    'beeper chats disappear --chat "Mom" --seconds 86400',
+    'beeper chats disappear --chat "Work Group" --seconds off',
+  ]
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     seconds: Flags.string({ required: true, description: 'Timer in seconds, or "off" to disable' }),
   }
   async run(): Promise<void> {

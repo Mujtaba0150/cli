@@ -43,7 +43,10 @@ export default class TargetsTunnel extends BeeperCommand {
       process.stderr.write('Press Ctrl-C to stop the tunnel.\n')
     }
 
-    await waitForExit(started.stop)
+    const exit = await waitForExit(started)
+    if (exit.reason === 'process' && exit.code !== 0) {
+      throw new Error(`cloudflared exited after the tunnel connected${exit.code === null ? '' : ` with code ${exit.code}`}.\n${started.tryMessage}`)
+    }
   }
 }
 
@@ -67,14 +70,19 @@ function parseTimeout(value?: string): number | undefined {
   return amount
 }
 
-async function waitForExit(stop: () => void): Promise<void> {
-  await new Promise<void>(resolve => {
+async function waitForExit(started: Awaited<ReturnType<typeof startCloudflareTunnel>>): Promise<{ code: number | null; reason: 'process' | 'signal' }> {
+  return new Promise(resolve => {
     const finish = () => {
-      stop()
-      resolve()
+      started.stop()
+      resolve({ code: 0, reason: 'signal' })
     }
 
     process.once('SIGINT', finish)
     process.once('SIGTERM', finish)
+    started.done.then(({ code }) => {
+      process.off('SIGINT', finish)
+      process.off('SIGTERM', finish)
+      resolve({ code, reason: 'process' })
+    })
   })
 }

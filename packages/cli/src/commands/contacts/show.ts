@@ -1,6 +1,7 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { notFound } from '../../lib/errors.js'
 import { collectPage, printData } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 export default class ContactsShow extends BeeperCommand {
@@ -20,6 +21,6 @@ export default class ContactsShow extends BeeperCommand {
       const match = matches.find((item: any) => [item.userID, item.id, item.name, item.displayName].includes(args.id))
       if (match) return printData({ accountID, contact: match }, flags.json ? 'json' : 'human')
     }
-    throw new Error(`Contact not found: ${args.id}`)
+    throw notFound(`Contact not found: ${args.id}`)
   }
 }

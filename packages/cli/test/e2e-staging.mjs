@@ -7,6 +7,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+await loadEnvFile(process.env.BEEPER_E2E_ENV_FILE || path.join(repoRoot, '.env.e2e'))
+
 const cliBin = path.join(repoRoot, 'bin/run.js')
 const runID = process.env.BEEPER_E2E_RUN_ID || String(Date.now())
 const workDir = process.env.BEEPER_E2E_WORKDIR || path.join(tmpdir(), `beeper-cli-e2e-${runID}`)
@@ -40,6 +42,11 @@ const report = {
   blocked: [],
   failures: [],
   notes: [],
+  coverage: {
+    commands: [],
+    api: [],
+    skipped: [],
+  },
 }
 
 const previousReport = await readPreviousReport()
@@ -49,6 +56,7 @@ if (previousReport?.runID === runID) {
   report.blocked = []
   report.failures = []
   report.notes = previousReport.notes ?? []
+  report.coverage = previousReport.coverage ?? report.coverage
 }
 
 process.on('SIGINT', async () => {
@@ -72,6 +80,7 @@ async function main() {
   if (hasPhase('readiness')) await phaseReadiness()
   if (hasPhase('verify')) await phaseVerify()
   if (hasPhase('messaging')) await phaseMessaging()
+  if (hasPhase('surface')) await phaseSurface()
   if (hasPhase('cleanup')) await phaseCleanup()
 
   report.finishedAt = new Date().toISOString()
@@ -91,11 +100,12 @@ async function phasePlan() {
   report.targets = targets
   const commands = [
     'pnpm --dir packages/cli build',
-    `BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
+    `BEEPER_E2E_ENV_FILE=.env.e2e BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,surface,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
     `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets list --json`,
   ]
   report.commands.push(...commands.map(command => ({ phase: 'plan', command })))
   report.notes.push('Default phase is plan only. Add explicit BEEPER_E2E_PHASES before launching targets.')
+  report.notes.push('Put BEEPER_E2E_OTP in .env.e2e or set BEEPER_E2E_ENV_FILE. The report redacts OTPs, access tokens, lead tokens, and setup responses.')
   report.notes.push('The harness uses non-default ports and an isolated BEEPER_CLI_CONFIG_DIR so the default Desktop instance is not used.')
   report.notes.push('install-server downloads Beeper Server. Use that phase only when you intend to download the staging server artifact.')
   printPlan(targets, commands)
@@ -196,11 +206,11 @@ async function phaseVerify() {
   await phaseVerifySameAccountDevices(targets)
   for (const target of targets) {
     for (const args of [
-      ['verify', 'status', '--target', target.name, '--json'],
-      ['verify', 'list', '--target', target.name, '--json'],
-      ['verify', 'show', '--target', target.name, '--json'],
-      ['verify', 'sas', '--target', target.name, '--json'],
-      ['verify', 'sas', 'confirm', '--target', target.name, '--json'],
+      ['auth', 'verify', 'status', '--target', target.name, '--json'],
+      ['auth', 'verify', 'list', '--target', target.name, '--json'],
+      ['auth', 'verify', 'show', '--target', target.name, '--json'],
+      ['auth', 'verify', 'sas', '--target', target.name, '--json'],
+      ['auth', 'verify', 'sas-confirm', '--target', target.name, '--json'],
     ]) {
       const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
       recordCommand('verify', args, result)
@@ -250,6 +260,156 @@ async function phaseMessaging() {
     recordCommand('messaging', args, result)
     if (result.status !== 0) recordFailure('messaging', sender, `beeper ${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`)
   }
+  if (signedInTargets.length >= 3) await phaseGroupMessaging(signedInTargets)
+}
+
+async function phaseGroupMessaging(targets) {
+  const [sender, ...receivers] = targets.filter(target => target.accessToken && target.matrix?.userID)
+  if (!sender || receivers.length < 2) {
+    recordBlock('messaging', undefined, 'group messaging needs three signed-in targets with Matrix user IDs.')
+    return
+  }
+
+  const roomName = `CLI E2E ${runID}`
+  const createRoomBody = JSON.stringify({
+    invite: receivers.slice(0, 2).map(target => target.matrix.userID),
+    name: roomName,
+    preset: 'trusted_private_chat',
+  })
+  const createRoomArgs = ['api', 'post', '/_matrix/client/v3/createRoom', '--target', sender.name, '--body', createRoomBody, '--json']
+  const createRoom = runCli(createRoomArgs, { env: { BEEPER_ACCESS_TOKEN: sender.accessToken }, allowFailure: true })
+  recordCommand('messaging-group', createRoomArgs, createRoom)
+  const chatID = parseEnvelope(createRoom.stdout)?.data?.room_id
+  if (!chatID) {
+    recordFailure('messaging-group', sender, 'Could not create Matrix group room through the raw API fallback.')
+    return
+  }
+
+  const text = `group staging e2e ${runID}`
+  const sendArgs = ['send', 'text', '--to', chatID, '--message', text, '--target', sender.name, '--json']
+  const send = runCli(sendArgs, { env: { BEEPER_ACCESS_TOKEN: sender.accessToken }, allowFailure: true })
+  recordCommand('messaging-group', sendArgs, send)
+
+  for (const target of [sender, ...receivers.slice(0, 2)]) {
+    const listArgs = ['messages', 'list', '--chat', chatID, '--target', target.name, '--limit', '10', '--json']
+    const list = runCli(listArgs, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
+    recordCommand('messaging-group', listArgs, list)
+    if (list.status !== 0) recordFailure('messaging-group', target, `group message list failed for ${target.name}`)
+  }
+}
+
+async function phaseSurface() {
+  await phaseApiSurface()
+  await phaseCliSurface()
+}
+
+async function phaseApiSurface() {
+  const target = (await plannedTargetsWithAuth()).find(item => item.accessToken)
+  if (!target) {
+    recordBlock('api-surface', undefined, 'API surface coverage needs at least one signed-in target.')
+    return
+  }
+
+  const env = { BEEPER_ACCESS_TOKEN: target.accessToken }
+  for (const args of [
+    ['api', 'request', 'GET', '/v1/info', '--target', target.name, '--no-auth', '--json'],
+    ['api', 'request', 'GET', '/v1/spec', '--target', target.name, '--no-auth', '--json'],
+    ['api', 'request', 'GET', '/v1/app', '--target', target.name, '--json'],
+    ['api', 'request', 'GET', '/v1/app/verifications', '--target', target.name, '--json'],
+    ['api', 'get', '/v1/accounts', '--target', target.name, '--json'],
+    ['api', 'get', '/v1/chats?limit=10', '--target', target.name, '--json'],
+    ['api', 'get', '/v1/contacts?limit=10', '--target', target.name, '--json'],
+  ]) {
+    const result = runCli(args, { env, allowFailure: true })
+    recordCommand('api-surface', args, result)
+    recordCoverage('api', args, result)
+  }
+
+  const specResult = runCli(['api', 'request', 'GET', '/v1/spec', '--target', target.name, '--no-auth', '--json'], { allowFailure: true })
+  const spec = parseEnvelope(specResult.stdout)?.data ?? parseEnvelope(specResult.stdout)
+  const paths = spec?.paths && typeof spec.paths === 'object' ? Object.keys(spec.paths).sort() : []
+  if (paths.length) {
+    report.coverage.apiSpecPaths = paths.length
+    report.coverage.skipped.push(...paths
+      .filter(pathname => !isCoveredByCliSurface(pathname))
+      .map(pathname => ({ phase: 'api-surface', path: pathname, reason: 'covered by SDK command, destructive side effect, multipart upload, websocket, or requires test-created resource IDs' })))
+  }
+}
+
+async function phaseCliSurface() {
+  const targets = (await plannedTargetsWithAuth()).filter(item => item.accessToken)
+  const target = targets[0]
+  if (!target) {
+    recordBlock('cli-surface', undefined, 'CLI surface coverage needs at least one signed-in target.')
+    return
+  }
+  const env = { BEEPER_ACCESS_TOKEN: target.accessToken }
+  const chatID = await findReusableChatID(target, env)
+  const messageID = chatID ? await findReusableMessageID(target, chatID, env) : undefined
+  const reminderAt = new Date(Date.now() + 86_400_000).toISOString()
+
+  const cases = [
+    ['status', '--target', target.name, '--json'],
+    ['doctor', '--target', target.name, '--json'],
+    ['auth', 'status', '--target', target.name, '--json'],
+    ['accounts', 'list', '--target', target.name, '--json'],
+    ['accounts', 'add', '--target', target.name, '--json'],
+    ['chats', 'list', '--target', target.name, '--limit', '20', '--json'],
+    ['chats', 'search', runID, '--target', target.name, '--limit', '10', '--json'],
+    ['contacts', 'list', '--target', target.name, '--limit', '20', '--json'],
+    ['contacts', 'search', 'staging-user', '--target', target.name, '--json'],
+    ['auth', 'verify', 'status', '--target', target.name, '--json'],
+    ['auth', 'verify', 'list', '--target', target.name, '--json'],
+  ]
+
+  if (chatID) {
+    cases.push(
+      ['chats', 'show', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'pin', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'unpin', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'archive', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'unarchive', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'mute', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'unmute', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'mark-read', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'mark-unread', '--chat', chatID, '--target', target.name, '--json'],
+      ['chats', 'priority', '--chat', chatID, '--level', 'inbox', '--target', target.name, '--json'],
+      ['chats', 'description', '--chat', chatID, '--description', `CLI E2E ${runID}`, '--target', target.name, '--json'],
+      ['chats', 'description', '--chat', chatID, '--clear', '--target', target.name, '--json'],
+      ['chats', 'draft', '--chat', chatID, '--text', `draft ${runID}`, '--target', target.name, '--json'],
+      ['chats', 'draft', '--chat', chatID, '--clear', '--target', target.name, '--json'],
+      ['chats', 'disappear', '--chat', chatID, '--seconds', 'off', '--target', target.name, '--json'],
+      ['chats', 'remind', '--chat', chatID, '--when', reminderAt, '--target', target.name, '--json'],
+      ['chats', 'unremind', '--chat', chatID, '--target', target.name, '--json'],
+      ['presence', '--chat', chatID, '--state', 'typing', '--duration', '1', '--target', target.name, '--json'],
+      ['messages', 'list', '--chat', chatID, '--target', target.name, '--limit', '10', '--json'],
+      ['messages', 'search', runID, '--chat', chatID, '--target', target.name, '--limit', '10', '--json'],
+      ['messages', 'export', '--chat', chatID, '--target', target.name, '--limit', '10', '--output', '-', '--json'],
+      ['send', 'text', '--to', chatID, '--message', `surface ${runID}`, '--target', target.name, '--json'],
+    )
+  }
+
+  if (chatID && messageID) {
+    cases.push(
+      ['messages', 'show', '--chat', chatID, '--id', messageID, '--target', target.name, '--json'],
+      ['messages', 'context', '--chat', chatID, '--id', messageID, '--target', target.name, '--before', '2', '--after', '2', '--json'],
+      ['messages', 'react', '--chat', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
+      ['send', 'react', '--to', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
+      ['messages', 'unreact', '--chat', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
+      ['api', 'request', 'DELETE', `/v1/chats/${encodeURIComponent(chatID)}/messages/${encodeURIComponent(messageID)}/reactions`, '--body', '{"reactionKey":"+1"}', '--target', target.name, '--json'],
+    )
+  }
+
+  for (const args of cases) {
+    const result = runCli(args, { env, allowFailure: true })
+    recordCommand('cli-surface', args, result)
+    recordCoverage('commands', args, result)
+    if (args[0] === 'accounts' && args[1] === 'add') {
+      recordBlock('cli-surface', target, 'accounts add intentionally stops before adding network accounts; that flow remains manual.')
+    } else if (result.status !== 0) {
+      recordFailure('cli-surface', target, `beeper ${args.join(' ')} failed with status ${result.status}`)
+    }
+  }
 }
 
 async function phaseVerifySameAccountDevices(targets) {
@@ -271,15 +431,15 @@ async function phaseVerifySameAccountDevices(targets) {
   }
 
   const [initiator, responder] = await verificationPair(pair)
-  const startArgs = ['verify', 'start', '--target', initiator.name, '--user', responder.matrix.userID, '--json']
+  const startArgs = ['auth', 'verify', 'start', '--target', initiator.name, '--user', responder.matrix.userID, '--json']
   const start = runCli(startArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
   recordCommand('verify-devices', startArgs, start)
 
   const responderResults = await pollResponderVerification(responder)
   const responderVerificationID = verificationIDFromResults(responderResults)
   for (const baseArgs of [
-    ['verify', 'approve', '--target', responder.name],
-    ['verify', 'sas', '--target', responder.name],
+    ['auth', 'verify', 'approve', '--target', responder.name],
+    ['auth', 'verify', 'sas', '--target', responder.name],
   ]) {
     const args = responderVerificationID ? [...baseArgs, '--id', responderVerificationID, '--json'] : [...baseArgs, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
@@ -288,17 +448,17 @@ async function phaseVerifySameAccountDevices(targets) {
   await sleep(1000)
 
   const initiatorSASArgs = responderVerificationID
-    ? ['verify', 'sas', '--target', initiator.name, '--id', responderVerificationID, '--json']
-    : ['verify', 'sas', '--target', initiator.name, '--json']
+    ? ['auth', 'verify', 'sas', '--target', initiator.name, '--id', responderVerificationID, '--json']
+    : ['auth', 'verify', 'sas', '--target', initiator.name, '--json']
   const initiatorSAS = runCli(initiatorSASArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
   recordCommand('verify-devices', initiatorSASArgs, initiatorSAS)
   await sleep(1000)
 
   for (const args of [
-    ['verify', 'show', '--target', responder.name, '--json'],
-    ['verify', 'show', '--target', initiator.name, '--json'],
-    ['verify', 'status', '--target', initiator.name, '--json'],
-    ['verify', 'status', '--target', responder.name, '--json'],
+    ['auth', 'verify', 'show', '--target', responder.name, '--json'],
+    ['auth', 'verify', 'show', '--target', initiator.name, '--json'],
+    ['auth', 'verify', 'status', '--target', initiator.name, '--json'],
+    ['auth', 'verify', 'status', '--target', responder.name, '--json'],
   ]) {
     const target = args.includes(initiator.name) ? initiator : responder
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
@@ -307,15 +467,15 @@ async function phaseVerifySameAccountDevices(targets) {
 
   for (const target of [initiator, responder]) {
     const args = responderVerificationID
-      ? ['verify', 'sas', 'confirm', '--target', target.name, '--id', responderVerificationID, '--json']
-      : ['verify', 'sas', 'confirm', '--target', target.name, '--json']
+      ? ['auth', 'verify', 'sas-confirm', '--target', target.name, '--id', responderVerificationID, '--json']
+      : ['auth', 'verify', 'sas-confirm', '--target', target.name, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
     recordCommand('verify-devices', args, result)
   }
   await sleep(1000)
   for (const args of [
-    ['verify', 'status', '--target', initiator.name, '--json'],
-    ['verify', 'status', '--target', responder.name, '--json'],
+    ['auth', 'verify', 'status', '--target', initiator.name, '--json'],
+    ['auth', 'verify', 'status', '--target', responder.name, '--json'],
   ]) {
     const target = args.includes(initiator.name) ? initiator : responder
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
@@ -326,7 +486,7 @@ async function phaseVerifySameAccountDevices(targets) {
 async function verificationPair(pair) {
   const states = []
   for (const target of pair) {
-    const args = ['verify', 'status', '--target', target.name, '--json']
+    const args = ['auth', 'verify', 'status', '--target', target.name, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
     recordCommand('verify-devices', args, result)
     const data = parseEnvelope(result.stdout)?.data
@@ -340,12 +500,12 @@ async function verificationPair(pair) {
 async function pollResponderVerification(responder) {
   const results = []
   for (let attempt = 0; attempt < 12; attempt++) {
-    const listArgs = ['verify', 'list', '--target', responder.name, '--json']
+    const listArgs = ['auth', 'verify', 'list', '--target', responder.name, '--json']
     const list = runCli(listArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
     recordCommand('verify-devices', listArgs, list)
     results.push(list)
     if (verificationIDFromResults([list])) {
-      const showArgs = ['verify', 'show', '--target', responder.name, '--json']
+      const showArgs = ['auth', 'verify', 'show', '--target', responder.name, '--json']
       const show = runCli(showArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
       recordCommand('verify-devices', showArgs, show)
       results.push(show)
@@ -460,10 +620,13 @@ function recordFailure(phase, target, error) {
 }
 
 function redactCommandOutput(value) {
-  return String(value)
+  let redacted = String(value)
     .replace(/"accessToken"\s*:\s*"[^"]+"/g, '"accessToken":"[redacted]"')
     .replace(/"access_token"\s*:\s*"[^"]+"/g, '"access_token":"[redacted]"')
     .replace(/"leadToken"\s*:\s*"[^"]+"/g, '"leadToken":"[redacted]"')
+    .replace(/"response"\s*:\s*"[^"]+"/g, '"response":"[redacted]"')
+  if (otp) redacted = redacted.split(otp).join('[redacted]')
+  return redacted
 }
 
 function recordBlock(phase, target, message, actions = []) {
@@ -592,6 +755,52 @@ function parseEnvelope(stdout) {
   }
 }
 
+async function findReusableChatID(target, env) {
+  const result = runCli(['chats', 'list', '--target', target.name, '--limit', '20', '--json'], { env, allowFailure: true })
+  recordCommand('surface-setup', ['chats', 'list', '--target', target.name, '--limit', '20', '--json'], result)
+  const items = parseEnvelope(result.stdout)?.data
+  const chat = Array.isArray(items) ? items.find(item => item?.id || item?.localChatID || item?.chatID) : undefined
+  if (!chat) {
+    recordBlock('cli-surface', target, 'No reusable chat found. Messaging phase should create one, or provide existing signed-in QA accounts with Beeper chats.')
+    return undefined
+  }
+  return chat.localChatID ?? chat.id ?? chat.chatID
+}
+
+async function findReusableMessageID(target, chatID, env) {
+  const result = runCli(['messages', 'list', '--chat', chatID, '--target', target.name, '--limit', '20', '--json'], { env, allowFailure: true })
+  recordCommand('surface-setup', ['messages', 'list', '--chat', chatID, '--target', target.name, '--limit', '20', '--json'], result)
+  const items = parseEnvelope(result.stdout)?.data
+  const message = Array.isArray(items) ? items.find(item => item?.id || item?.messageID || item?.eventID) : undefined
+  if (!message) {
+    recordBlock('cli-surface', target, 'No reusable message found. Send a message or run the messaging phase before message-specific surface tests.')
+    return undefined
+  }
+  return message.id ?? message.messageID ?? message.eventID
+}
+
+function recordCoverage(type, args, result) {
+  report.coverage[type].push({
+    command: `beeper ${redactCommandOutput(args.join(' '))}`,
+    status: result.status,
+    ok: result.status === 0,
+  })
+}
+
+function isCoveredByCliSurface(pathname) {
+  return [
+    '/v1/info',
+    '/v1/spec',
+    '/v1/app',
+    '/v1/app/verifications',
+    '/v1/accounts',
+    '/v1/chats',
+    '/v1/contacts',
+    '/v1/messages',
+    '/v1/assets',
+  ].some(prefix => pathname.startsWith(prefix))
+}
+
 function serverEnv() {
   const env = {}
   if (process.env.BEEPER_SERVER_BIN) env.BEEPER_SERVER_BIN = process.env.BEEPER_SERVER_BIN
@@ -613,9 +822,37 @@ async function writeReport() {
 
 function redactReport(value) {
   return JSON.parse(JSON.stringify(value, (key, innerValue) => {
-    if (key === 'accessToken' || key === 'access_token') return '[redacted]'
+    if (key === 'accessToken' || key === 'access_token' || key === 'leadToken') return '[redacted]'
+    if (key === 'response' && innerValue === otp) return '[redacted]'
     return innerValue
   }))
+}
+
+async function loadEnvFile(envPath) {
+  if (!envPath) return
+  let text
+  try {
+    text = await readFile(envPath, 'utf8')
+  } catch {
+    return
+  }
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(trimmed)
+    if (!match) continue
+    const [, key, rawValue] = match
+    if (process.env[key] !== undefined) continue
+    process.env[key] = unquoteEnvValue(rawValue)
+  }
+}
+
+function unquoteEnvValue(value) {
+  const trimmed = value.trim()
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1)
+  }
+  return trimmed
 }
 
 function printPlan(targets, commands) {

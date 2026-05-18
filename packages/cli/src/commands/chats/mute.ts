@@ -8,7 +8,7 @@ export default class ChatsMute extends BeeperCommand {
   static override summary = 'Mute a chat'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsMute)

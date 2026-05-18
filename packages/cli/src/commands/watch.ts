@@ -9,15 +9,13 @@ import { startStream } from '../lib/output.js'
 type WebhookConfig = { url: string; secret?: string; queue: Array<{ body: string; signature?: string }>; inflight: number; max: number }
 type EventFilter = { include?: Set<string>; exclude?: Set<string> }
 
-const EVENT_TYPES = ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'] as const
-
 export default class Watch extends BeeperCommand {
   static override summary = 'Stream Desktop API WebSocket events'
   static override flags = {
     chat: Flags.string({ char: 'c', multiple: true, description: 'Chat ID to subscribe to. Defaults to all chats.' }),
     json: Flags.boolean({ default: false, description: 'Print raw JSON, one event per line' }),
-    'include-type': Flags.string({ multiple: true, options: [...EVENT_TYPES], description: 'Only forward events of these types. Repeat for multiple.' }),
-    'exclude-type': Flags.string({ multiple: true, options: [...EVENT_TYPES], description: 'Drop events of these types. Repeat for multiple.' }),
+    'include-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'], description: 'Only forward events of these types. Repeat for multiple.' }),
+    'exclude-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'], description: 'Drop events of these types. Repeat for multiple.' }),
     webhook: Flags.string({ description: 'Forward each event to this URL as a POST request (best-effort, fire-and-forget)' }),
     'webhook-secret': Flags.string({ description: 'HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex>' }),
     'webhook-queue': Flags.integer({ default: 64, description: 'Maximum pending webhook deliveries before dropping events' }),
@@ -47,19 +45,20 @@ export default class Watch extends BeeperCommand {
       : undefined
 
     if (flags.json) {
-      await this.runJSON(ws, subscribed, flags.events, webhook)
+      await this.runJSON(ws, subscribed, flags.events, webhook, filter)
       return
     }
-    await this.runHuman(ws, subscribed, baseURL, flags.events, webhook)
+    await this.runHuman(ws, subscribed, baseURL, flags.events, webhook, filter)
   }
 
-  private async runJSON(ws: WebSocket, subscribed: string[], events: boolean, webhook?: WebhookConfig): Promise<void> {
+  private async runJSON(ws: WebSocket, subscribed: string[], events: boolean, webhook?: WebhookConfig, filter?: EventFilter): Promise<void> {
     ws.addEventListener('open', () => {
       if (events) writeEvent('watch.open', { subscribed })
       ws.send(JSON.stringify({ type: 'subscriptions.set', chatIDs: subscribed }))
     })
     ws.addEventListener('message', event => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
+      if (!passesFilter(data, filter)) return
       if (events) writeEvent('watch.message')
       process.stdout.write(`${data}\n`)
       if (webhook) forwardWebhook(webhook, data, events)
@@ -78,7 +77,7 @@ export default class Watch extends BeeperCommand {
     })
   }
 
-  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string, events: boolean, webhook?: WebhookConfig): Promise<void> {
+  private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string, events: boolean, webhook?: WebhookConfig, filter?: EventFilter): Promise<void> {
     const stream = await startStream({ baseURL, subscribed })
     let closed = false
 
@@ -96,6 +95,7 @@ export default class Watch extends BeeperCommand {
     })
     ws.addEventListener('message', event => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString()
+      if (!passesFilter(data, filter)) return
       if (events) writeEvent('watch.message')
       if (webhook) forwardWebhook(webhook, data, events)
       try {
@@ -125,6 +125,21 @@ export default class Watch extends BeeperCommand {
 
     await stream.done
   }
+}
+
+function passesFilter(body: string, filter?: EventFilter): boolean {
+  if (!filter || (!filter.include && !filter.exclude)) return true
+  let type: string | undefined
+  try {
+    const parsed = JSON.parse(body) as { type?: unknown }
+    if (typeof parsed.type === 'string') type = parsed.type
+  } catch {
+    return true
+  }
+  if (!type) return true
+  if (filter.include && !filter.include.has(type)) return false
+  if (filter.exclude && filter.exclude.has(type)) return false
+  return true
 }
 
 function forwardWebhook(webhook: WebhookConfig, body: string, events: boolean): void {

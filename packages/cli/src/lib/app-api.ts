@@ -8,9 +8,10 @@ export type AppLoginSuccess = LoginResponseResponse.Success | LoginRegisterRespo
 export type AppRegistrationRequired = LoginResponseResponse.RegistrationRequired
 export type AppLoginOutput = LoginResponseResponse | LoginRegisterResponse
 export type AppRecoveryCodeResetBeginResponse = ResetCreateResponse
+export type AppRequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export async function appRequest<T>(
-  method: 'GET' | 'POST',
+  method: AppRequestMethod,
   path: string,
   options: { baseURL?: string; body?: Record<string, unknown>; token?: string | false; target?: string } = {},
 ): Promise<T> {

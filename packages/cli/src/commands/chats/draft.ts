@@ -9,7 +9,7 @@ export default class ChatsDraft extends BeeperCommand {
   static override summary = 'Set or clear a chat draft'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     text: Flags.string({ description: 'Draft text. Omit and pass --clear to remove the draft.' }),
     file: Flags.string({ description: 'Attachment file to upload with the draft' }),
     filename: Flags.string({ description: 'Override the displayed filename of the attachment' }),

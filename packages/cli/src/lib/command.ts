@@ -1,4 +1,5 @@
 import { Command, Flags } from '@oclif/core'
+import { CLIError, ExitCodes } from './errors.js'
 
 export abstract class BeeperCommand extends Command {
   static override baseFlags = {
@@ -14,16 +15,17 @@ export abstract class BeeperCommand extends Command {
   }
 
   protected override async catch(error: Error & { exitCode?: number }): Promise<void> {
-    process.exitCode = process.exitCode ?? error.exitCode ?? 1
+    const code = error instanceof CLIError ? error.exitCode : error.exitCode ?? ExitCodes.Generic
+    process.exitCode = process.exitCode ?? code
     const message = error.message || String(error)
 
     if (this.argv.includes('--events')) {
-      writeEvent('error', { message })
+      writeEvent('error', { message, exitCode: code })
       return
     }
 
     if (this.argv.includes('--json')) {
-      process.stderr.write(`${JSON.stringify({ success: false, data: null, error: message })}\n`)
+      process.stderr.write(`${JSON.stringify({ success: false, data: null, error: message, exitCode: code })}\n`)
       return
     }
 
@@ -34,7 +36,7 @@ export abstract class BeeperCommand extends Command {
 export function ensureWritable(flags: { 'read-only'?: boolean }): void {
   const env = process.env.BEEPER_READONLY
   const readOnly = flags['read-only'] || ['1', 'true', 'yes', 'on'].includes(String(env ?? '').toLowerCase())
-  if (readOnly) throw new Error('read-only mode: command would modify Beeper or local CLI state')
+  if (readOnly) throw new CLIError('read-only mode: command would modify Beeper or local CLI state', ExitCodes.Usage)
 }
 
 export function writeEvent(event: string, data: Record<string, unknown> = {}): void {

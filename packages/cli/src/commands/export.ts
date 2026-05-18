@@ -20,7 +20,7 @@ export default class Export extends BeeperCommand {
     'max-participants': Flags.integer({ default: 500, description: 'Maximum participants to include in each chat.json.' }),
     'no-attachments': Flags.boolean({ default: false, description: 'Skip downloading message attachments.' }),
     out: Flags.directory({ char: 'o', default: 'beeper-export', description: 'Export directory.' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when a --chat selector is ambiguous.' }),
+    pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
     quiet: Flags.boolean({ default: false, description: 'Suppress progress output.' }),
   }
 

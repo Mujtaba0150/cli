@@ -2,6 +2,7 @@ import { constants as fsConstants } from 'node:fs'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { notFound } from './errors.js'
 
 export type AuthSource = 'desktop-db' | 'desktop-cache' | 'desktop-oauth' | 'remote-oauth' | 'manual'
 
@@ -165,7 +166,7 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   const targetID = options.target ?? envTarget ?? config.defaultTarget
   if (targetID) {
     const target = await readTarget(targetID)
-    if (!target) throw new Error(`Unknown Beeper target "${targetID}". Run \`beeper targets list\`.`)
+    if (!target) throw notFound(`Unknown Beeper target "${targetID}". Run \`beeper targets list\`.`)
     return withConfigAuth(target, config)
   }
   const targets = await listTargets()
