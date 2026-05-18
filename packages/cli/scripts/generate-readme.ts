@@ -384,8 +384,8 @@ Required local credentials:
 
 - GitHub CLI authenticated with release and tap access
 - npm auth for publishing \`beeper-cli\`
-- local Developer ID signing identity, or Fastlane match access via
-  \`MOBILE_SECRETS_FILE\`
+- local Developer ID signing identity, or Fastlane match access via a
+  \`MOBILE_SECRETS_FILE\` path exported in your shell
 - \`HOMEBREW_TAP_GITHUB_TOKEN\` for updating the tap
 `;
 

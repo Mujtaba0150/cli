@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const outDir = join(root, 'dist', 'bin')
 const manifestPath = join(outDir, 'binaries.json')
 const teamID = process.env.TEAM_ID || process.env.APPLE_TEAM_ID || 'PZYM8XX95Q'
-const secretsFile = process.env.MOBILE_SECRETS_FILE || '/path/to/secrets.yml'
+const secretsFile = process.env.MOBILE_SECRETS_FILE
 const requireSigning = process.env.BEEPER_CLI_REQUIRE_MACOS_SIGNING === '1'
 
 if (process.platform !== 'darwin') {
@@ -115,7 +115,7 @@ async function prepareCredentials(workDir) {
     return { ...envCredentials, notary: true, match: false }
   }
 
-  if (!existsSync(secretsFile)) return { notary: false, match: false }
+  if (!secretsFile || !existsSync(secretsFile)) return { notary: false, match: false }
 
   const envFile = join(workDir, 'secrets.env')
   const p8 = join(workDir, `AuthKey_${teamID}.p8`)
@@ -168,6 +168,11 @@ end
     await run('fastlane', ['import_developer_id'], {
       cwd: fastlaneDir,
       env: { ...process.env, FASTLANE_DISABLE_COLORS: '1', BEEPER_CLI_TEAM_ID: teamID },
+      scrub: [
+        process.env.MATCH_S3_ACCESS_KEY,
+        process.env.MATCH_S3_SECRET_ACCESS_KEY,
+        process.env.MATCH_PASSWORD,
+      ],
     })
     return
   }
@@ -224,9 +229,27 @@ async function run(command, args, options = {}) {
     cwd: options.cwd || root,
     env: options.env || process.env,
     stdin: 'ignore',
-    stdout: 'inherit',
-    stderr: 'inherit',
+    stdout: options.scrub ? 'pipe' : 'inherit',
+    stderr: options.scrub ? 'pipe' : 'inherit',
   })
-  const code = await child.exited
+  const [, , code] = await Promise.all([
+    options.scrub ? collect(child.stdout, process.stdout, options.scrub) : Promise.resolve(),
+    options.scrub ? collect(child.stderr, process.stderr, options.scrub) : Promise.resolve(),
+    child.exited,
+  ])
   if (code !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${code}`)
+}
+
+async function collect(stream, sink, scrubValues) {
+  const decoder = new TextDecoder()
+  for await (const chunk of stream) {
+    const text = typeof chunk === 'string' ? chunk : decoder.decode(chunk, { stream: true })
+    sink.write(scrub(text, scrubValues))
+  }
+  const rest = decoder.decode()
+  if (rest) sink.write(scrub(rest, scrubValues))
+}
+
+function scrub(text, values) {
+  return values.filter(Boolean).reduce((next, value) => next.replaceAll(value, '[redacted]'), text)
 }
