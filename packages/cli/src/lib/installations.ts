@@ -1,9 +1,6 @@
-import { createWriteStream } from 'node:fs'
 import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { beeperDir } from './targets.js'
@@ -216,7 +213,7 @@ export async function downloadArtifact(url: string, destinationDir: string): Pro
   const filename = filenameFromResponse(response) ?? (basename(new URL(response.url).pathname) || `beeper-download-${Date.now()}`)
   const finalPath = join(destinationDir, filename)
   const tmpPath = join(tmpdir(), `${filename}.${process.pid}.${Date.now()}.tmp`)
-  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(tmpPath))
+  await Bun.write(tmpPath, response)
   await rename(tmpPath, finalPath)
   return finalPath
 }

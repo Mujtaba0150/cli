@@ -2,7 +2,6 @@
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -59,21 +58,13 @@ async function patchRootPackageJson() {
 }
 
 async function run(command, args, options = {}) {
-  await new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, {
-      cwd: options.cwd || root,
-      env: process.env,
-      stdio: 'inherit',
-    })
-
-    child.on('error', reject)
-    child.on('exit', code => {
-      if (code === 0) {
-        resolvePromise()
-        return
-      }
-
-      reject(new Error(`${command} ${args.join(' ')} exited with ${code}`))
-    })
+  const child = Bun.spawn([command, ...args], {
+    cwd: options.cwd || root,
+    env: process.env,
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
   })
+  const code = await child.exited
+  if (code !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${code}`)
 }

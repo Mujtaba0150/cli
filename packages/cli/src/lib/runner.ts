@@ -1,5 +1,3 @@
-import { spawn } from 'node:child_process'
-
 export type RunResult = {
   code: number | null
   signal: NodeJS.Signals | null
@@ -8,31 +6,22 @@ export type RunResult = {
 }
 
 export async function runCli(args: string[], options: { inherit?: boolean } = {}): Promise<RunResult> {
-  const child = spawn(process.execPath, [process.argv[1]!, ...args], {
+  const child = Bun.spawn([process.execPath, process.argv[1]!, ...args], {
     env: process.env,
-    stdio: options.inherit ? 'inherit' : ['ignore', 'pipe', 'pipe'],
+    stdin: options.inherit ? 'inherit' : 'ignore',
+    stdout: options.inherit ? 'inherit' : 'pipe',
+    stderr: options.inherit ? 'inherit' : 'pipe',
   })
 
   if (options.inherit) {
-    return new Promise((resolve, reject) => {
-      child.on('error', reject)
-      child.on('close', (code, signal) => resolve({ code, signal, stdout: '', stderr: '' }))
-    })
+    const code = await child.exited
+    return { code, signal: child.signalCode as NodeJS.Signals | null, stdout: '', stderr: '' }
   }
 
-  let stdout = ''
-  let stderr = ''
-  child.stdout?.setEncoding('utf8')
-  child.stderr?.setEncoding('utf8')
-  child.stdout?.on('data', chunk => {
-    stdout += chunk
-  })
-  child.stderr?.on('data', chunk => {
-    stderr += chunk
-  })
-
-  return new Promise((resolve, reject) => {
-    child.on('error', reject)
-    child.on('close', (code, signal) => resolve({ code, signal, stdout, stderr }))
-  })
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ])
+  return { code, signal: child.signalCode as NodeJS.Signals | null, stdout, stderr }
 }

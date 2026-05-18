@@ -5,7 +5,6 @@ import { existsSync } from 'node:fs'
 import { mkdir, readFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { spawn } from 'node:child_process'
 
 void (async () => {
   const archive = await readFile(payloadArchive)
@@ -22,38 +21,27 @@ void (async () => {
     await run('tar', ['-xzf', tempArchive, '-C', payloadRoot])
   }
 
-  const child = spawn(process.execPath, [entrypoint, ...process.argv.slice(2)], {
+  const child = Bun.spawn([process.execPath, entrypoint, ...process.argv.slice(2)], {
     env: {
       ...process.env,
       BUN_BE_BUN: '1',
     },
-    stdio: 'inherit',
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
   })
 
-  child.on('exit', (code, signal) => {
-    if (signal) {
-      process.kill(process.pid, signal)
-      return
-    }
-    process.exit(code ?? 1)
-  })
-
-  child.on('error', error => {
-    console.error(error instanceof Error ? error.message : String(error))
-    process.exit(1)
-  })
+  const code = await child.exited
+  if (child.signalCode) process.kill(process.pid, child.signalCode)
+  process.exit(code ?? 1)
 })()
 
 async function run(command, args) {
-  await new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { stdio: 'inherit' })
-    child.on('error', reject)
-    child.on('exit', code => {
-      if (code === 0) {
-        resolvePromise()
-      } else {
-        reject(new Error(`${command} ${args.join(' ')} exited with ${code}`))
-      }
-    })
+  const child = Bun.spawn([command, ...args], {
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
   })
+  const code = await child.exited
+  if (code !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${code}`)
 }

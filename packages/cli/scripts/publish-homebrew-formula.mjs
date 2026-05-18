@@ -3,7 +3,6 @@ import {existsSync} from 'node:fs';
 import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {spawn} from 'node:child_process';
 
 const root = new URL('..', import.meta.url).pathname;
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
@@ -98,33 +97,31 @@ async function run(command, args, options = {}) {
 }
 
 async function output(command, args, options = {}) {
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, {
-      cwd: options.cwd || root,
-      env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', chunk => {
-      const text = chunk.toString();
-      stdout += text;
-      process.stdout.write(options.scrub ? text.replaceAll(options.scrub, '[token]') : text);
-    });
-    child.stderr.on('data', chunk => {
-      const text = chunk.toString();
-      stderr += text;
-      process.stderr.write(options.scrub ? text.replaceAll(options.scrub, '[token]') : text);
-    });
-    child.on('error', reject);
-    child.on('exit', code => {
-      if (code !== 0 && !options.allowFailure) {
-        resolvePromise({code, stdout, stderr});
-        return;
-      }
-
-      resolvePromise({code, stdout, stderr});
-    });
+  const child = Bun.spawn([command, ...args], {
+    cwd: options.cwd || root,
+    env: process.env,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
   });
+
+  const [stdout, stderr, code] = await Promise.all([
+    collect(child.stdout, process.stdout, options.scrub),
+    collect(child.stderr, process.stderr, options.scrub),
+    child.exited,
+  ]);
+
+  return {code, stdout, stderr};
+}
+
+async function collect(stream, sink, scrub) {
+  let output = '';
+  const decoder = new TextDecoder();
+  for await (const chunk of stream) {
+    const text = typeof chunk === 'string' ? chunk : decoder.decode(chunk, {stream: true});
+    output += text;
+    sink.write(scrub ? text.replaceAll(scrub, '[token]') : text);
+  }
+  output += decoder.decode();
+  return output;
 }
