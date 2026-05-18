@@ -2778,8 +2778,9 @@ Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json
 
 ## Publishing
 
-Beeper CLI releases ship signed macOS Bun binaries, Homebrew archives, and a
-thin npm package that downloads and verifies the matching GitHub Release binary.
+Beeper CLI releases ship signed macOS Bun binaries inside versioned archives and
+a thin npm package that downloads, verifies, extracts, and runs the matching
+GitHub Release archive.
 
 For now, publishing runs from a local macOS machine:
 
@@ -2791,7 +2792,7 @@ The local release command:
 
 - builds standalone Bun binaries
 - signs and notarizes macOS binaries when local signing credentials are available
-- uploads binaries and Homebrew archives to the GitHub release
+- uploads versioned macOS and Linux archives to the GitHub release
 - publishes `beeper-cli` to npm as a thin binary launcher package
 - updates `beeper/homebrew-tap` with the pinned archive SHA
 

@@ -25,19 +25,14 @@ await run('gh', [
   'release',
   'upload',
   tag,
-  'dist/bin/beeper-darwin-arm64',
-  'dist/bin/beeper-darwin-x64',
-  'dist/bin/beeper-linux-arm64',
-  'dist/bin/beeper-linux-x64',
   'dist/bin/binaries.json',
   ...await releaseArchives(),
   '--repo',
   repo,
   '--clobber',
 ])
-
-await run('npm', ['publish', '--access', 'public'], { cwd: fileURLToPath(new URL('../../npm/', import.meta.url)) })
 await run('bun', ['scripts/publish-homebrew-formula.ts'])
+await run('npm', ['publish', '--access', 'public'], { cwd: fileURLToPath(new URL('../../npm/', import.meta.url)) })
 
 async function ensureRelease(tag, repo) {
   const view = await output('gh', ['release', 'view', tag, '--repo', repo], { allowFailure: true })

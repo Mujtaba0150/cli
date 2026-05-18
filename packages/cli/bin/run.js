@@ -14,8 +14,6 @@ const pkg = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8')
 const version = pkg.version
 const platform = normalizePlatform(process.platform)
 const arch = normalizeArch(process.arch)
-const extension = platform === 'windows' ? '.exe' : ''
-const executableName = `beeper-${platform}-${arch}${extension}`
 const releaseTag = process.env.BEEPER_CLI_RELEASE_TAG || `v${version}`
 const releaseRepository = process.env.GITHUB_REPOSITORY || 'beeper/cli'
 const releaseBaseURL = (process.env.BEEPER_CLI_RELEASE_BASE_URL || `https://github.com/${releaseRepository}/releases/download/${releaseTag}`).replace(/\/$/, '')
@@ -45,26 +43,28 @@ try {
 async function ensureExecutable() {
   if (existsSync(cachedExecutable)) return cachedExecutable
 
-  await mkdir(cacheDir, { recursive: true })
-  const tmpPath = join(tmpdir(), `${executableName}.${process.pid}.${Date.now()}.download`)
-  const url = `${releaseBaseURL}/${executableName}`
+  const artifact = await fetchArtifact()
+  const tmpDir = join(tmpdir(), `beeper-cli-${version}-${process.pid}-${Date.now()}`)
+  const tmpPath = join(tmpDir, artifact.file)
+  const url = `${releaseBaseURL}/${artifact.file}`
   console.error(`beeper-cli: downloading ${url}`)
+  await rm(tmpDir, { recursive: true, force: true })
+  await mkdir(tmpDir, { recursive: true })
   await download(url, tmpPath)
 
-  const expectedHash = await fetchExpectedHash().catch(() => undefined)
-  if (expectedHash) {
-    const actualHash = await sha256(tmpPath)
-    if (actualHash !== expectedHash) {
-      await rm(tmpPath, { force: true })
-      throw new Error(`downloaded binary checksum mismatch for ${executableName}`)
-    }
-  } else if (process.env.BEEPER_CLI_REQUIRE_CHECKSUM === '1') {
-    await rm(tmpPath, { force: true })
-    throw new Error(`no checksum found for ${executableName}`)
+  const actualHash = await sha256(tmpPath)
+  if (actualHash !== artifact.sha256) {
+    await rm(tmpDir, { recursive: true, force: true })
+    throw new Error(`downloaded archive checksum mismatch for ${artifact.file}`)
   }
 
-  if (platform !== 'windows') await chmod(tmpPath, 0o755)
-  await rename(tmpPath, cachedExecutable)
+  await extract(tmpPath, tmpDir)
+  const extractedExecutable = join(tmpDir, 'bin', platform === 'windows' ? 'beeper.exe' : 'beeper')
+  if (platform !== 'windows') await chmod(extractedExecutable, 0o755)
+  await rm(cacheDir, { recursive: true, force: true })
+  await mkdir(cacheDir, { recursive: true })
+  await rename(extractedExecutable, cachedExecutable)
+  await rm(tmpDir, { recursive: true, force: true })
   return cachedExecutable
 }
 
@@ -81,13 +81,15 @@ function normalizeArch(value) {
   throw new Error(`unsupported architecture: ${value}`)
 }
 
-async function fetchExpectedHash() {
+async function fetchArtifact() {
   const manifestURL = `${releaseBaseURL}/binaries.json`
   const manifestPath = join(tmpdir(), `beeper-cli-binaries-${version}-${process.pid}-${Date.now()}.json`)
   try {
     await download(manifestURL, manifestPath, { quiet: true })
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
-    return manifest.artifacts?.find(artifact => artifact.file === executableName)?.sha256
+    const artifact = manifest.artifacts?.find(artifact => artifact.platform === `${platform}-${arch}`)
+    if (!artifact) throw new Error(`no release archive found for ${platform}-${arch}`)
+    return artifact
   } finally {
     await rm(manifestPath, { force: true })
   }
@@ -117,4 +119,27 @@ async function download(url, destination, options = {}, redirectCount = 0) {
 
 async function sha256(path) {
   return createHash('sha256').update(await readFile(path)).digest('hex')
+}
+
+async function extract(archivePath, destination) {
+  if (archivePath.endsWith('.zip')) {
+    await run('/usr/bin/ditto', ['-x', '-k', archivePath, destination])
+    return
+  }
+  if (archivePath.endsWith('.tar.gz')) {
+    await run('tar', ['-xzf', archivePath, '-C', destination])
+    return
+  }
+  throw new Error(`unsupported release archive: ${basename(archivePath)}`)
+}
+
+async function run(command, args) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: 'ignore' })
+    child.once('error', reject)
+    child.once('exit', code => {
+      if (code === 0) resolve()
+      else reject(new Error(`${command} ${args.join(' ')} exited with ${code}`))
+    })
+  })
 }

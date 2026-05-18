@@ -10,16 +10,19 @@ const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
 const version = process.env.PACKAGE_VERSION || pkg.version
 const binaryDir = join(root, 'dist', 'bin')
 const outDir = join(root, 'dist', 'release')
+const manifestPath = join(binaryDir, 'binaries.json')
 const metadataPath = join(outDir, 'homebrew.json')
-const platforms = ['darwin-arm64', 'darwin-x64']
 
+await rm(outDir, { recursive: true, force: true })
 await mkdir(outDir, { recursive: true })
 
+const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
 const archives = []
-for (const platform of platforms) {
-  const binaryPath = join(binaryDir, `beeper-${platform}`)
+for (const artifact of manifest.artifacts) {
+  const platform = artifact.platform
+  const binaryPath = artifact.path || join(binaryDir, artifact.binaryFile || `beeper-${platform}`)
   const workDir = await mkdtemp(join(tmpdir(), `beeper-cli-${platform}-`))
-  const archiveName = `beeper-cli_${version}_${platform}.tar.gz`
+  const archiveName = releaseArchiveName(version, platform)
   const archivePath = join(outDir, archiveName)
 
   await mkdir(join(workDir, 'bin'), { recursive: true })
@@ -27,14 +30,25 @@ for (const platform of platforms) {
   await cp(binaryPath, installedBinary)
   await chmod(installedBinary, 0o755)
   await rm(archivePath, { force: true })
-  await run('tar', ['-czf', archivePath, '-C', workDir, '.'], { cwd: root })
+  const binarySha256 = await hashFile(binaryPath)
+  if (platform.startsWith('darwin-')) {
+    await run('/usr/bin/zip', ['-X', '-r', archivePath, 'bin'], { cwd: workDir })
+  } else {
+    await run('tar', ['-czf', archivePath, '-C', workDir, '.'], { cwd: root })
+  }
   const sha256 = await hashFile(archivePath)
   archives.push({ archive: basename(archivePath), path: archivePath, platform, sha256 })
+  artifact.binaryFile = artifact.binaryFile || artifact.file
+  artifact.binarySha256 = binarySha256
+  artifact.file = basename(archivePath)
+  artifact.sha256 = sha256
+  artifact.archive = basename(archivePath)
   console.log(`${archivePath}`)
   console.log(`sha256 ${sha256}`)
   await rm(workDir, { recursive: true, force: true })
 }
 
+await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 await writeFile(
   metadataPath,
   `${JSON.stringify(
@@ -49,6 +63,13 @@ await writeFile(
     2,
   )}\n`,
 )
+
+function releaseArchiveName(version, platform) {
+  const [os, arch] = platform.split('-')
+  const displayOS = os === 'darwin' ? 'macos' : os
+  const extension = os === 'darwin' ? 'zip' : 'tar.gz'
+  return `beeper-cli-${version}-${displayOS}-${arch}.${extension}`
+}
 
 async function hashFile(path) {
   const hash = createHash('sha256')

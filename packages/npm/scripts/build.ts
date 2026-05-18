@@ -50,21 +50,29 @@ if (!artifact) {
 }
 
 const cacheDir = process.env.BEEPER_CLI_BINARY_CACHE_DIR || join(homedir(), '.cache', 'beeper-cli', manifest.version)
-const binPath = join(cacheDir, artifact.file)
+const binPath = join(cacheDir, 'bin', manifest.command || 'beeper')
 
-if (!existsSync(binPath) || await sha256(binPath).catch(() => '') !== artifact.sha256) {
-  await mkdir(cacheDir, { recursive: true })
-  const tempPath = join(tmpdir(), \`\${artifact.file}.\${process.pid}.tmp\`)
-  await rm(tempPath, { force: true })
-  await download(\`https://github.com/beeper/cli/releases/download/v\${manifest.version}/\${artifact.file}\`, tempPath)
-  const actual = await sha256(tempPath)
+const expectedBinarySha256 = artifact.binarySha256 || artifact.sha256
+
+if (!existsSync(binPath) || await sha256(binPath).catch(() => '') !== expectedBinarySha256) {
+  const tempDir = join(tmpdir(), \`beeper-cli-\${manifest.version}-\${process.pid}\`)
+  const archivePath = join(tempDir, artifact.file)
+  await rm(tempDir, { recursive: true, force: true })
+  await mkdir(tempDir, { recursive: true })
+  await download(\`https://github.com/beeper/cli/releases/download/v\${manifest.version}/\${artifact.file}\`, archivePath)
+  const actual = await sha256(archivePath)
   if (actual !== artifact.sha256) {
-    await rm(tempPath, { force: true })
+    await rm(tempDir, { recursive: true, force: true })
     console.error(\`beeper-cli binary checksum mismatch for \${artifact.file}.\`)
     process.exit(1)
   }
-  await chmod(tempPath, 0o755)
-  await rename(tempPath, binPath)
+  await extract(archivePath, tempDir)
+  const extractedBin = join(tempDir, 'bin', manifest.command || 'beeper')
+  await chmod(extractedBin, 0o755)
+  await rm(cacheDir, { recursive: true, force: true })
+  await mkdir(dirname(binPath), { recursive: true })
+  await rename(extractedBin, binPath)
+  await rm(tempDir, { recursive: true, force: true })
 }
 
 const child = spawn(binPath, process.argv.slice(2), { stdio: 'inherit', env: process.env })
@@ -105,6 +113,29 @@ async function download(url, destination) {
       file.on('finish', () => file.close(resolve))
       file.on('error', reject)
     }).on('error', reject)
+  })
+}
+
+async function extract(archivePath, destination) {
+  if (artifact.file.endsWith('.zip')) {
+    await run('/usr/bin/ditto', ['-x', '-k', archivePath, destination])
+    return
+  }
+  if (artifact.file.endsWith('.tar.gz')) {
+    await run('tar', ['-xzf', archivePath, '-C', destination])
+    return
+  }
+  throw new Error(\`Unsupported beeper-cli archive: \${artifact.file}\`)
+}
+
+async function run(command, args) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: 'ignore' })
+    child.on('error', reject)
+    child.on('exit', code => {
+      if (code === 0) resolve()
+      else reject(new Error(\`\${command} \${args.join(' ')} exited with \${code}\`))
+    })
   })
 }
 `
