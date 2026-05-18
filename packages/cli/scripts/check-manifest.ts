@@ -4,7 +4,7 @@
  *
  *   - every manifest entry has at least one `examples[]` entry
  *   - the manifest contains no duplicates
- *   - the manifest matches src/commands/** filenames (defense-in-depth with cli-smoke.mjs)
+ *   - the manifest matches src/commands/** filenames (defense-in-depth with cli-smoke.ts)
  *   - the ./plugin-sdk subpath resolves at runtime and re-exports BeeperCommand
  */
 import { readdirSync } from 'node:fs'

@@ -66,9 +66,9 @@ async function buildPayload() {
       recursive: true,
       filter: source => !source.includes('/dist/bin/') && source !== payloadArchive,
     })
-    await cp(join(root, 'scripts', 'prepare-desktop-api.mjs'), join(workDir, 'scripts', 'prepare-desktop-api.mjs'))
+    await cp(join(root, 'scripts', 'prepare-desktop-api.ts'), join(workDir, 'scripts', 'prepare-desktop-api.ts'))
     await run('bun', ['install', '--production'], { cwd: workDir })
-    await run('bun', ['scripts/prepare-desktop-api.mjs'], { cwd: workDir })
+    await run('bun', ['scripts/prepare-desktop-api.ts'], { cwd: workDir })
     await rm(payloadArchive, { force: true })
     await run('tar', ['-czf', payloadArchive, '-C', workDir, '.'], { cwd: root })
   } finally {

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { execFile } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { beeperDir, type Target } from './targets.js'
@@ -25,6 +26,23 @@ export const profileErrorLogPath = (id: string) => join(profileLogDir(), `${id}.
 
 export function assertProfile(target: Target): void {
   if (!target.managed || !target.dataDir) throw new Error(`Target "${target.id}" is not a local profile.`)
+}
+
+export function assertServerProfile(target: Target): void {
+  if (!target.managed || !target.dataDir || target.type !== 'server') {
+    throw new Error(`Target "${target.id}" is not a local Beeper Server install.`)
+  }
+}
+
+export function defaultDesktopDataDir(profile?: string): string {
+  const appName = `BeeperTexts${profile ? `-${profile}` : ''}`
+  if (process.platform === 'darwin') return join(homedir(), 'Library', 'Application Support', appName)
+  if (process.platform === 'win32') return process.env.APPDATA ? join(process.env.APPDATA, appName) : join(homedir(), appName)
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), appName)
+}
+
+export function desktopLogDir(target?: Target): string {
+  return join(target?.dataDir ?? defaultDesktopDataDir(target?.profile), 'logs')
 }
 
 export async function startProfile(target: Target): Promise<ProfileRun | { id: string; startedAt: string }> {

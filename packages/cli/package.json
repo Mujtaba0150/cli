@@ -21,16 +21,16 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun scripts/prepare-desktop-api.mjs && bun scripts/generate-command-map.mjs && bun run clean && tsc -p tsconfig.json",
-    "binary": "bun run build && bun scripts/build-binaries.mjs",
-    "check:api-copy": "bun run build && bun scripts/check-api-copy.mjs",
-    "check:readme": "bun run build && bun scripts/generate-readme.mjs --check",
+    "build": "bun scripts/prepare-desktop-api.ts && bun scripts/generate-command-map.ts && bun run clean && tsc -p tsconfig.json",
+    "binary": "bun run build && bun scripts/build-binaries.ts",
+    "check:api-copy": "bun run build && bun scripts/check-api-copy.ts",
+    "check:readme": "bun run build && bun scripts/generate-readme.ts --check",
     "clean": "rm -rf dist",
     "dev": "bun ./bin/dev.js",
-    "e2e:staging": "bun run build && bun test/e2e-staging.mjs",
-    "pack:homebrew": "bun run binary && bun scripts/build-homebrew-archive.mjs",
-    "readme": "bun run build && bun scripts/generate-readme.mjs",
-    "test": "bun run build && bun scripts/generate-readme.mjs --check && bun scripts/check-api-copy.mjs && bun scripts/check-manifest.mjs && bun ./test/cli-smoke.mjs && bun test",
+    "e2e:staging": "bun run build && bun test/e2e-staging.ts",
+    "pack:homebrew": "bun run binary && bun scripts/build-homebrew-archive.ts",
+    "readme": "bun run build && bun scripts/generate-readme.ts",
+    "test": "bun run build && bun scripts/generate-readme.ts --check && bun scripts/check-api-copy.ts && bun scripts/check-manifest.ts && bun ./test/cli-smoke.ts && bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {

@@ -3,7 +3,7 @@ set -euo pipefail
 
 errors=()
 
-for path in package.json bun.lock scripts/build-homebrew-archive.mjs scripts/publish-homebrew-formula.mjs .github/workflows/publish-release.yml; do
+for path in package.json bun.lock scripts/build-homebrew-archive.ts scripts/publish-homebrew-formula.ts .github/workflows/publish-release.yml; do
   if [[ ! -f "${path}" ]]; then
     errors+=("Missing required release file: ${path}")
   fi
