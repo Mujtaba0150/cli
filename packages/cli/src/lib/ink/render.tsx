@@ -5,6 +5,7 @@ import {
   AccountRow,
   AssetRow,
   AuthStatusCard,
+  BridgeRow,
   ChatDetail,
   ChatRow,
   CommandsView,
@@ -15,7 +16,9 @@ import {
   GenericRow,
   InfoCard,
   MessageRow,
+  ReadinessCard,
   SectionHeader,
+  SendResultCard,
   type StreamEvent,
   StreamEventLine,
   StreamHeader,
@@ -41,9 +44,9 @@ async function renderOnce(node: React.ReactNode): Promise<void> {
 }
 
 type Kind =
-  | 'chat' | 'chatDetail' | 'message' | 'user' | 'account' | 'asset'
+  | 'chat' | 'chatDetail' | 'message' | 'user' | 'account' | 'bridge' | 'asset'
   | 'info' | 'doctor' | 'auth' | 'oauth' | 'search'
-  | 'commandManifest' | 'config'
+  | 'commandManifest' | 'config' | 'readiness' | 'sendResult'
   | 'generic'
 
 function detectKind(record: RecordValue): Kind {
@@ -52,11 +55,16 @@ function detectKind(record: RecordValue): Kind {
     return 'chat'
   }
   if (typeof record.id === 'string' && typeof record.chatID === 'string' && typeof record.senderID === 'string' && typeof record.timestamp === 'string') return 'message'
+  if (typeof record.chatID === 'string' && typeof record.pendingMessageID === 'string' && (record.accepted === true || typeof record.state === 'string')) return 'sendResult'
   if (typeof record.id === 'string' && (typeof record.fullName === 'string' || typeof record.username === 'string' || typeof record.email === 'string' || typeof record.phoneNumber === 'string')) return 'user'
+  if (typeof record.id === 'string' && typeof record.provider === 'string' && typeof record.status === 'string' && (typeof record.displayName === 'string' || Array.isArray(record.accounts))) return 'bridge'
   if (typeof (record.accountID ?? record.id) === 'string' && (typeof record.network === 'string' || typeof record.bridge === 'string' || typeof record.displayName === 'string')) return 'account'
   if (typeof record.uploadID === 'string' || typeof record.srcURL === 'string') return 'asset'
   if (typeof record.version === 'string' && typeof record.endpoints === 'object') return 'info'
   if (typeof record.ok === 'boolean' && Array.isArray(record.checks)) return 'doctor'
+  if (typeof record.ok === 'boolean' && record.checks && typeof record.checks === 'object') return 'doctor'
+  if (record.readiness && typeof record.readiness === 'object') return 'readiness'
+  if (typeof record.state === 'string' && Array.isArray(record.actions)) return 'readiness'
   if (typeof record.authenticated === 'boolean' && typeof record.baseURL === 'string') return 'auth'
   if (typeof record.sub === 'string' && (typeof record.email === 'string' || typeof record.name === 'string' || typeof record.preferred_username === 'string')) return 'oauth'
   if (Array.isArray(record.chats) && Array.isArray(record.messages)) return 'search'
@@ -79,6 +87,7 @@ function rowFor(kind: Kind, item: RecordValue, key: number): React.ReactNode {
     case 'message': return <MessageRow item={item} key={key} />
     case 'user': return <UserRow item={item} key={key} />
     case 'account': return <AccountRow item={item} key={key} />
+    case 'bridge': return <BridgeRow item={item} key={key} />
     case 'asset': return <AssetRow item={item} key={key} />
     default: return <GenericRow item={item} key={key} />
   }
@@ -118,7 +127,20 @@ export async function renderValue(value: unknown): Promise<void> {
       await renderOnce(<InfoCard info={record} />)
       return
     case 'doctor': {
-      const checks = (record.checks as Array<{ ok: boolean; name: string; detail?: string }>) ?? []
+      const rawChecks = Array.isArray(record.checks)
+        ? record.checks as Array<{ ok: boolean; name: string; detail?: string }>
+        : record.checks && typeof record.checks === 'object'
+          ? Object.entries(record.checks as Record<string, unknown>).map(([name, value]) => {
+            const detail = typeof value === 'object' && value ? JSON.stringify(value) : String(value)
+            const ok = name === 'readiness'
+              ? (value as RecordValue)?.state === 'ready'
+              : typeof (value as RecordValue)?.reachable === 'boolean'
+                ? Boolean((value as RecordValue).reachable)
+                : Boolean(value)
+            return { ok, name, detail }
+          })
+          : []
+      const checks = rawChecks
       await renderOnce(<DoctorCard checks={checks} ok={Boolean(record.ok)} />)
       return
     }
@@ -154,6 +176,12 @@ export async function renderValue(value: unknown): Promise<void> {
       )
       return
     }
+    case 'readiness':
+      await renderOnce(<ReadinessCard data={record} />)
+      return
+    case 'sendResult':
+      await renderOnce(<SendResultCard result={record} />)
+      return
     case 'chat':
     case 'chatDetail':
       await renderOnce(<ChatDetail item={record} />)
@@ -166,6 +194,9 @@ export async function renderValue(value: unknown): Promise<void> {
       return
     case 'account':
       await renderOnce(<AccountRow item={record} />)
+      return
+    case 'bridge':
+      await renderOnce(<BridgeRow item={record} />)
       return
     case 'asset':
       await renderOnce(<AssetRow item={record} />)

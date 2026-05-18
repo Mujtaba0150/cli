@@ -30,13 +30,19 @@ export async function createMatrixDM(flags: MatrixFlags, userID: string): Promis
   })
 }
 
-export async function sendMatrixText(flags: MatrixFlags, roomID: string, text: string): Promise<{ chatID: string; pendingMessageID: string }> {
+export async function sendMatrixText(flags: MatrixFlags, roomID: string, text: string): Promise<{ accepted: true; state: 'accepted'; chatID: string; pendingMessageID: string; hint: string }> {
   const txnID = `beeper-cli-${Date.now()}-${Math.random().toString(36).slice(2)}`
   await matrixRequest(await matrixContext(flags), 'PUT', `/_matrix/client/v3/rooms/${encodeURIComponent(roomID)}/send/m.room.message/${encodeURIComponent(txnID)}`, {
     body: text,
     msgtype: 'm.text',
   })
-  return { chatID: roomID, pendingMessageID: txnID }
+  return {
+    accepted: true,
+    state: 'accepted',
+    chatID: roomID,
+    pendingMessageID: txnID,
+    hint: 'Matrix accepted the send request. Use messages show or watch to resolve the final event.',
+  }
 }
 
 export async function listMatrixMessages(flags: MatrixFlags, roomID: string, limit: number): Promise<unknown[]> {

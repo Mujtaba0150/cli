@@ -10,7 +10,7 @@
     "@beeper/desktop-api"
   ],
   "scripts": {
-    "build": "bun run --workspaces build",
+    "build": "bun run --workspaces --sequential build",
     "check": "bun run typecheck && bun run test && bun run build && bun run pack:packages",
     "clean": "bun run --workspaces clean",
     "changeset": "changeset",

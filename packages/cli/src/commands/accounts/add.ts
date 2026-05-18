@@ -88,16 +88,20 @@ function printAvailableAccounts(items: AccountType[]): void {
     ['Self-Hosted Accounts', items.filter(item => item.provider === 'self-hosted')],
   ]
 
+  process.stdout.write('Choose a bridge to connect an account:\n\n')
   for (const [title, accounts] of sections) {
     if (!accounts.length) continue
     process.stdout.write(`${title}\n`)
     for (const account of accounts) {
       const status = account.statusText ?? statusLabel(account)
-      process.stdout.write(`  ${account.displayName} (${account.id})${status ? ` - ${status}` : ''}\n`)
+      const command = account.status === 'available' ? `beeper accounts add ${account.id}` : undefined
+      const multiple = account.supportsMultipleAccounts ? 'multiple allowed' : 'single account'
+      process.stdout.write(`  ${account.displayName} (${account.id}) - ${multiple}${status ? ` - ${status}` : ''}\n`)
+      if (command) process.stdout.write(`    ${command}\n`)
     }
     process.stdout.write('\n')
   }
-  process.stdout.write('Run `beeper bridges list` for the full bridge catalog.\n')
+  process.stdout.write('Run `beeper bridges list` for the scriptable catalog or `beeper bridges show <bridge>` for login flows.\n')
 }
 
 function resolveAccountType(items: AccountType[], input: string): AccountType {

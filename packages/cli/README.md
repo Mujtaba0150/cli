@@ -428,6 +428,8 @@ List bridges that can connect chat accounts
 beeper bridges list
 ```
 
+`bridges list` is the scriptable bridge catalog. Use `accounts add` without an argument for the guided account connection flow.
+
 Flags:
 
 | Flag | Type | Description |
@@ -1944,6 +1946,7 @@ Examples:
 
 ```sh
 beeper send text --to 10313 --message "on my way"
+beeper send text --to 8951 --message "hi"
 beeper send text --to "Family" --message "hi" --pick 1
 ```
 
@@ -1955,6 +1958,8 @@ Send a file
 ```sh
 beeper send file
 ```
+
+Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.
 
 Flags:
 

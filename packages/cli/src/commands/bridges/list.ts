@@ -5,6 +5,7 @@ import { printList } from '../../lib/output.js'
 
 export default class BridgesList extends BeeperCommand {
   static override summary = 'List bridges that can connect chat accounts'
+  static override description = '`bridges list` is the scriptable bridge catalog. Use `accounts add` without an argument for the guided account connection flow.'
   static override flags = {
     provider: Flags.string({ options: ['local', 'cloud', 'self-hosted'], description: 'Limit to bridge provider' }),
     available: Flags.boolean({ allowNo: true, description: 'Only bridges available to add (--no-available to exclude)' }),

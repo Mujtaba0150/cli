@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Validate the command manifest and the public plugin-sdk export.
  *

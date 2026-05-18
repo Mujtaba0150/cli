@@ -415,6 +415,118 @@ export const AccountRow: React.FC<RowProps<RecordValue>> = ({ item: account }) =
   )
 }
 
+export const BridgeRow: React.FC<RowProps<RecordValue>> = ({ item: bridge }) => {
+  const id = String(bridge.id)
+  const provider = stringValue(bridge.provider)
+  const type = stringValue(bridge.type)
+  const network = stringValue(bridge.network) ?? type
+  const title = stringValue(bridge.displayName) ?? id
+  const status = stringValue(bridge.status)
+  const statusText = stringValue(bridge.statusText)
+  const accounts = Array.isArray(bridge.accounts) ? bridge.accounts as RecordValue[] : []
+  const available = status === 'available'
+  const connected = status === 'connected' || accounts.length > 0
+  const rail = available ? theme.mine : connected ? theme.primary : theme.warn
+  const flows = Array.isArray(bridge.loginFlows) ? bridge.loginFlows as RecordValue[] : []
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Box>
+        <Rail color={rail} />
+        <Text> </Text>
+        <Text bold color={theme.text}>{title}</Text>
+        {network && <Text color={bridgeColor(network) ?? theme.muted}>  {network.toLowerCase()}</Text>}
+        {provider && <Text color={theme.subtle}>  {provider}</Text>}
+        {status && <Text color={available ? theme.mine : connected ? theme.primary : theme.warn}>  {status.replaceAll('_', ' ')}</Text>}
+      </Box>
+      {statusText ? (
+        <Box marginLeft={2}>
+          <Text color={theme.muted}>{statusText}</Text>
+        </Box>
+      ) : null}
+      <Box marginLeft={2}>
+        <Text color={theme.subtle}>id </Text>
+        <Text color={theme.text}>{id}</Text>
+        {typeof bridge.activeAccountCount === 'number' ? <Text color={theme.subtle}>  accounts {String(bridge.activeAccountCount)}</Text> : null}
+        {typeof bridge.supportsMultipleAccounts === 'boolean' ? (
+          <Text color={theme.subtle}>  {bridge.supportsMultipleAccounts ? 'multiple allowed' : 'single account'}</Text>
+        ) : null}
+        {flows.length > 0 ? <Text color={theme.subtle}>  flows {flows.length}</Text> : null}
+      </Box>
+      {flows.length > 0 ? (
+        <Box flexDirection="column" marginLeft={2}>
+          {flows.slice(0, 5).map(flow => {
+            const flowID = String(flow.id ?? flow.type ?? 'flow')
+            const name = stringValue(flow.name)
+            const description = stringValue(flow.description)
+            return (
+              <Text key={flowID} color={theme.muted}>
+                {glyphs.bullet} {flowID}{name ? `  ${name}` : ''}{description ? ` - ${description}` : ''}
+              </Text>
+            )
+          })}
+          {flows.length > 5 ? <Text color={theme.subtle}>  {flows.length - 5} more flows</Text> : null}
+        </Box>
+      ) : null}
+      {accounts.length > 0 ? (
+        <Box flexDirection="column" marginLeft={2}>
+          {accounts.slice(0, 3).map(account => (
+            <Text key={String(account.accountID ?? account.id)} color={theme.muted}>
+              {glyphs.bullet} {String(account.accountID ?? account.id)}
+              {account.status ? `  ${String(account.status).replaceAll('_', ' ')}` : ''}
+            </Text>
+          ))}
+          {accounts.length > 3 ? <Text color={theme.subtle}>  {accounts.length - 3} more</Text> : null}
+        </Box>
+      ) : null}
+      {available ? (
+        <Box marginLeft={2}>
+          <Text color={theme.primaryGlow}>beeper accounts add {id}</Text>
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+export const SendResultCard: React.FC<{ result: RecordValue }> = ({ result }) => {
+  const message = result.message && typeof result.message === 'object' ? result.message as RecordValue : undefined
+  const sendStatus = message?.sendStatus && typeof message.sendStatus === 'object' ? message.sendStatus as RecordValue : undefined
+  const state = stringValue(result.state)
+  const finalID = stringValue(message?.id)
+  const status = stringValue(sendStatus?.status)
+  const failed = status?.startsWith('FAIL')
+  const sent = status === 'SUCCESS'
+  return (
+    <Box flexDirection="column">
+      <Box>
+        <Rail color={failed ? theme.danger : state === 'resolved' ? theme.mine : theme.primary} />
+        <Text> </Text>
+        <Text bold color={theme.text}>Message send</Text>
+        <Text>  </Text>
+        {failed ? (
+          <Text color={theme.danger}>{glyphs.cross} failed</Text>
+        ) : sent ? (
+          <Text color={theme.mine}>{glyphs.check} sent</Text>
+        ) : state === 'resolved' ? (
+          <Text color={theme.mine}>{glyphs.check} resolved</Text>
+        ) : (
+          <Text color={theme.primary}>{glyphs.ring} accepted by Desktop</Text>
+        )}
+      </Box>
+      <KV label="chat" value={String(result.chatID)} tone="muted" />
+      {result.pendingMessageID ? <KV label="pending" value={String(result.pendingMessageID)} tone="muted" /> : null}
+      {finalID ? <KV label="message" value={finalID} /> : null}
+      {status ? <KV label="status" value={status} tone={failed ? 'normal' : 'muted'} /> : null}
+      {sendStatus?.message ? <KV label="reason" value={String(sendStatus.message)} tone={failed ? 'normal' : 'muted'} /> : null}
+      {result.hint ? (
+        <Box marginLeft={2}>
+          <Text color={theme.subtle}>{String(result.hint)}</Text>
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
 export const AssetRow: React.FC<RowProps<RecordValue>> = ({ item: asset }) => {
   const title = stringValue(asset.fileName)
     ?? stringValue(asset.uploadID)
@@ -551,6 +663,35 @@ export const AuthStatusCard: React.FC<{ auth: RecordValue }> = ({ auth }) => {
           { command: 'beeper setup', hint: 'continue target setup' },
         ]} />
       )}
+    </Box>
+  )
+}
+
+export const ReadinessCard: React.FC<{ data: RecordValue }> = ({ data }) => {
+  const target = data.target && typeof data.target === 'object' ? data.target as RecordValue : undefined
+  const readiness = data.readiness && typeof data.readiness === 'object' ? data.readiness as RecordValue : data
+  const state = stringValue(readiness.state) ?? 'unknown'
+  const ready = state === 'ready'
+  const actions = Array.isArray(readiness.actions) ? readiness.actions.map(String) : []
+  const message = stringValue(readiness.message)
+  return (
+    <Box flexDirection="column">
+      <Box>
+        <Rail color={ready ? theme.mine : theme.warn} />
+        <Text> </Text>
+        <Text bold color={theme.text}>{ready ? 'Ready' : 'Not ready'}</Text>
+        <Text color={ready ? theme.mine : theme.warn}>  {state.replaceAll('-', ' ')}</Text>
+      </Box>
+      {target ? (
+        <>
+          <KV label="target" value={String(target.id ?? target.name ?? 'selected')} />
+          {target.baseURL ? <KV label="endpoint" value={<Hyperlink url={String(target.baseURL)}><Text color={theme.link}>{String(target.baseURL)}</Text></Hyperlink>} /> : null}
+        </>
+      ) : null}
+      {message ? <KV label="next" value={message} tone={ready ? 'muted' : 'normal'} /> : null}
+      {actions.length > 0 && !ready ? (
+        <Suggestions suggestions={actions.slice(0, 4).map(command => ({ command: `beeper ${command}` }))} />
+      ) : null}
     </Box>
   )
 }

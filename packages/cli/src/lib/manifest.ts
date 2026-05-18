@@ -398,6 +398,7 @@ export const commandManifest: ManifestCommand[] = [
     description: 'Send a text message',
     examples: [
       'beeper send text --to 10313 --message "on my way"',
+      'beeper send text --to 8951 --message "hi"',
       'beeper send text --to "Family" --message "hi" --pick 1',
     ],
   },

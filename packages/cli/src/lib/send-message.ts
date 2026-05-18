@@ -2,6 +2,14 @@ import { createReadStream } from 'node:fs'
 import { waitForMessage } from './wait.js'
 
 export type AttachmentType = 'sticker' | 'voice-note'
+export type SendMessageResult = {
+  accepted: boolean
+  state: 'accepted' | 'resolved'
+  chatID: string
+  pendingMessageID?: string
+  message?: unknown
+  hint?: string
+}
 
 export async function sendMessage(client: any, options: {
   chatID: string
@@ -16,7 +24,7 @@ export async function sendMessage(client: any, options: {
   duration?: number
   wait?: boolean
   waitTimeoutMs?: number
-}): Promise<unknown> {
+}): Promise<SendMessageResult> {
   const uploaded = options.file
     ? await client.assets.upload({
       file: createReadStream(options.file),
@@ -44,8 +52,23 @@ export async function sendMessage(client: any, options: {
     disableLinkPreview: options.noPreview || undefined,
   })
 
-  if (!options.wait) return pending
-  return waitForMessage(client, options.chatID, pending.pendingMessageID, {
+  if (!options.wait) {
+    return {
+      ...pending,
+      accepted: true,
+      state: 'accepted',
+      chatID: options.chatID,
+      hint: 'Desktop accepted the send request. Pass --wait to wait for the final message or failure.',
+    }
+  }
+  const message = await waitForMessage(client, options.chatID, pending.pendingMessageID, {
     timeoutMs: options.waitTimeoutMs,
   })
+  return {
+    accepted: true,
+    state: 'resolved',
+    chatID: options.chatID,
+    pendingMessageID: pending.pendingMessageID,
+    message,
+  }
 }

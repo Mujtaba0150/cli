@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import {readFile, writeFile} from 'node:fs/promises';
 import {Config} from '@oclif/core/config';
 import {commandManifest} from '../dist/lib/manifest.js';

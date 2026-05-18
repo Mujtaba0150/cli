@@ -7,10 +7,11 @@ import { sendMessage } from '../../lib/send-message.js'
 
 export default class SendFile extends BeeperCommand {
   static override summary = 'Send a file'
+  static override description = 'Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.'
   static override examples = [
-    'beeper send file --to "Mom" --file ./photo.jpg --caption "Look at this"',
+    'beeper send file --to 10313 --file ./photo.jpg --caption "Look at this"',
     'beeper send file --to alice@whatsapp --file ./report.pdf',
-    'beeper send file --to "Work" --file ./clip.mp4 --reply-to <msgID>',
+    'beeper send file --to 8951 --file ./clip.mp4 --reply-to <msgID>',
   ]
   static override flags = {
     to: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),

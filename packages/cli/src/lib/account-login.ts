@@ -87,9 +87,12 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
 
     if (step.type === 'cookies') {
       const fields: Record<string, string> = {}
+      let usedWebView = false
       if (options.webview) {
         try {
-          Object.assign(fields, await collectCookieFieldsWithWebView(step, options))
+          const webviewFields = await collectCookieFieldsWithWebView(step, options)
+          usedWebView = Object.keys(webviewFields).length > 0
+          Object.assign(fields, webviewFields)
         } catch (error) {
           if (options.nonInteractive) throw error
           output.write(`webview: ${error instanceof Error ? error.message : String(error)}\n`)
@@ -107,7 +110,7 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
         if (options.nonInteractive) throw new Error(`Missing required cookie ${id}. Pass --cookie ${id}=... or run without --non-interactive.`)
         fields[id] = await promptSecret(`${id}: `)
       }
-      session = await client.bridges.loginSessions.steps.submit(step.stepID, { bridgeID, loginSessionID: session.loginSessionID, type: 'cookies', fields })
+      session = await client.bridges.loginSessions.steps.submit(step.stepID, { bridgeID, loginSessionID: session.loginSessionID, type: 'cookies', fields, source: usedWebView ? 'webview' : 'api' })
       continue
     }
 
@@ -119,7 +122,22 @@ type CookieLoginStep = NonNullable<AccountLoginStep['currentStep']> & {
   type: 'cookies'
 }
 
-type CookieField = CookieLoginStep['fields'][number]
+type CookieField = CookieLoginStep['fields'][number] & {
+  required?: boolean
+  pattern?: string
+  sources?: CookieFieldSource[]
+}
+
+type NormalizedCookieField = CookieField & {
+  required: boolean
+  sources: CookieFieldSource[]
+}
+
+type CookieFieldSource =
+  | { type: 'cookie'; name: string; cookieDomain?: string }
+  | { type: 'request_header'; name: string; requestURLRegex?: string }
+  | { type: 'local_storage'; name: string }
+  | { type: 'special'; name: string }
 
 type WebViewConstructor = new (options?: Record<string, unknown>) => {
   url: string
@@ -127,8 +145,11 @@ type WebViewConstructor = new (options?: Record<string, unknown>) => {
   navigate(url: string): Promise<void>
   evaluate(script: string): Promise<unknown>
   cdp?(method: string, params?: Record<string, unknown>): Promise<unknown>
+  addEventListener?(type: string, listener: (event: Event & { data?: unknown }) => void): void
   onNavigated?: ((url: string, title: string) => void) | null
 }
+
+const EXTRACT_JS_KEY = '__BEEP_BEEP_AUTH_RESULTS__'
 
 async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: AccountLoginOptions): Promise<Record<string, string>> {
   const BunRuntime = (globalThis as { Bun?: { WebView?: WebViewConstructor } }).Bun
@@ -138,15 +159,19 @@ async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: Ac
   const backend = options.webviewBackend && options.webviewBackend !== 'auto' ? options.webviewBackend : undefined
   const view = new WebView(backend ? { backend } : undefined)
   const found: Record<string, string> = {}
+  const fields = normalizeCookieFields(step.fields)
+  const headerFields = fields.filter(field => field.sources.some(source => source.type === 'request_header'))
   let lastURL = ''
+  let extractJSURL: string | undefined
   view.onNavigated = url => {
     lastURL = url
   }
 
   try {
-    if (step.userAgent && backend === 'chrome' && view.cdp) {
+    if ((step.userAgent || headerFields.length > 0 || fields.some(field => field.sources.some(source => source.type === 'cookie' && source.cookieDomain))) && backend === 'chrome' && view.cdp) {
       await view.navigate('about:blank')
-      await view.cdp('Emulation.setUserAgentOverride', { userAgent: step.userAgent })
+      if (step.userAgent) await view.cdp('Emulation.setUserAgentOverride', { userAgent: step.userAgent })
+      await setupChromeNetworkCapture(view, headerFields, found)
     } else if (step.userAgent) {
       output.write('webview: this cookie step suggests a user agent; pass --webview-backend chrome to apply it.\n')
     }
@@ -164,27 +189,32 @@ async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: Ac
     const deadline = Date.now() + (options.webviewTimeoutMs ?? 120_000)
     const finalURLRegex = step.expectedFinalURLRegex ? new RegExp(step.expectedFinalURLRegex) : undefined
     while (Date.now() < deadline) {
-      Object.assign(found, await collectBrowserStorageFields(view, step.fields))
-      if (step.extractJS) Object.assign(found, await runExtractJS(view, step.extractJS, step.fields))
+      Object.assign(found, await collectBrowserStorageFields(view, fields))
+      if (view.cdp) Object.assign(found, await collectChromeCookies(view, fields))
+      if (step.extractJS && extractJSURL !== (lastURL || view.url)) {
+        extractJSURL = lastURL || view.url
+        await runDesktopExtractJS(view, step.extractJS)
+      }
+      if (step.extractJS) Object.assign(found, await collectSpecialFields(view, fields))
 
-      const hasFields = step.fields.every(field => found[field.id] !== undefined || field.type === 'header')
+      const hasFields = fields.every(field => !field.required || found[field.id] !== undefined)
       const hasFinalURL = !finalURLRegex || finalURLRegex.test(lastURL || view.url)
       if (hasFields && hasFinalURL) return found
       await sleep(500)
     }
 
-    const missing = step.fields.map(field => field.id).filter(id => found[id] === undefined)
+    const missing = fields.filter(field => field.required && found[field.id] === undefined).map(field => field.id)
     throw new Error(`Timed out waiting for cookie fields${missing.length ? `: ${missing.join(', ')}` : ''}.`)
   } finally {
     view.close()
   }
 }
 
-async function collectBrowserStorageFields(view: InstanceType<WebViewConstructor>, fields: CookieField[]): Promise<Record<string, string>> {
+async function collectBrowserStorageFields(view: InstanceType<WebViewConstructor>, fields: NormalizedCookieField[]): Promise<Record<string, string>> {
   const serializableFields = fields.map(field => ({
     id: field.id,
-    name: field.name ?? field.id,
-    type: field.type ?? 'cookie',
+    pattern: field.pattern,
+    sources: field.sources.filter(source => source.type === 'cookie' || source.type === 'local_storage'),
   }))
   const result = await view.evaluate(`(() => {
     const fields = ${JSON.stringify(serializableFields)};
@@ -195,11 +225,14 @@ async function collectBrowserStorageFields(view: InstanceType<WebViewConstructor
     }).filter(Boolean));
     const found = {};
     for (const field of fields) {
-      if (field.type === 'local_storage') {
-        const value = localStorage.getItem(field.name);
-        if (value !== null) found[field.id] = value;
-      } else if (field.type === 'cookie' && cookies[field.name] !== undefined) {
-        found[field.id] = cookies[field.name];
+      for (const source of field.sources) {
+        let value;
+        if (source.type === 'local_storage') value = localStorage.getItem(source.name);
+        else if (source.type === 'cookie' && !source.cookieDomain) value = cookies[source.name];
+        if (value === null || value === undefined) continue;
+        if (field.pattern && !(new RegExp(field.pattern)).test(value)) continue;
+        found[field.id] = value;
+        break;
       }
     }
     return found;
@@ -207,16 +240,112 @@ async function collectBrowserStorageFields(view: InstanceType<WebViewConstructor
   return stringRecord(result)
 }
 
-async function runExtractJS(view: InstanceType<WebViewConstructor>, extractJS: string, fields: CookieField[]): Promise<Record<string, string>> {
+async function collectChromeCookies(view: InstanceType<WebViewConstructor>, fields: NormalizedCookieField[]): Promise<Record<string, string>> {
+  if (!view.cdp) return {}
+  const cookieFields = fields.filter(field => field.sources.some(source => source.type === 'cookie'))
+  if (cookieFields.length === 0) return {}
+
+  const response = await view.cdp('Network.getAllCookies').catch(() => undefined)
+  const cookies = Array.isArray((response as { cookies?: unknown[] } | undefined)?.cookies) ? (response as { cookies: Array<Record<string, unknown>> }).cookies : []
+  const found: Record<string, string> = {}
+  for (const field of cookieFields) {
+    for (const source of field.sources) {
+      if (source.type !== 'cookie') continue
+      const cookie = cookies.find(candidate => {
+        if (candidate.name !== source.name || typeof candidate.value !== 'string') return false
+        return !source.cookieDomain || matchesCookieDomain(String(candidate.domain ?? ''), source.cookieDomain)
+      })
+      if (typeof cookie?.value !== 'string') continue
+      const value = decodeURIComponent(cookie.value)
+      if (!matchesPattern(value, field.pattern)) continue
+      found[field.id] = value
+      break
+    }
+  }
+
+  return found
+}
+
+async function setupChromeNetworkCapture(view: InstanceType<WebViewConstructor>, fields: NormalizedCookieField[], found: Record<string, string>): Promise<void> {
+  if (!view.cdp || !view.addEventListener || fields.length === 0) return
+  await view.cdp('Network.enable')
+  view.addEventListener('Network.requestWillBeSent', event => {
+    const data = event.data as { request?: { url?: string; headers?: Record<string, unknown> } } | undefined
+    const url = data?.request?.url ?? ''
+    const headers = data?.request?.headers ?? {}
+    const lowerHeaders = new Map(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), typeof value === 'string' ? value : String(value)]))
+    for (const field of fields) {
+      for (const source of field.sources) {
+        if (source.type !== 'request_header') continue
+        if (source.requestURLRegex && !matchesPattern(url, source.requestURLRegex)) continue
+        const value = lowerHeaders.get(source.name.toLowerCase())
+        if (value === undefined || !matchesPattern(value, field.pattern)) continue
+        found[field.id] = value
+        break
+      }
+    }
+  })
+}
+
+async function runDesktopExtractJS(view: InstanceType<WebViewConstructor>, extractJS: string): Promise<void> {
   const script = extractJS.replace(/\\n/g, '\n').replace(/\\t/g, '\t').trim()
-  if (!script) return {}
-  const result = await view.evaluate(`(async () => {
-    const value = await (${script});
-    return value && typeof value === 'object' ? value : {};
-  })()`)
+  if (!script) return
+  await view.evaluate(`(async () => {
+    try {
+      const result = await (${script});
+      if (result) globalThis[${JSON.stringify(EXTRACT_JS_KEY)}] = result;
+    } catch {}
+  })()`).catch(() => undefined)
+}
+
+async function collectSpecialFields(view: InstanceType<WebViewConstructor>, fields: NormalizedCookieField[]): Promise<Record<string, string>> {
+  const specialFields = fields.filter(field => field.sources.some(source => source.type === 'special'))
+  if (specialFields.length === 0) return {}
+  const result = await view.evaluate(`globalThis[${JSON.stringify(EXTRACT_JS_KEY)}] || {}`)
   const record = stringRecord(result)
-  const fieldIDs = new Set(fields.map(field => field.id))
-  return Object.fromEntries(Object.entries(record).filter(([key]) => fieldIDs.has(key)))
+  const found: Record<string, string> = {}
+  for (const field of specialFields) {
+    for (const source of field.sources) {
+      if (source.type !== 'special') continue
+      const value = record[field.id] ?? record[source.name]
+      if (value === undefined || !matchesPattern(value, field.pattern)) continue
+      found[field.id] = value
+      break
+    }
+  }
+
+  return found
+}
+
+function normalizeCookieFields(fields: CookieLoginStep['fields']): NormalizedCookieField[] {
+  return fields.map(field => {
+    const rich = field as CookieField
+    const sources = rich.sources?.length ? rich.sources : legacySourcesForField(rich)
+    const required = rich.required ?? true
+    return { ...rich, sources, required }
+  })
+}
+
+function legacySourcesForField(field: CookieField): CookieFieldSource[] {
+  const name = field.name ?? field.id
+  if (field.type === 'header') return [{ type: 'request_header', name }]
+  if (field.type === 'local_storage') return [{ type: 'local_storage', name }]
+  return [{ type: 'cookie', name }]
+}
+
+function matchesCookieDomain(actual: string, expected: string): boolean {
+  const normalizedActual = actual.replace(/^\./, '').toLowerCase()
+  const normalizedExpected = expected.replace(/^\./, '').toLowerCase()
+  return normalizedActual === normalizedExpected || normalizedActual.endsWith(`.${normalizedExpected}`)
+}
+
+function matchesPattern(value: string, pattern: string | undefined): boolean {
+  if (!pattern) return true
+  try {
+    return new RegExp(pattern).test(value)
+  } catch {
+    return true
+  }
 }
 
 function stringRecord(value: unknown): Record<string, string> {
