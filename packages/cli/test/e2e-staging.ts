@@ -390,10 +390,10 @@ async function phaseCliSurface() {
     ['bridges', 'show', 'local-dummy', '--target', target.name, '--json'],
     ['accounts', 'list', '--target', target.name, '--json'],
     ['accounts', 'add', '--target', target.name, '--json'],
-    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'password', '--field', 'username=cli-e2e', '--field', 'password=example-password', '--non-interactive', '--json'],
-    ['accounts', 'add', 'local-dummy', '--target', target.name, '--login-id', 'cli-e2e', '--flow', 'password', '--field', 'username=cli-e2e', '--field', 'password=example-password', '--non-interactive', '--json'],
-    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'cookies', '--cookie', 'username=cli-e2e-cookies', '--cookie', 'password=example-password', '--non-interactive', '--json'],
-    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'localstorage', '--cookie', 'username=cli-e2e-localstorage', '--cookie', 'password=example-password', '--non-interactive', '--json'],
+    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'password', '--field', 'username=cli-e2e', '--field', `password=${dummyPassword()}`, '--non-interactive', '--json'],
+    ['accounts', 'add', 'local-dummy', '--target', target.name, '--login-id', 'cli-e2e', '--flow', 'password', '--field', 'username=cli-e2e', '--field', `password=${dummyPassword()}`, '--non-interactive', '--json'],
+    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'cookies', '--cookie', 'username=cli-e2e-cookies', '--cookie', `password=${dummyPassword()}`, '--non-interactive', '--json'],
+    ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'localstorage', '--cookie', 'username=cli-e2e-localstorage', '--cookie', `password=${dummyPassword()}`, '--non-interactive', '--json'],
     ['accounts', 'add', 'local-dummy', '--target', target.name, '--flow', 'displayandwait', '--non-interactive', '--json'],
     ['accounts', 'list', '--target', target.name, '--account', 'local-dummy', '--json'],
     ['config', 'get', 'defaultAccount', '--json'],
@@ -577,7 +577,7 @@ async function phaseVerifySameAccountDevices(targets) {
   const pair = [...byUserID.values()].find(group => group.length >= 2)
   if (!pair) {
     recordBlock('verify', undefined, 'Device-to-device verification needs two targets signed into the same QA account.', [
-      `BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_EMAIL_1=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_2=staging-user+123456@beeper.com BEEPER_E2E_EMAIL_3=staging-user+123457@beeper.com BEEPER_E2E_ACCOUNT_COUNT=3 BEEPER_E2E_DESKTOP_TARGETS=0 BEEPER_E2E_SERVER_TARGETS=3 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup bun packages/cli/test/e2e-staging.ts`,
+      `BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_EMAIL_1="$QA_EMAIL_1" BEEPER_E2E_EMAIL_2="$QA_EMAIL_1" BEEPER_E2E_EMAIL_3="$QA_EMAIL_2" BEEPER_E2E_ACCOUNT_COUNT=3 BEEPER_E2E_DESKTOP_TARGETS=0 BEEPER_E2E_SERVER_TARGETS=3 BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup bun packages/cli/test/e2e-staging.ts`,
     ])
     return
   }
@@ -734,7 +734,7 @@ async function plannedTargetsWithAuth() {
 }
 
 function targetPlan(kind, index, ordinal, baseURL) {
-  const email = process.env[`BEEPER_E2E_EMAIL_${ordinal + 1}`] || `staging-user+${emailBase + ordinal}@beeper.com`
+  const email = process.env[`BEEPER_E2E_EMAIL_${ordinal + 1}`] || `staging-user-${emailBase + ordinal}@example.invalid`
   const port = Number(process.env[`BEEPER_E2E_PORT_${ordinal + 1}`] || (portStart + ordinal))
   return {
     kind,
@@ -822,7 +822,7 @@ function recordLoginBlock(target, args, result) {
     recordBlock('login', target, 'Complete Server setup sign-in, then rerun the login/readiness phases.', [
       `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/dev.js targets start ${target.name} --json`,
       `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/dev.js auth email start --target ${target.name} --email ${target.email} --json`,
-      `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/dev.js auth email response --target ${target.name} --setup-request-id "$SETUP_REQUEST_ID" --code "$QA_OTP" --username staging-user --yes --json`,
+      `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/dev.js auth email response --target ${target.name} --setup-request-id "$SETUP_REQUEST_ID" --code "$QA_OTP" --username "$QA_USERNAME" --yes --json`,
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login,readiness bun packages/cli/test/e2e-staging.ts`,
     ])
     return
@@ -864,8 +864,12 @@ async function loginServerViaSetupAPI(target) {
 }
 
 function usernameForEmail(email) {
-  const digits = email.match(/\+(\d+)@/)?.[1]
-  return digits ? `staging-user${digits}` : `staging-user${Date.now()}`
+  const localPart = email.split('@')[0]?.replace(/[^a-zA-Z0-9_-]/g, '') || ''
+  return localPart || `staging-user-${Date.now()}`
+}
+
+function dummyPassword() {
+  return process.env.BEEPER_E2E_DUMMY_PASSWORD || 'example-password'
 }
 
 async function waitForInfo(target) {

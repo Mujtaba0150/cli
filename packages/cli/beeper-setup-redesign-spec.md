@@ -458,7 +458,7 @@ Downloads/installs require:
 - Create three isolated targets:
   - one managed Desktop profile
   - two managed Server profiles
-- Use `staging-user@example.invalid` accounts and provide the QA OTP via `BEEPER_E2E_OTP` only in the scripts that target verified setup APIs.
+- Provide staging account emails and verification codes through environment variables only in the scripts that target verified setup APIs.
 - Start all targets on non-default ports.
 - Authenticate each target through the appropriate setup mode.
 - Run device-to-device verification between two signed-in targets.

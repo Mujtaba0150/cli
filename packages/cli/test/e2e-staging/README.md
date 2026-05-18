@@ -12,9 +12,9 @@ not launch apps, download artifacts, or touch the default Desktop instance.
   `<workdir>/cli-config`.
 - Use non-default PAS ports. The default starts at `24573`, not `23373`.
 - Every test target uses `--server-env staging`.
-- QA users should be `staging-user@example.invalid`; provide the QA OTP via
-  `BEEPER_E2E_OTP` only for scripts that explicitly target verified setup-login
-  APIs.
+- Provide staging account emails through `BEEPER_E2E_EMAIL_*` and verification
+  codes through `BEEPER_E2E_OTP` only for scripts that explicitly target
+  verified setup-login APIs.
 - Do not run `install-server` unless you intend to download the staging server
   artifact.
 

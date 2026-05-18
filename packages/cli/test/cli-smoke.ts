@@ -222,7 +222,7 @@ envelope = JSON.parse(result.stderr)
 assert.equal(envelope.success, false)
 assert.match(envelope.error, /read-only mode/)
 
-result = run('setup', '--remote', 'http://127.0.0.1:9', '--target', 'email-remote', '--email', 'staging-user+123456@beeper.com', '--json')
+result = run('setup', '--remote', 'http://127.0.0.1:9', '--target', 'email-remote', '--email', 'staging-user-123456@example.invalid', '--json')
 assert.notEqual(result.status, 0)
 envelope = JSON.parse(result.stderr)
 assert.equal(envelope.success, false)
