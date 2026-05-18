@@ -73,32 +73,32 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'targets start',
-    description: 'Start a managed target',
+    description: 'Start a local Server target or open Beeper Desktop',
     examples: ['beeper targets start work'],
   },
   {
     command: 'targets stop',
-    description: 'Stop a managed target',
+    description: 'Stop a local Beeper Server target',
     examples: ['beeper targets stop work'],
   },
   {
     command: 'targets restart',
-    description: 'Restart a managed target',
+    description: 'Restart a local Beeper Server target',
     examples: ['beeper targets restart work'],
   },
   {
     command: 'targets logs',
-    description: 'Print managed target logs',
+    description: 'Print logs for a local Beeper Desktop or Server install',
     examples: ['beeper targets logs work'],
   },
   {
     command: 'targets enable',
-    description: 'Enable managed target startup at login',
+    description: 'Enable a local Beeper Server target at login',
     examples: ['beeper targets enable work'],
   },
   {
     command: 'targets disable',
-    description: 'Disable managed target startup at login',
+    description: 'Disable a local Beeper Server target at login',
     examples: ['beeper targets disable work'],
   },
   {
