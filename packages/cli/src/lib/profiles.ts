@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { beeperDir, type Target } from './targets.js'
 import { readInstallations } from './installations.js'
+import { usageError } from './errors.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -30,7 +31,7 @@ export function assertProfile(target: Target): void {
 
 export function assertServerProfile(target: Target): void {
   if (!target.managed || !target.dataDir || target.type !== 'server') {
-    throw new Error(`Target "${target.id}" is not a local Beeper Server install.`)
+    throw usageError(`Target "${target.id}" is not a local Beeper Server install.`)
   }
 }
 

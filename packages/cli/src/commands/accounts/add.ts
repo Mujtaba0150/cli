@@ -77,7 +77,7 @@ export default class AccountsAdd extends BeeperCommand {
       webviewTimeoutMs: flags['webview-timeout'] * 1000,
     }) : step
     if (flags.json) await printData(result, 'json')
-    else printAccountLoginStep(result)
+    else await printAccountLoginStep(result)
   }
 }
 

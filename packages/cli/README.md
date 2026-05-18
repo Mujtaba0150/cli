@@ -695,6 +695,14 @@ Arguments:
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--all` | boolean | Print all matching log files instead of only recent files |
+| `--files=<value>` | option | Desktop log files to print, newest first Default: 5 |
+| `--lines=<value>` | option | Lines to print from each log file Default: 200 |
+
 Examples:
 
 ```sh

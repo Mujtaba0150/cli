@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline/promises'
 import { execFileSync } from 'node:child_process'
 import { stdin as input, stderr as output } from 'node:process'
+import QRCode from 'qrcode'
 import type { LoginSession } from '@beeper/desktop-api/resources/bridges.js'
 import type { BeeperDesktop } from '@beeper/desktop-api'
 
@@ -15,7 +16,7 @@ export type AccountLoginOptions = {
   webviewTimeoutMs?: number
 }
 
-export function printAccountLoginStep(session: AccountLoginStep): void {
+export async function printAccountLoginStep(session: AccountLoginStep): Promise<void> {
   const step = session.currentStep
   output.write(`status: ${session.status}\n`)
   if (session.loginID) output.write(`login_id: ${session.loginID}\n`)
@@ -28,7 +29,7 @@ export function printAccountLoginStep(session: AccountLoginStep): void {
   if (step.type === 'display_and_wait') {
     const display = step.display as { type: string; data?: string; imageURL?: string }
     output.write(`display: ${step.display.type}\n`)
-    if (display.type === 'qr' && display.data) output.write(`${display.data}\n`)
+    if (display.type === 'qr' && display.data) output.write(`${await renderTerminalQRCode(display.data)}\n`)
     if (display.type === 'emoji' && display.imageURL) output.write(`image: ${display.imageURL}\n`)
     if (display.type === 'code' && display.data) output.write(`${display.data}\n`)
   } else if (step.type === 'user_input') {
@@ -50,7 +51,7 @@ export function printAccountLoginStep(session: AccountLoginStep): void {
 export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: string, initialStep: AccountLoginStep, options: AccountLoginOptions = {}): Promise<AccountLoginStep> {
   let session = initialStep
   for (;;) {
-    printAccountLoginStep(session)
+    await printAccountLoginStep(session)
     if (session.status === 'complete' || session.status === 'cancelled' || session.status === 'failed') return session
 
     const step = session.currentStep
@@ -118,6 +119,18 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
     }
 
     throw new Error(`Unsupported account login step: ${step.type}`)
+  }
+}
+
+async function renderTerminalQRCode(data: string): Promise<string> {
+  try {
+    return await QRCode.toString(data, {
+      errorCorrectionLevel: 'M',
+      small: true,
+      type: 'terminal',
+    })
+  } catch {
+    return data
   }
 }
 
