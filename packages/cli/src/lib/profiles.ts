@@ -73,7 +73,7 @@ export async function launchDesktopApp(target?: Target): Promise<{ id: string; s
     spawn('open', args, { detached: true, stdio: 'ignore', env }).unref()
   }
 
-  if (process.platform === 'linux') {
+  if (process.platform === 'linux' || process.platform === 'win32') {
     if (!appPath) throw new Error("Beeper Desktop not found. Please install beeper using 'beeper install --desktop' or add Beeper Desktop to the PATH")
     const args = ['--no-enforce-app-location']
     if (target?.port) args.push(`--pas-port=${target.port}`)
@@ -122,7 +122,6 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
       for (const file of files) {
         const filePath = join(desktopAppDir, file);
         if (file.match(/^Beeper-.*\.AppImage$/i) && await pathExists(filePath)) {
-          console.log(`Found Beeper Desktop AppImage at ${filePath}`);
           return filePath;
         }
       }
@@ -151,7 +150,6 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
             const executable = match?.[1] ?? match?.[2];
 
             if (executable && await pathExists(executable)) {
-              console.log(`Found Beeper Desktop executable from .desktop file at ${executable}`);
               return executable;
             }
           }
@@ -171,7 +169,6 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
             if (file.match(/^Beeper-.*\.AppImage$/i)) {
               const filePath = join(dir, file);
               if (await pathExists(filePath)) {
-                console.log(`Found Beeper Desktop AppImage in PATH at ${filePath}`);
                 return filePath;
               }
             }
@@ -181,9 +178,6 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
         }
       }
     }
-
-    // 4. If still doesn't find it, show an error
-    throw new Error("Please install beeper using 'beeper install --desktop' or add Beeper Desktop to the PATH");
   }
 
   return undefined
